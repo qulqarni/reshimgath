@@ -319,13 +319,7 @@ export const MyProfilePage = ({ onNavigate }) => {
             <span>{t('editProfile')}</span>
           </button>
 
-          <button
-            onClick={() => setShowPhotoManager(true)}
-            className="px-4 py-2.5 bg-amber-50 text-brand-kesari border border-amber-300 font-bold text-xs rounded-xl hover:bg-amber-100 transition-all flex items-center justify-center space-x-1.5"
-          >
-            <Camera className="w-4 h-4 shrink-0" />
-            <span>Photos ({photos.length})</span>
-          </button>
+
 
           <button
             onClick={() => {
