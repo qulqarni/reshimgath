@@ -330,42 +330,7 @@ export const MyProfilePage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 2. ABOUT ME SECTION (BELOW HEADER) */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
-        <div className="flex items-center justify-between border-b pb-3">
-          <h3 className="font-serif font-bold text-xl text-brand-plum flex items-center space-x-2">
-            <span>{t('aboutMe')}</span>
-          </h3>
-          <button
-            onClick={handleOpenEditModal}
-            className="text-xs text-brand-kesari font-semibold hover:underline flex items-center space-x-1"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Edit Bio</span>
-          </button>
-        </div>
 
-        <p className="text-xs sm:text-sm text-brand-gray leading-relaxed bg-brand-ivory p-4 rounded-2xl border border-brand-rose/10">
-          {user?.aboutMe || "I am a family-oriented Maharashtrian professional based in Pune. I balance modern aspirations with traditional family values."}
-        </p>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs pt-1">
-          <div className="bg-brand-lightBg p-3.5 rounded-2xl border border-brand-rose/10">
-            <span className="text-[10px] text-brand-gray uppercase font-semibold">Native Place (मूळ गाव)</span>
-            <p className="font-bold text-brand-plum mt-1">{user?.nativePlace || 'Ichalkaranji / Sangli'}</p>
-          </div>
-
-          <div className="bg-brand-lightBg p-3.5 rounded-2xl border border-brand-rose/10">
-            <span className="text-[10px] text-brand-gray uppercase font-semibold">Education (शिक्षण)</span>
-            <p className="font-bold text-brand-plum mt-1 truncate">{user?.education || 'B.E. / B.Tech'}</p>
-          </div>
-
-          <div className="bg-brand-lightBg p-3.5 rounded-2xl border border-brand-rose/10">
-            <span className="text-[10px] text-brand-gray uppercase font-semibold">Occupation (नोकरी / व्यवसाय)</span>
-            <p className="font-bold text-brand-plum mt-1 truncate">{user?.occupation || 'Software Engineer'}</p>
-          </div>
-        </div>
-      </div>
 
       {/* 3. INDEPENDENT IMAGE GALLERY SECTION */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
