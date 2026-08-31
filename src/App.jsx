@@ -27,15 +27,52 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 
 function AppContent() {
-  const [currentPath, setCurrentPath] = useState('/');
-  const [selectedProfileId, setSelectedProfileId] = useState(null);
+  // Helper to determine initial path from browser address bar URL slug
+  const getInitialPath = () => {
+    if (typeof window === 'undefined') return '/';
+    const path = window.location.pathname;
+    if (path.startsWith('/profile/')) return '/profile';
+    return path || '/';
+  };
+
+  const getInitialProfileId = () => {
+    if (typeof window === 'undefined') return null;
+    const path = window.location.pathname;
+    if (path.startsWith('/profile/')) return path.replace('/profile/', '');
+    return null;
+  };
+
+  const [currentPath, setCurrentPath] = useState(getInitialPath);
+  const [selectedProfileId, setSelectedProfileId] = useState(getInitialProfileId);
+
+  // Sync browser back & forward button navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path.startsWith('/profile/')) {
+        setSelectedProfileId(path.replace('/profile/', ''));
+        setCurrentPath('/profile');
+      } else {
+        setSelectedProfileId(null);
+        setCurrentPath(path || '/');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Scroll to top on navigation change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPath, selectedProfileId]);
 
+  // Handle URL Slug Navigation with HTML5 History API
   const handleNavigate = (path) => {
+    if (typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+
     if (path.startsWith('/profile/')) {
       const id = path.replace('/profile/', '');
       setSelectedProfileId(id);
