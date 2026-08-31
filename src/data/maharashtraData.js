@@ -52,7 +52,7 @@ export const MAHARASHTRA_COMMUNITIES = [
   'Vani / Vaishya',
   'Sutar / Vishwakarma',
   'Gowari',
-  'Other Maharashtrian Community'
+  'Other'
 ];
 
 export const RELIGIONS = [
@@ -79,7 +79,7 @@ export const EDUCATION_LEVELS = [
   'LL.B / LL.M',
   'Ph.D / Doctorate',
   'Diploma / Technical',
-  'Other Graduate'
+  'Other'
 ];
 
 export const OCCUPATIONS = [
@@ -95,7 +95,8 @@ export const OCCUPATIONS = [
   'Lawyer / Legal Advocate',
   'Pharmacist / Biotech Researcher',
   'Corporate Manager',
-  'Agriculture Specialist / Farmer'
+  'Agriculture Specialist / Farmer',
+  'Other'
 ];
 
 export const INCOME_RANGES = [

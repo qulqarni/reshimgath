@@ -10,21 +10,38 @@ export const ProfileSetupPage = ({ onNavigate }) => {
   const { t } = useLanguage();
 
   const [step, setStep] = useState(1);
+
+  const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
+  const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
+
+  const initCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Maratha') : 'Other';
+  const initCustomCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+
+  const initEdu = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
+  const initCustomEdu = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
+
+  const initOcc = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
+  const initCustomOcc = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
+
   const [formData, setFormData] = useState({
     dob: user?.dob || '1998-06-15',
     height: user?.height || '5\' 6" (168 cm)',
     maritalStatus: 'Never Married',
-    religion: user?.religion || 'Hindu',
-    caste: user?.caste || 'Maratha',
+    religion: initReligion,
+    customReligion: initCustomReligion,
+    caste: initCaste,
+    customCaste: initCustomCaste,
     motherTongue: 'Marathi',
     bloodGroup: 'O+',
     state: 'Maharashtra',
     district: user?.district || 'Pune',
     city: 'Kothrud, Pune',
     nativePlace: 'Satara / Sangli',
-    education: 'B.E. / B.Tech',
+    education: initEdu,
+    customEducation: initCustomEdu,
     college: 'COEP Pune',
-    occupation: 'Software Engineer / IT Professional',
+    occupation: initOcc,
+    customOccupation: initCustomOcc,
     company: 'Leading Tech Company',
     income: '₹ 12 - 18 Lakhs per annum',
     fatherOccupation: 'Government Servant / Business Owner',
@@ -45,7 +62,19 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     if (step < 6) {
       setStep(step + 1);
     } else {
-      updateProfile(formData);
+      const finalData = {
+        ...formData,
+        religion: formData.religion === 'Other' ? (formData.customReligion || 'Other') : formData.religion,
+        caste: formData.caste === 'Other' ? (formData.customCaste || 'Other') : formData.caste,
+        education: formData.education === 'Other' ? (formData.customEducation || 'Other') : formData.education,
+        occupation: formData.occupation === 'Other' ? (formData.customOccupation || 'Other') : formData.occupation
+      };
+      delete finalData.customReligion;
+      delete finalData.customCaste;
+      delete finalData.customEducation;
+      delete finalData.customOccupation;
+
+      updateProfile(finalData);
       onNavigate('/dashboard');
     }
   };
@@ -95,6 +124,17 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
+
+                {formData.religion === 'Other' && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify Religion (धर्म सांगा)"
+                    value={formData.customReligion}
+                    onChange={(e) => setFormData({ ...formData, customReligion: e.target.value })}
+                    className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                )}
               </div>
 
               <div>
@@ -108,6 +148,17 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+
+                {formData.caste === 'Other' && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify Caste / Community (जात सांगा)"
+                    value={formData.customCaste}
+                    onChange={(e) => setFormData({ ...formData, customCaste: e.target.value })}
+                    className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                )}
               </div>
 
               <div>
@@ -212,6 +263,17 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     <option key={ed} value={ed}>{ed}</option>
                   ))}
                 </select>
+
+                {formData.education === 'Other' && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify Highest Education (शिक्षण सांगा)"
+                    value={formData.customEducation}
+                    onChange={(e) => setFormData({ ...formData, customEducation: e.target.value })}
+                    className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                )}
               </div>
 
               <div>
@@ -235,6 +297,17 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     <option key={occ} value={occ}>{occ}</option>
                   ))}
                 </select>
+
+                {formData.occupation === 'Other' && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify Occupation (नोकरी / व्यवसाय सांगा)"
+                    value={formData.customOccupation}
+                    onChange={(e) => setFormData({ ...formData, customOccupation: e.target.value })}
+                    className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                )}
               </div>
 
               <div>

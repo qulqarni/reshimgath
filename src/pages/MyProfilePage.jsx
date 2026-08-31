@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { 
   User, 
@@ -36,16 +36,32 @@ export const MyProfilePage = ({ onNavigate }) => {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
+  const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
+
+  const initCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
+  const initCustomCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+
+  const initEdu = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
+  const initCustomEdu = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
+
+  const initOcc = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
+  const initCustomOcc = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
+
   const [editFormData, setEditFormData] = useState({
     name: user?.name || '',
     gender: user?.gender || 'female',
     age: user?.age || '24',
-    religion: user?.religion || 'Hindu',
+    religion: initReligion,
+    customReligion: initCustomReligion,
     district: user?.district || 'Pune',
     nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
-    caste: user?.caste || 'Brahmin',
-    education: user?.education || 'B.E. / B.Tech',
-    occupation: user?.occupation || 'Software Engineer',
+    caste: initCaste,
+    customCaste: initCustomCaste,
+    education: initEdu,
+    customEducation: initCustomEdu,
+    occupation: initOcc,
+    customOccupation: initCustomOcc,
     aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
   });
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -98,16 +114,32 @@ export const MyProfilePage = ({ onNavigate }) => {
   };
 
   const handleOpenEditModal = () => {
+    const rSel = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
+    const rCust = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
+
+    const cSel = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
+    const cCust = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+
+    const eSel = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
+    const eCust = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
+
+    const oSel = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
+    const oCust = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
+
     setEditFormData({
       name: user?.name || '',
       gender: user?.gender || 'female',
       age: user?.age || '24',
-      religion: user?.religion || 'Hindu',
+      religion: rSel,
+      customReligion: rCust,
       district: user?.district || 'Pune',
       nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
-      caste: user?.caste || 'Brahmin',
-      education: user?.education || 'B.E. / B.Tech',
-      occupation: user?.occupation || 'Software Engineer',
+      caste: cSel,
+      customCaste: cCust,
+      education: eSel,
+      customEducation: eCust,
+      occupation: oSel,
+      customOccupation: oCust,
       aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
     });
     setShowEditModal(true);
@@ -115,7 +147,19 @@ export const MyProfilePage = ({ onNavigate }) => {
 
   const handleSaveEditProfile = (e) => {
     e.preventDefault();
-    updateProfile(editFormData);
+    const finalData = {
+      ...editFormData,
+      religion: editFormData.religion === 'Other' ? (editFormData.customReligion || 'Other') : editFormData.religion,
+      caste: editFormData.caste === 'Other' ? (editFormData.customCaste || 'Other') : editFormData.caste,
+      education: editFormData.education === 'Other' ? (editFormData.customEducation || 'Other') : editFormData.education,
+      occupation: editFormData.occupation === 'Other' ? (editFormData.customOccupation || 'Other') : editFormData.occupation
+    };
+    delete finalData.customReligion;
+    delete finalData.customCaste;
+    delete finalData.customEducation;
+    delete finalData.customOccupation;
+
+    updateProfile(finalData);
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
@@ -515,6 +559,17 @@ export const MyProfilePage = ({ onNavigate }) => {
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
+
+                  {editFormData.religion === 'Other' && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Specify Religion (धर्म सांगा)"
+                      value={editFormData.customReligion}
+                      onChange={(e) => setEditFormData({ ...editFormData, customReligion: e.target.value })}
+                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  )}
                 </div>
 
                 {/* 5. Maharashtra District */}
@@ -554,28 +609,67 @@ export const MyProfilePage = ({ onNavigate }) => {
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
+
+                  {editFormData.caste === 'Other' && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Specify Caste / Community (जात सांगा)"
+                      value={editFormData.customCaste}
+                      onChange={(e) => setEditFormData({ ...editFormData, customCaste: e.target.value })}
+                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  )}
                 </div>
 
                 {/* 8. Education */}
                 <div>
                   <label className="block font-semibold mb-1 text-brand-charcoal">Education (शिक्षण)</label>
-                  <input
-                    type="text"
+                  <select
                     value={editFormData.education}
                     onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  />
+                  >
+                    {EDUCATION_LEVELS.map(ed => (
+                      <option key={ed} value={ed}>{ed}</option>
+                    ))}
+                  </select>
+
+                  {editFormData.education === 'Other' && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Specify Highest Education (शिक्षण सांगा)"
+                      value={editFormData.customEducation}
+                      onChange={(e) => setEditFormData({ ...editFormData, customEducation: e.target.value })}
+                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  )}
                 </div>
 
                 {/* 9. Occupation */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1 text-brand-charcoal">Occupation (नोकरी / व्यवसाय)</label>
-                  <input
-                    type="text"
+                  <select
                     value={editFormData.occupation}
                     onChange={(e) => setEditFormData({ ...editFormData, occupation: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  />
+                  >
+                    {OCCUPATIONS.map(occ => (
+                      <option key={occ} value={occ}>{occ}</option>
+                    ))}
+                  </select>
+
+                  {editFormData.occupation === 'Other' && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Specify Occupation (नोकरी / व्यवसाय सांगा)"
+                      value={editFormData.customOccupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, customOccupation: e.target.value })}
+                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  )}
                 </div>
               </div>
 
