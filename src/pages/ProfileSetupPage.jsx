@@ -72,7 +72,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
       delete finalData.customOccupation;
 
       updateProfile(finalData);
-      onNavigate('/dashboard');
+      onNavigate('/my-profile');
     }
   };
 
@@ -455,7 +455,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
             onClick={handleNext}
             className="px-8 py-3 rounded-xl bg-brand-plum text-white font-bold text-xs shadow-md hover:bg-brand-plumDark transition-all flex items-center space-x-2"
           >
-            <span>{step === 6 ? "Finish Setup & Launch Dashboard" : "Save & Continue"}</span>
+            <span>{step === 6 ? "Finish Setup & View My Profile" : "Save & Continue"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

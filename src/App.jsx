@@ -14,7 +14,6 @@ import { SignUpPage } from './pages/SignUpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProfileSetupPage } from './pages/ProfileSetupPage';
-import { DashboardPage } from './pages/DashboardPage';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { ProfileDetailPage } from './pages/ProfileDetailPage';
 import { MyProfilePage } from './pages/MyProfilePage';
@@ -28,59 +27,66 @@ import { ContactPage } from './pages/ContactPage';
 
 function AppContent() {
   // Helper to determine initial path from browser address bar URL slug
-  const getInitialPath = () => {
-    if (typeof window === 'undefined') return '/';
-    const path = window.location.pathname;
-    if (path.startsWith('/profile/')) return '/profile';
-    return path || '/';
+  const getPathFromLocation = () => {
+    const pathname = window.location.pathname;
+    return pathname === '' ? '/' : pathname;
   };
 
-  const getInitialProfileId = () => {
-    if (typeof window === 'undefined') return null;
-    const path = window.location.pathname;
-    if (path.startsWith('/profile/')) return path.replace('/profile/', '');
-    return null;
-  };
+  const [currentPath, setCurrentPath] = useState(getPathFromLocation);
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
 
-  const [currentPath, setCurrentPath] = useState(getInitialPath);
-  const [selectedProfileId, setSelectedProfileId] = useState(getInitialProfileId);
-
-  // Sync browser back & forward button navigation
+  // Sync browser back / forward buttons (popstate)
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname;
+      const path = getPathFromLocation();
+      
+      // Handle dynamic profile path like /profile/3
       if (path.startsWith('/profile/')) {
-        setSelectedProfileId(path.replace('/profile/', ''));
-        setCurrentPath('/profile');
-      } else {
-        setSelectedProfileId(null);
-        setCurrentPath(path || '/');
+        const idStr = path.replace('/profile/', '');
+        const numericId = parseInt(idStr, 10);
+        if (!isNaN(numericId)) {
+          setSelectedProfileId(numericId);
+          setCurrentPath('/profile');
+          return;
+        }
       }
+
+      setCurrentPath(path);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Scroll to top on navigation change
-  useEffect(() => {
+  // Centralized Navigation Function that updates both React state & Browser URL address bar slug
+  const handleNavigate = (targetPath) => {
+    let cleanPath = targetPath;
+    let profId = null;
+
+    // Handle dynamic profile route like /profile/2
+    if (targetPath.startsWith('/profile/')) {
+      const idStr = targetPath.replace('/profile/', '');
+      const numericId = parseInt(idStr, 10);
+      if (!isNaN(numericId)) {
+        profId = numericId;
+        cleanPath = '/profile';
+      }
+    }
+
+    if (profId !== null) {
+      setSelectedProfileId(profId);
+    }
+
+    // Redirect dashboard requests directly to my-profile
+    const pushUrl = targetPath === '/dashboard' ? '/my-profile' : targetPath;
+
+    // Update browser URL address bar dynamically without full page reload
+    if (window.location.pathname !== pushUrl) {
+      window.history.pushState({}, '', pushUrl);
+    }
+
+    setCurrentPath(cleanPath === '/dashboard' ? '/my-profile' : cleanPath);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPath, selectedProfileId]);
-
-  // Handle URL Slug Navigation with HTML5 History API
-  const handleNavigate = (path) => {
-    if (typeof window !== 'undefined' && window.location.pathname !== path) {
-      window.history.pushState({}, '', path);
-    }
-
-    if (path.startsWith('/profile/')) {
-      const id = path.replace('/profile/', '');
-      setSelectedProfileId(id);
-      setCurrentPath('/profile');
-    } else {
-      setSelectedProfileId(null);
-      setCurrentPath(path);
-    }
   };
 
   const renderPage = () => {
@@ -97,14 +103,13 @@ function AppContent() {
         return <ResetPasswordPage onNavigate={handleNavigate} />;
       case '/profile-setup':
         return <ProfileSetupPage onNavigate={handleNavigate} />;
-      case '/dashboard':
-        return <DashboardPage onNavigate={handleNavigate} />;
       case '/discover':
         return <DiscoverPage onNavigate={handleNavigate} />;
       case '/profile':
         return <ProfileDetailPage profileId={selectedProfileId} onNavigate={handleNavigate} />;
       case '/my-profile':
       case '/edit-profile':
+      case '/dashboard':
         return <MyProfilePage onNavigate={handleNavigate} />;
       case '/interests':
         return <InterestsPage onNavigate={handleNavigate} />;
@@ -124,10 +129,10 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-brand-ivory text-brand-charcoal">
+    <div className="min-h-screen bg-brand-lightBg flex flex-col font-sans text-brand-charcoal selection:bg-brand-plum selection:text-white">
       <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
-      
-      <main className="flex-1">
+
+      <main className="flex-1 pb-16 md:pb-0">
         {renderPage()}
       </main>
 
@@ -138,7 +143,7 @@ function AppContent() {
   );
 }
 
-export default function App() {
+export function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
@@ -149,3 +154,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+export default App;

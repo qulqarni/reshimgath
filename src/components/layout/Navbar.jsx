@@ -314,12 +314,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                 >
                   {t('messages')}
                 </button>
-                <button
-                  onClick={() => handleNav('/dashboard')}
-                  className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl"
-                >
-                  {t('dashboard')}
-                </button>
+
                 <button
                   onClick={() => handleNav('/my-profile')}
                   className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl"
