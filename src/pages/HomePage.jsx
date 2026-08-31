@@ -86,14 +86,7 @@ export const HomePage = ({ onNavigate }) => {
             {/* Left Hero Text Column */}
             <div className="lg:col-span-7 space-y-5 sm:space-y-8 text-center lg:text-left w-full max-w-full overflow-hidden">
               
-              {/* Logo Badge */}
-              <div className="flex items-center justify-center lg:justify-start mb-2">
-                <img 
-                  src="/logo.png" 
-                  alt="Sambodhi Sarang Marriage Bureau" 
-                  className="h-16 sm:h-20 w-auto object-contain bg-white/95 px-4 py-2 rounded-2xl shadow-2xl border border-brand-rose/40 backdrop-blur-md" 
-                />
-              </div>
+
 
               {/* Tagline Badge */}
               <div className="inline-flex items-center gap-1.5 bg-brand-plum/30 border border-brand-rose/50 text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-md backdrop-blur-md max-w-full">
