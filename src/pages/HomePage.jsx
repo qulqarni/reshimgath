@@ -180,7 +180,7 @@ export const HomePage = ({ onNavigate }) => {
                     <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-2xl border border-white/10">
                       <Star className="w-5 h-5 text-amber-400 fill-amber-400 shrink-0" />
                       <div>
-                        <p className="font-bold text-white">Maharashtrian Biodata PDF</p>
+                        <p className="font-bold text-white">Biodata PDF</p>
                         <p className="text-[11px] text-gray-300">Detailed family background & PDF biodata sharing</p>
                       </div>
                     </div>

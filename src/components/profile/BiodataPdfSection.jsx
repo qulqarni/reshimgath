@@ -1,38 +1,37 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { 
   FileText, 
   UploadCloud, 
-  Eye, 
   Download, 
+  Eye, 
   Trash2, 
   CheckCircle2, 
-  X, 
-  Sparkles,
-  ShieldCheck,
-  Printer,
-  FileCheck
+  X,
+  FileCheck,
+  User,
+  Heart
 } from 'lucide-react';
 
 export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) => {
-  const [showViewerModal, setShowViewerModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [showViewerModal, setShowViewerModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  const biodata = user?.biodataPdf;
+  const biodata = user?.biodataPdf || null;
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Please select a valid PDF document (.pdf file).');
+      alert('Please select a valid PDF document file.');
       return;
     }
 
-    // Limit to 10MB
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds 10MB limit. Please upload a smaller PDF file.');
+      alert('File size exceeds 10MB. Please choose a smaller PDF file.');
       return;
     }
 
@@ -53,7 +52,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
       updateProfile({ biodataPdf: newBiodata });
       setIsUploading(false);
       setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 4000);
+      setTimeout(() => setUploadSuccess(false), 3000);
     }, 800);
   };
 
@@ -83,7 +82,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="font-serif text-lg font-bold text-brand-plum">Maharashtrian Biodata (बायोडेटा PDF)</h3>
+              <h3 className="font-serif text-lg font-bold text-brand-plum">Biodata (बायोडेटा PDF)</h3>
               <span className="bg-brand-kesari/10 text-brand-kesari text-[10px] font-bold px-2 py-0.5 rounded-full border border-brand-kesari/30">
                 PDF Format
               </span>
@@ -187,7 +186,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                 {isUploading ? 'Uploading Biodata PDF...' : 'Click to Upload Your Biodata PDF'}
               </h4>
               <p className="text-xs text-brand-gray mt-1">
-                Upload your detailed Maharashtrian Biodata (PDF format, up to 10MB)
+                Upload your detailed Biodata (PDF format, up to 10MB)
               </p>
             </div>
             <div className="pt-1">
@@ -212,7 +211,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                 </div>
                 <div>
                   <h3 className="font-serif font-bold text-base text-brand-gold">
-                    {user?.name} — Maharashtrian Biodata
+                    {user?.name} — Biodata
                   </h3>
                   <p className="text-xs text-white/80">{biodata.fileName} • {biodata.fileSize}</p>
                 </div>
@@ -236,7 +235,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
               </div>
             </div>
 
-            {/* Modal Body: Digital Formatted Maharashtrian Biodata Document */}
+            {/* Modal Body: Digital Formatted Biodata Document */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-8 bg-brand-ivory">
               
               {/* Cultural Header Banner */}
@@ -248,85 +247,48 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                   रेशीमगाठ विवाह बायोडेटा (Biodata)
                 </h1>
                 <p className="text-xs text-brand-gray">
-                  ReshimGath Verified Matrimonial Profile Document
+                  Verified Family Biodata Document • Confidential
                 </p>
               </div>
 
-              {/* Candidate Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-2xl border border-brand-rose/20 shadow-sm">
-                
-                {/* Photo */}
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  {(user?.avatar || user?.photos?.[0]) ? (
-                    <img
-                      src={user.avatar || user.photos[0]}
-                      alt={user?.name}
-                      className="w-36 h-36 rounded-2xl object-cover border-2 border-brand-gold shadow-md"
-                    />
-                  ) : (
-                    <div className="w-36 h-36 rounded-2xl bg-brand-plum text-brand-gold flex flex-col items-center justify-center border-2 border-brand-gold shadow-md">
-                      <span className="font-serif text-4xl font-bold">{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
-                      <span className="text-[10px] text-brand-rose mt-1">No Photo Uploaded</span>
-                    </div>
-                  )}
-                  <span className="text-xs font-bold text-brand-plum">{user?.name}</span>
+              {/* Profile Overview Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-brand-rose/20 shadow-sm">
+                <div className="space-y-3">
+                  <h4 className="font-serif font-bold text-sm text-brand-plum uppercase tracking-wider border-b pb-1">Personal Info</h4>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Full Name:</strong> {user?.name}</p>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Age / DOB:</strong> {user?.age || '26'} Years ({user?.dob || '1998-06-15'})</p>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Height:</strong> {user?.height || '5\' 6"'}</p>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Religion / Caste:</strong> {user?.religion || 'Hindu'} - {user?.caste || 'Maratha'}</p>
                 </div>
 
-                {/* Personal Summary */}
-                <div className="md:col-span-2 space-y-3 text-xs">
-                  <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1">Personal Details (वैयक्तिक माहिती)</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><strong>Full Name:</strong> {user?.name}</div>
-                    <div><strong>Date of Birth:</strong> {user?.dob || '18 April 1996'}</div>
-                    <div><strong>Height:</strong> {user?.height || "5' 10\" (178 cm)"}</div>
-                    <div><strong>Marital Status:</strong> {user?.maritalStatus || 'Never Married'}</div>
-                    <div><strong>Religion / Caste:</strong> {user?.religion} / {user?.caste}</div>
-                    <div><strong>Mother Tongue:</strong> {user?.motherTongue || 'Marathi'}</div>
-                    <div><strong>Blood Group:</strong> {user?.bloodGroup || 'O+'}</div>
-                    <div><strong>Diet:</strong> {user?.diet || 'Vegetarian'}</div>
+                <div className="space-y-3">
+                  <h4 className="font-serif font-bold text-sm text-brand-plum uppercase tracking-wider border-b pb-1">Location & Career</h4>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">District:</strong> {user?.district || 'Pune'}</p>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Native Place:</strong> {user?.nativePlace || 'Satara'}</p>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Education:</strong> {user?.education || 'B.E. / B.Tech'}</p>
+                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Occupation:</strong> {user?.occupation || 'Software Engineer'}</p>
+                </div>
+              </div>
+
+              {/* PDF Preview Frame Container */}
+              <div className="bg-white rounded-2xl p-4 border border-brand-rose/20 shadow-md text-center space-y-4">
+                <div className="h-96 bg-gray-100 rounded-xl flex flex-col items-center justify-center p-6 space-y-3 border-2 border-dashed border-gray-300">
+                  <FileText className="w-16 h-16 text-brand-plum/40" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-brand-plum">{biodata.fileName}</p>
+                    <p className="text-[11px] text-brand-gray">Interactive PDF View Mode • {biodata.fileSize}</p>
                   </div>
+                  <a
+                    href={biodata.url || '#'}
+                    download={biodata.fileName || 'Biodata.pdf'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+                  >
+                    <Download className="w-4 h-4 text-brand-gold" />
+                    <span>Open & Download Full PDF</span>
+                  </a>
                 </div>
-
-              </div>
-
-              {/* Education & Career */}
-              <div className="bg-white p-6 rounded-2xl border border-brand-rose/20 shadow-sm space-y-3 text-xs">
-                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1">Education & Career (शिक्षण व नोकरी)</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div><strong>Education:</strong> {user?.education || 'B.E. Information Technology'} ({user?.college || 'PICT Pune'})</div>
-                  <div><strong>Occupation:</strong> {user?.occupation || 'Software Engineer'}</div>
-                  <div><strong>Company:</strong> {user?.company || 'Cloud Tech Systems'}</div>
-                  <div><strong>Annual Income:</strong> {user?.income || '₹ 18 - 25 Lakhs per annum'}</div>
-                </div>
-              </div>
-
-              {/* Family Background */}
-              <div className="bg-white p-6 rounded-2xl border border-brand-rose/20 shadow-sm space-y-3 text-xs">
-                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1">Family Details (कौटुंबिक माहिती)</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div><strong>Father's Name & Occupation:</strong> {user?.fatherOccupation || 'Ex-Bank Manager'}</div>
-                  <div><strong>Mother's Occupation:</strong> {user?.motherOccupation || 'Retd. High School Teacher'}</div>
-                  <div><strong>Siblings:</strong> {user?.siblings || '1 Sister'}</div>
-                  <div><strong>Native Place (मूळ गाव):</strong> {user?.nativePlace || 'Ichalkaranji / Sangli'}</div>
-                  <div><strong>Current Residence:</strong> {user?.city || 'Shivajinagar, Pune'}</div>
-                  <div><strong>Family Values:</strong> {user?.familyValues || 'Cultured & Ethical'}</div>
-                </div>
-              </div>
-
-              {/* Cultural & Partner Expectations */}
-              <div className="bg-amber-50/70 p-6 rounded-2xl border border-amber-200 shadow-sm space-y-3 text-xs">
-                <h4 className="font-serif font-bold text-sm text-amber-900 border-b border-amber-200 pb-1">Partner Preferences & Expectations (जोडीदाराच्या अपेक्षा)</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-amber-950 font-medium">
-                  <div><strong>Preferred Age:</strong> {user?.partnerPref?.ageRange || '24 - 30'}</div>
-                  <div><strong>Preferred Height:</strong> {user?.partnerPref?.heightRange || "5' 2\" - 5' 10\""}</div>
-                  <div><strong>Districts:</strong> {user?.partnerPref?.districts?.join(', ') || 'Pune, Kolhapur'}</div>
-                  <div><strong>Profile Status:</strong> Verified</div>
-                </div>
-              </div>
-
-              {/* Printable PDF Notice */}
-              <div className="bg-white p-4 rounded-xl border text-center text-xs text-brand-gray">
-                <p>© 2026 ReshimGath Matrimony • Verified Maharashtrian Matrimonial Profile Document</p>
               </div>
 
             </div>

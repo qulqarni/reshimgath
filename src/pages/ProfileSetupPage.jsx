@@ -93,7 +93,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
             {step === 3 && "Education & Career (शिक्षण व नोकरी)"}
             {step === 4 && "Family Background (कौटुंबिक माहिती)"}
             {step === 5 && "Lifestyle & Bio (जीवनशैली व परिच्छेद)"}
-            {step === 6 && "Maharashtrian Biodata PDF (बायोडेटा PDF)"}
+            {step === 6 && "Biodata PDF (बायोडेटा PDF)"}
           </h2>
 
           {/* Progress Bar */}
@@ -426,8 +426,8 @@ export const ProfileSetupPage = ({ onNavigate }) => {
             <div className="space-y-3">
               {/* Biodata PDF Upload during Registration */}
               <div className="space-y-2">
-                <h4 className="font-serif text-sm font-bold text-brand-plum">
-                  Upload Maharashtrian Biodata PDF (बायोडेटा PDF अपलोड) - Optional
+                <h4 className="font-serif text-sm font-bold text-brand-plum uppercase tracking-wider">
+                  Upload Biodata PDF (बायोडेटा PDF अपलोड) - Optional
                 </h4>
                 <p className="text-xs text-brand-gray">
                   Upload your detailed family biodata PDF now or complete it later from your profile.

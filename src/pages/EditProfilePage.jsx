@@ -180,7 +180,7 @@ export const EditProfilePage = ({ onNavigate }) => {
           {/* COMPACT STANDARD FORM FIELD FOR BIODATA PDF */}
           <div>
             <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-              Maharashtrian Biodata PDF (बायोडेटा PDF)
+              Biodata PDF (बायोडेटा PDF)
             </label>
             
             <div className="flex items-center gap-3 bg-brand-ivory/60 p-3 rounded-xl border border-gray-200">

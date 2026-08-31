@@ -688,7 +688,7 @@ export const MyProfilePage = ({ onNavigate }) => {
               <div className="pt-2 border-t border-gray-100 space-y-1.5">
                 <label className="block font-bold text-brand-plum flex items-center space-x-1.5">
                   <FileText className="w-4 h-4 text-brand-kesari" />
-                  <span>Maharashtrian Biodata PDF (बायोडेटा PDF)</span>
+                  <span>Biodata PDF (बायोडेटा PDF)</span>
                 </label>
                 <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} />
               </div>
