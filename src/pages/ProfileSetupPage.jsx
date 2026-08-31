@@ -52,10 +52,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     smoking: 'No',
     drinking: 'No',
     hobbies: 'Music, Trekking, Classical Art',
-    aboutMe: 'I am a family-oriented Maharashtrian professional. I balance modern tech aspirations with cultural warmth.',
-    prefAge: '24 - 29',
-    prefHeight: '5\' 2" - 5\' 8"',
-    prefDistrict: 'Pune, Mumbai, Kolhapur'
+    aboutMe: 'I am a family-oriented Maharashtrian professional. I balance modern tech aspirations with cultural warmth.'
   });
 
   const handleNext = () => {
@@ -96,7 +93,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
             {step === 3 && "Education & Career (शिक्षण व नोकरी)"}
             {step === 4 && "Family Background (कौटुंबिक माहिती)"}
             {step === 5 && "Lifestyle & Bio (जीवनशैली व परिच्छेद)"}
-            {step === 6 && "Partner Preferences (अपेक्षित जोडीदार)"}
+            {step === 6 && "Maharashtrian Biodata PDF (बायोडेटा PDF)"}
           </h2>
 
           {/* Progress Bar */}
@@ -426,32 +423,9 @@ export const ProfileSetupPage = ({ onNavigate }) => {
           )}
 
           {step === 6 && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Preferred Age Range</label>
-                  <input
-                    type="text"
-                    value={formData.prefAge}
-                    onChange={(e) => setFormData({ ...formData, prefAge: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Preferred Districts</label>
-                  <input
-                    type="text"
-                    value={formData.prefDistrict}
-                    onChange={(e) => setFormData({ ...formData, prefDistrict: e.target.value })}
-                    placeholder="e.g. Pune, Kolhapur, Sangli"
-                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                  />
-                </div>
-              </div>
-
+            <div className="space-y-3">
               {/* Biodata PDF Upload during Registration */}
-              <div className="pt-2 border-t border-gray-100 space-y-2">
+              <div className="space-y-2">
                 <h4 className="font-serif text-sm font-bold text-brand-plum">
                   Upload Maharashtrian Biodata PDF (बायोडेटा PDF अपलोड) - Optional
                 </h4>
