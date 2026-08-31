@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { 
   User, 
@@ -52,16 +52,31 @@ export const MyProfilePage = ({ onNavigate }) => {
     name: user?.name || '',
     gender: user?.gender || 'female',
     age: user?.age || '24',
+    dob: user?.dob || '1998-06-15',
+    height: user?.height || '5\' 6" (168 cm)',
+    maritalStatus: user?.maritalStatus || 'Never Married',
     religion: initReligion,
     customReligion: initCustomReligion,
-    district: user?.district || 'Pune',
-    nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
     caste: initCaste,
     customCaste: initCustomCaste,
+    motherTongue: user?.motherTongue || 'Marathi',
+    district: user?.district || 'Pune',
+    nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
+    city: user?.city || 'Kothrud, Pune',
+    pincode: user?.pincode || '411038',
     education: initEdu,
     customEducation: initCustomEdu,
+    college: user?.college || 'COEP Pune',
     occupation: initOcc,
     customOccupation: initCustomOcc,
+    income: user?.income || '₹ 12 - 18 Lakhs per annum',
+    fatherOccupation: user?.fatherOccupation || 'Government Servant / Business Owner',
+    motherOccupation: user?.motherOccupation || 'Homemaker',
+    siblings: user?.siblings || '1 Brother',
+    familyType: user?.familyType || 'Nuclear Family',
+    diet: user?.diet || 'Vegetarian',
+    smoking: user?.smoking || 'No',
+    drinking: user?.drinking || 'No',
     aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
   });
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -130,16 +145,31 @@ export const MyProfilePage = ({ onNavigate }) => {
       name: user?.name || '',
       gender: user?.gender || 'female',
       age: user?.age || '24',
+      dob: user?.dob || '1998-06-15',
+      height: user?.height || '5\' 6" (168 cm)',
+      maritalStatus: user?.maritalStatus || 'Never Married',
       religion: rSel,
       customReligion: rCust,
-      district: user?.district || 'Pune',
-      nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
       caste: cSel,
       customCaste: cCust,
+      motherTongue: user?.motherTongue || 'Marathi',
+      district: user?.district || 'Pune',
+      nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
+      city: user?.city || 'Kothrud, Pune',
+      pincode: user?.pincode || '411038',
       education: eSel,
       customEducation: eCust,
+      college: user?.college || 'COEP Pune',
       occupation: oSel,
       customOccupation: oCust,
+      income: user?.income || '₹ 12 - 18 Lakhs per annum',
+      fatherOccupation: user?.fatherOccupation || 'Government Servant / Business Owner',
+      motherOccupation: user?.motherOccupation || 'Homemaker',
+      siblings: user?.siblings || '1 Brother',
+      familyType: user?.familyType || 'Nuclear Family',
+      diet: user?.diet || 'Vegetarian',
+      smoking: user?.smoking || 'No',
+      drinking: user?.drinking || 'No',
       aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
     });
     setShowEditModal(true);
@@ -486,10 +516,10 @@ export const MyProfilePage = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* EDIT PROFILE INLINE MODAL WITH ALL REGISTRATION FIELDS (EXCLUDING EMAIL, PHONE, PASSWORD) */}
+      {/* EDIT PROFILE INLINE MODAL WITH ALL REGISTRATION & SETUP FIELDS */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white max-w-3xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setShowEditModal(false)}
@@ -508,183 +538,410 @@ export const MyProfilePage = ({ onNavigate }) => {
               )}
             </div>
 
-            <form onSubmit={handleSaveEditProfile} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveEditProfile} className="space-y-6 text-xs">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* 1. Full Name */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Full Name (संपूर्ण नाव)</label>
-                  <input
-                    type="text"
-                    required
-                    value={editFormData.name}
-                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  />
-                </div>
-
-                {/* 2. Looking for Match for */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Looking for Match for</label>
-                  <select
-                    value={editFormData.gender}
-                    onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  >
-                    <option value="female">Bride (वधू) - Female</option>
-                    <option value="male">Groom (वर) - Male</option>
-                  </select>
-                </div>
-
-                {/* 3. Age */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Age (वय)</label>
-                  <input
-                    type="number"
-                    value={editFormData.age}
-                    onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  />
-                </div>
-
-                {/* 4. Religion */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Religion (धर्म)</label>
-                  <select
-                    value={editFormData.religion}
-                    onChange={(e) => setEditFormData({ ...editFormData, religion: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  >
-                    {RELIGIONS.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-
-                  {editFormData.religion === 'Other' && (
+              {/* SECTION 1: BASIC INFORMATION */}
+              <div className="space-y-3">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  1. Basic Details (प्राथमिक माहिती)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Full Name (संपूर्ण नाव)</label>
                     <input
                       type="text"
                       required
-                      placeholder="Specify Religion (धर्म सांगा)"
-                      value={editFormData.customReligion}
-                      onChange={(e) => setEditFormData({ ...editFormData, customReligion: e.target.value })}
-                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      value={editFormData.name}
+                      onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                     />
-                  )}
-                </div>
+                  </div>
 
-                {/* 5. Maharashtra District */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District (जिल्हा)</label>
-                  <select
-                    value={editFormData.district}
-                    onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  >
-                    {MAHARASHTRA_DISTRICTS.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Looking for Match for */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Looking for Match for</label>
+                    <select
+                      value={editFormData.gender}
+                      onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="female">Bride (वधू) - Female</option>
+                      <option value="male">Groom (वर) - Male</option>
+                    </select>
+                  </div>
 
-                {/* 6. Native Place */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Native Place (मूळ गाव)</label>
-                  <input
-                    type="text"
-                    value={editFormData.nativePlace}
-                    onChange={(e) => setEditFormData({ ...editFormData, nativePlace: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  />
-                </div>
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={editFormData.dob}
+                      onChange={(e) => setEditFormData({ ...editFormData, dob: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
 
-                {/* 7. Community / Caste */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Community / Caste (जात)</label>
-                  <select
-                    value={editFormData.caste}
-                    onChange={(e) => setEditFormData({ ...editFormData, caste: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  >
-                    {MAHARASHTRA_COMMUNITIES.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  {/* Age */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Age (वय)</label>
+                    <input
+                      type="number"
+                      value={editFormData.age}
+                      onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
 
-                  {editFormData.caste === 'Other' && (
+                  {/* Height */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Height</label>
+                    <select
+                      value={editFormData.height}
+                      onChange={(e) => setEditFormData({ ...editFormData, height: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="5' 2&quot; (157 cm)">5' 2" (157 cm)</option>
+                      <option value="5' 4&quot; (163 cm)">5' 4" (163 cm)</option>
+                      <option value="5' 6&quot; (168 cm)">5' 6" (168 cm)</option>
+                      <option value="5' 8&quot; (172 cm)">5' 8" (172 cm)</option>
+                      <option value="5' 10&quot; (178 cm)">5' 10" (178 cm)</option>
+                      <option value="6' 0&quot; (183 cm)">6' 0" (183 cm)</option>
+                    </select>
+                  </div>
+
+                  {/* Marital Status */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Marital Status</label>
+                    <select
+                      value={editFormData.maritalStatus}
+                      onChange={(e) => setEditFormData({ ...editFormData, maritalStatus: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Never Married">Never Married</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Widowed">Widowed</option>
+                    </select>
+                  </div>
+
+                  {/* Religion */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Religion (धर्म)</label>
+                    <select
+                      value={editFormData.religion}
+                      onChange={(e) => setEditFormData({ ...editFormData, religion: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {RELIGIONS.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.religion === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Religion (धर्म सांगा)"
+                        value={editFormData.customReligion}
+                        onChange={(e) => setEditFormData({ ...editFormData, customReligion: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* Community / Caste */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Community / Caste (जात)</label>
+                    <select
+                      value={editFormData.caste}
+                      onChange={(e) => setEditFormData({ ...editFormData, caste: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {MAHARASHTRA_COMMUNITIES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.caste === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Caste / Community (जात सांगा)"
+                        value={editFormData.customCaste}
+                        onChange={(e) => setEditFormData({ ...editFormData, customCaste: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* Mother Tongue */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Mother Tongue</label>
                     <input
                       type="text"
-                      required
-                      placeholder="Specify Caste / Community (जात सांगा)"
-                      value={editFormData.customCaste}
-                      onChange={(e) => setEditFormData({ ...editFormData, customCaste: e.target.value })}
-                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      value={editFormData.motherTongue}
+                      onChange={(e) => setEditFormData({ ...editFormData, motherTongue: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                     />
-                  )}
-                </div>
-
-                {/* 8. Education */}
-                <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Education (शिक्षण)</label>
-                  <select
-                    value={editFormData.education}
-                    onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  >
-                    {EDUCATION_LEVELS.map(ed => (
-                      <option key={ed} value={ed}>{ed}</option>
-                    ))}
-                  </select>
-
-                  {editFormData.education === 'Other' && (
-                    <input
-                      type="text"
-                      required
-                      placeholder="Specify Highest Education (शिक्षण सांगा)"
-                      value={editFormData.customEducation}
-                      onChange={(e) => setEditFormData({ ...editFormData, customEducation: e.target.value })}
-                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
-                    />
-                  )}
-                </div>
-
-                {/* 9. Occupation */}
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Occupation (नोकरी / व्यवसाय)</label>
-                  <select
-                    value={editFormData.occupation}
-                    onChange={(e) => setEditFormData({ ...editFormData, occupation: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                  >
-                    {OCCUPATIONS.map(occ => (
-                      <option key={occ} value={occ}>{occ}</option>
-                    ))}
-                  </select>
-
-                  {editFormData.occupation === 'Other' && (
-                    <input
-                      type="text"
-                      required
-                      placeholder="Specify Occupation (नोकरी / व्यवसाय सांगा)"
-                      value={editFormData.customOccupation}
-                      onChange={(e) => setEditFormData({ ...editFormData, customOccupation: e.target.value })}
-                      className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
-                    />
-                  )}
+                  </div>
                 </div>
               </div>
 
-              {/* 10. About Me (Bio) */}
-              <div>
-                <label className="block font-semibold mb-1 text-brand-charcoal">About Me (Bio / परिच्छेद)</label>
-                <textarea
-                  rows={3}
-                  value={editFormData.aboutMe}
-                  onChange={(e) => setEditFormData({ ...editFormData, aboutMe: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
-                />
+              {/* SECTION 2: LOCATION & NATIVE PLACE */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  2. Location & Address Details (पत्ता व मूळ गाव)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Maharashtra District */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District (जिल्हा)</label>
+                    <select
+                      value={editFormData.district}
+                      onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {MAHARASHTRA_DISTRICTS.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Native Place */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Native Place (मूळ गाव)</label>
+                    <input
+                      type="text"
+                      value={editFormData.nativePlace}
+                      onChange={(e) => setEditFormData({ ...editFormData, nativePlace: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Current City / Area */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Current City / Area</label>
+                    <input
+                      type="text"
+                      value={editFormData.city}
+                      onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                      placeholder="e.g. Kothrud, Pune"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Pincode */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Pincode</label>
+                    <input
+                      type="text"
+                      value={editFormData.pincode}
+                      onChange={(e) => setEditFormData({ ...editFormData, pincode: e.target.value })}
+                      placeholder="e.g. 411038"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* 11. Maharashtrian Biodata PDF Upload Section */}
+              {/* SECTION 3: EDUCATION & CAREER */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  3. Education & Profession (शिक्षण व नोकरी)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Education */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Highest Education (शिक्षण)</label>
+                    <select
+                      value={editFormData.education}
+                      onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {EDUCATION_LEVELS.map(ed => (
+                        <option key={ed} value={ed}>{ed}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.education === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Highest Education (शिक्षण सांगा)"
+                        value={editFormData.customEducation}
+                        onChange={(e) => setEditFormData({ ...editFormData, customEducation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* College / University */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">College / University</label>
+                    <input
+                      type="text"
+                      value={editFormData.college}
+                      onChange={(e) => setEditFormData({ ...editFormData, college: e.target.value })}
+                      placeholder="e.g. COEP Pune"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Occupation */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Occupation (नोकरी / व्यवसाय)</label>
+                    <select
+                      value={editFormData.occupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, occupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {OCCUPATIONS.map(occ => (
+                        <option key={occ} value={occ}>{occ}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.occupation === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Occupation (नोकरी / व्यवसाय सांगा)"
+                        value={editFormData.customOccupation}
+                        onChange={(e) => setEditFormData({ ...editFormData, customOccupation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* Annual Income */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Annual Income Range</label>
+                    <select
+                      value={editFormData.income}
+                      onChange={(e) => setEditFormData({ ...editFormData, income: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {INCOME_RANGES.map(inc => (
+                        <option key={inc} value={inc}>{inc}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: FAMILY DETAILS */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  4. Family Details (कौटुंबिक माहिती)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Father's Occupation */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Father's Occupation</label>
+                    <input
+                      type="text"
+                      value={editFormData.fatherOccupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, fatherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Mother's Occupation */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Mother's Occupation</label>
+                    <input
+                      type="text"
+                      value={editFormData.motherOccupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, motherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Siblings */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Siblings</label>
+                    <input
+                      type="text"
+                      value={editFormData.siblings}
+                      onChange={(e) => setEditFormData({ ...editFormData, siblings: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Family Type */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Family Type</label>
+                    <select
+                      value={editFormData.familyType}
+                      onChange={(e) => setEditFormData({ ...editFormData, familyType: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Nuclear Family">Nuclear Family</option>
+                      <option value="Joint Family">Joint Family</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: LIFESTYLE & BIO */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  5. Lifestyle & Bio (जीवनशैली व परिच्छेद)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Diet Preferences */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Diet Preference</label>
+                    <select
+                      value={editFormData.diet}
+                      onChange={(e) => setEditFormData({ ...editFormData, diet: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Vegetarian">Vegetarian</option>
+                      <option value="Non-Vegetarian">Non-Vegetarian</option>
+                      <option value="Eggetarian">Eggetarian</option>
+                    </select>
+                  </div>
+
+                  {/* Smoking */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Smoking</label>
+                    <select
+                      value={editFormData.smoking}
+                      onChange={(e) => setEditFormData({ ...editFormData, smoking: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="No">No</option>
+                      <option value="Occasionally">Occasionally</option>
+                    </select>
+                  </div>
+
+                  {/* Drinking */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Drinking</label>
+                    <select
+                      value={editFormData.drinking}
+                      onChange={(e) => setEditFormData({ ...editFormData, drinking: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="No">No</option>
+                      <option value="Socially">Socially</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* About Me (Bio) */}
+                <div className="pt-2">
+                  <label className="block font-semibold mb-1 text-brand-charcoal">About Me (Bio / परिच्छेद)</label>
+                  <textarea
+                    rows={3}
+                    value={editFormData.aboutMe}
+                    onChange={(e) => setEditFormData({ ...editFormData, aboutMe: e.target.value })}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 6: BIODATA PDF */}
               <div className="pt-2 border-t border-gray-100 space-y-1.5">
                 <label className="block font-bold text-brand-plum flex items-center space-x-1.5">
                   <FileText className="w-4 h-4 text-brand-kesari" />
