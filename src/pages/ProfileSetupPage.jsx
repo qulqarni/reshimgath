@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export const ProfileSetupPage = ({ onNavigate }) => {
   const { user, updateProfile } = useAuth();
@@ -123,16 +124,13 @@ export const ProfileSetupPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Caste / Community</label>
-                <select
-                  value={formData.caste}
-                  onChange={(e) => setFormData({ ...formData, caste: e.target.value })}
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Mother Tongue</label>
+                <input
+                  type="text"
+                  value={formData.motherTongue}
+                  onChange={(e) => setFormData({ ...formData, motherTongue: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                >
-                  {MAHARASHTRA_COMMUNITIES.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
           )}
@@ -153,7 +151,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">City / Area</label>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Current City / Area</label>
                 <input
                   type="text"
                   value={formData.city}
@@ -163,12 +161,12 @@ export const ProfileSetupPage = ({ onNavigate }) => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Native Place in Maharashtra (मूळ गाव)</label>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Native Place (मूळ गाव)</label>
                 <input
                   type="text"
                   value={formData.nativePlace}
                   onChange={(e) => setFormData({ ...formData, nativePlace: e.target.value })}
-                  placeholder="e.g. Tasgaon, Sangli / Wai, Satara / Ichalkaranji"
+                  placeholder="e.g. Satara / Sangli / Ichalkaranji"
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 />
               </div>
@@ -191,6 +189,16 @@ export const ProfileSetupPage = ({ onNavigate }) => {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">College / University</label>
+                <input
+                  type="text"
+                  value={formData.college}
+                  onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1">Occupation</label>
                 <select
                   value={formData.occupation}
@@ -203,7 +211,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                 </select>
               </div>
 
-              <div className="sm:col-span-2">
+              <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1">Annual Income Range</label>
                 <select
                   value={formData.income}
@@ -239,31 +247,79 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Siblings</label>
+                <input
+                  type="text"
+                  value={formData.siblings}
+                  onChange={(e) => setFormData({ ...formData, siblings: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Family Type</label>
+                <select
+                  value={formData.familyType}
+                  onChange={(e) => setFormData({ ...formData, familyType: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="Nuclear Family">Nuclear Family</option>
+                  <option value="Joint Family">Joint Family</option>
+                </select>
+              </div>
             </div>
           )}
 
           {step === 5 && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Diet Preference</label>
-                <select
-                  value={formData.diet}
-                  onChange={(e) => setFormData({ ...formData, diet: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="Vegetarian">Vegetarian</option>
-                  <option value="Non-Vegetarian">Non-Vegetarian</option>
-                  <option value="Strict Jain Vegetarian">Strict Jain Vegetarian</option>
-                  <option value="Eggetarian">Eggetarian</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Diet Preference</label>
+                  <select
+                    value={formData.diet}
+                    onChange={(e) => setFormData({ ...formData, diet: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  >
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Non-Vegetarian">Non-Vegetarian</option>
+                    <option value="Eggetarian">Eggetarian</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Smoking</label>
+                  <select
+                    value={formData.smoking}
+                    onChange={(e) => setFormData({ ...formData, smoking: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  >
+                    <option value="No">No</option>
+                    <option value="Occasionally">Occasionally</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Drinking</label>
+                  <select
+                    value={formData.drinking}
+                    onChange={(e) => setFormData({ ...formData, drinking: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  >
+                    <option value="No">No</option>
+                    <option value="Socially">Socially</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">About Me (Bio)</label>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">About Me (परिच्छेद)</label>
                 <textarea
                   rows={4}
                   value={formData.aboutMe}
                   onChange={(e) => setFormData({ ...formData, aboutMe: e.target.value })}
+                  placeholder="Write a few lines about yourself, your family values, and what you are looking for in a life partner..."
                   className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                 />
               </div>
@@ -271,26 +327,28 @@ export const ProfileSetupPage = ({ onNavigate }) => {
           )}
 
           {step === 6 && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Preferred Age Range</label>
-                <input
-                  type="text"
-                  value={formData.prefAge}
-                  onChange={(e) => setFormData({ ...formData, prefAge: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                />
-              </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Preferred Age Range</label>
+                  <input
+                    type="text"
+                    value={formData.prefAge}
+                    onChange={(e) => setFormData({ ...formData, prefAge: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Preferred Districts</label>
-                <input
-                  type="text"
-                  value={formData.prefDistrict}
-                  onChange={(e) => setFormData({ ...formData, prefDistrict: e.target.value })}
-                  placeholder="e.g. Pune, Kolhapur, Sangli"
-                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-brand-charcoal mb-1">Preferred Districts</label>
+                  <input
+                    type="text"
+                    value={formData.prefDistrict}
+                    onChange={(e) => setFormData({ ...formData, prefDistrict: e.target.value })}
+                    placeholder="e.g. Pune, Kolhapur, Sangli"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                </div>
               </div>
 
               {/* Biodata PDF Upload during Registration */}
