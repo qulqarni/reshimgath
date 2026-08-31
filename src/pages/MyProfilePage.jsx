@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { 
   User, 
   MapPin, 
@@ -21,7 +22,8 @@ import {
   Maximize2,
   ChevronLeft,
   ChevronRight,
-  Save
+  Save,
+  FileText
 } from 'lucide-react';
 
 export const MyProfilePage = ({ onNavigate }) => {
@@ -36,6 +38,8 @@ export const MyProfilePage = ({ onNavigate }) => {
 
   const [editFormData, setEditFormData] = useState({
     name: user?.name || '',
+    gender: user?.gender || 'female',
+    age: user?.age || '24',
     district: user?.district || 'Pune',
     nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
     caste: user?.caste || 'Brahmin',
@@ -90,6 +94,21 @@ export const MyProfilePage = ({ onNavigate }) => {
     if (activePhotoIdx >= updated.length) {
       setActivePhotoIdx(Math.max(0, updated.length - 1));
     }
+  };
+
+  const handleOpenEditModal = () => {
+    setEditFormData({
+      name: user?.name || '',
+      gender: user?.gender || 'female',
+      age: user?.age || '24',
+      district: user?.district || 'Pune',
+      nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
+      caste: user?.caste || 'Brahmin',
+      education: user?.education || 'B.E. / B.Tech',
+      occupation: user?.occupation || 'Software Engineer',
+      aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
+    });
+    setShowEditModal(true);
   };
 
   const handleSaveEditProfile = (e) => {
@@ -207,18 +226,7 @@ export const MyProfilePage = ({ onNavigate }) => {
 
           {/* Edit Profile Modal Trigger */}
           <button
-            onClick={() => {
-              setEditFormData({
-                name: user?.name || '',
-                district: user?.district || 'Pune',
-                nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
-                caste: user?.caste || 'Brahmin',
-                education: user?.education || 'B.E. / B.Tech',
-                occupation: user?.occupation || 'Software Engineer',
-                aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
-              });
-              setShowEditModal(true);
-            }}
+            onClick={handleOpenEditModal}
             className="px-3.5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
           >
             <Edit3 className="w-4 h-4 shrink-0" />
@@ -253,18 +261,7 @@ export const MyProfilePage = ({ onNavigate }) => {
             <span>{t('aboutMe')}</span>
           </h3>
           <button
-            onClick={() => {
-              setEditFormData({
-                name: user?.name || '',
-                district: user?.district || 'Pune',
-                nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
-                caste: user?.caste || 'Brahmin',
-                education: user?.education || 'B.E. / B.Tech',
-                occupation: user?.occupation || 'Software Engineer',
-                aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
-              });
-              setShowEditModal(true);
-            }}
+            onClick={handleOpenEditModal}
             className="text-xs text-brand-kesari font-semibold hover:underline flex items-center space-x-1"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -443,10 +440,10 @@ export const MyProfilePage = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* EDIT PROFILE INLINE MODAL */}
+      {/* EDIT PROFILE INLINE MODAL WITH ALL REGISTRATION FIELDS (EXCLUDING EMAIL, PHONE, PASSWORD) */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white max-w-xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setShowEditModal(false)}
@@ -467,23 +464,50 @@ export const MyProfilePage = ({ onNavigate }) => {
 
             <form onSubmit={handleSaveEditProfile} className="space-y-4 text-xs">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 1. Full Name */}
                 <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Full Name</label>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Full Name (संपूर्ण नाव)</label>
                   <input
                     type="text"
+                    required
                     value={editFormData.name}
                     onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                   />
                 </div>
 
+                {/* 2. Looking for Match for */}
                 <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District</label>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Looking for Match for</label>
+                  <select
+                    value={editFormData.gender}
+                    onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                  >
+                    <option value="female">Bride (वधू) - Female</option>
+                    <option value="male">Groom (वर) - Male</option>
+                  </select>
+                </div>
+
+                {/* 3. Age */}
+                <div>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Age (वय)</label>
+                  <input
+                    type="number"
+                    value={editFormData.age}
+                    onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                </div>
+
+                {/* 4. Maharashtra District */}
+                <div>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District (जिल्हा)</label>
                   <select
                     value={editFormData.district}
                     onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                   >
                     {MAHARASHTRA_DISTRICTS.map(d => (
                       <option key={d} value={d}>{d}</option>
@@ -491,22 +515,24 @@ export const MyProfilePage = ({ onNavigate }) => {
                   </select>
                 </div>
 
+                {/* 5. Native Place */}
                 <div>
                   <label className="block font-semibold mb-1 text-brand-charcoal">Native Place (मूळ गाव)</label>
                   <input
                     type="text"
                     value={editFormData.nativePlace}
                     onChange={(e) => setEditFormData({ ...editFormData, nativePlace: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                   />
                 </div>
 
+                {/* 6. Community / Caste */}
                 <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Caste / Community</label>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Community / Caste (जात)</label>
                   <select
                     value={editFormData.caste}
                     onChange={(e) => setEditFormData({ ...editFormData, caste: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                   >
                     {MAHARASHTRA_COMMUNITIES.map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -514,40 +540,52 @@ export const MyProfilePage = ({ onNavigate }) => {
                   </select>
                 </div>
 
+                {/* 7. Education */}
                 <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Education</label>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Education (शिक्षण)</label>
                   <input
                     type="text"
                     value={editFormData.education}
                     onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                   />
                 </div>
 
+                {/* 8. Occupation */}
                 <div>
-                  <label className="block font-semibold mb-1 text-brand-charcoal">Occupation</label>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Occupation (नोकरी / व्यवसाय)</label>
                   <input
                     type="text"
                     value={editFormData.occupation}
                     onChange={(e) => setEditFormData({ ...editFormData, occupation: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                   />
                 </div>
               </div>
 
+              {/* 9. About Me (Bio) */}
               <div>
-                <label className="block font-semibold mb-1 text-brand-charcoal">About Me (Bio)</label>
+                <label className="block font-semibold mb-1 text-brand-charcoal">About Me (Bio / परिच्छेद)</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={editFormData.aboutMe}
                   onChange={(e) => setEditFormData({ ...editFormData, aboutMe: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                 />
+              </div>
+
+              {/* 10. Maharashtrian Biodata PDF Upload Section */}
+              <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                <label className="block font-bold text-brand-plum flex items-center space-x-1.5">
+                  <FileText className="w-4 h-4 text-brand-kesari" />
+                  <span>Maharashtrian Biodata PDF (बायोडेटा PDF)</span>
+                </label>
+                <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 pt-2"
+                className="w-full py-3.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 mt-4"
               >
                 <Save className="w-4 h-4 text-brand-gold" />
                 <span>Save Profile Changes</span>
