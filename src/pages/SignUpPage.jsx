@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { MAHARASHTRA_COMMUNITIES, RELIGIONS } from '../data/maharashtraData';
 import { Heart, User, Mail, Lock, Phone, Sparkles } from 'lucide-react';
 
 export const SignUpPage = ({ onNavigate }) => {
@@ -112,38 +111,6 @@ export const SignUpPage = ({ onNavigate }) => {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
                 />
               </div>
-            </div>
-
-            {/* Religion */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-                Religion (धर्म) *
-              </label>
-              <select
-                value={formData.religion}
-                onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
-              >
-                {RELIGIONS.map(rel => (
-                  <option key={rel} value={rel}>{rel}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Community / Caste */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-                Community / Caste (जात) *
-              </label>
-              <select
-                value={formData.caste}
-                onChange={(e) => setFormData({ ...formData, caste: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
-              >
-                {MAHARASHTRA_COMMUNITIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
             </div>
 
           </div>
