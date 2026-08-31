@@ -46,22 +46,11 @@ export const Navbar = ({ currentPath, onNavigate }) => {
             onClick={() => handleNav('/')}
             className="flex items-center space-x-2 sm:space-x-3 cursor-pointer group shrink"
           >
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-brand-plum to-brand-plumDark flex items-center justify-center text-brand-gold shadow-md group-hover:scale-105 transition-transform border border-brand-gold/40 shrink-0">
-              <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-brand-kesari text-brand-gold animate-pulse" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center space-x-1.5 sm:space-x-2">
-                <span className="font-serif text-lg sm:text-2xl font-bold tracking-tight text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
-                  ReshimGath
-                </span>
-                <span className="bg-brand-rose/20 text-brand-plum text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0">
-                  मराठी
-                </span>
-              </div>
-              <p className="hidden sm:block text-[11px] font-medium text-brand-gray tracking-wider uppercase truncate">
-                {t('brandTagline')}
-              </p>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Sambodhi Sarang Marriage Bureau" 
+              className="h-10 sm:h-14 w-auto object-contain transition-transform group-hover:scale-105" 
+            />
           </div>
 
           {/* Desktop Navigation Links */}

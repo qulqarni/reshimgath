@@ -29,10 +29,12 @@ export const SignUpPage = ({ onNavigate }) => {
       <div className="max-w-xl w-full space-y-6 bg-white p-8 sm:p-10 rounded-3xl border border-brand-rose/20 shadow-2xl">
         
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-brand-plum text-brand-gold flex items-center justify-center mx-auto shadow-md border border-brand-gold/40">
-            <Heart className="w-6 h-6 fill-brand-kesari text-brand-gold" />
-          </div>
+        <div className="text-center space-y-3">
+          <img 
+            src="/logo.png" 
+            alt="Sambodhi Sarang Marriage Bureau" 
+            className="h-16 w-auto object-contain mx-auto" 
+          />
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-plum">
             {t('signupHeading')}
           </h2>
