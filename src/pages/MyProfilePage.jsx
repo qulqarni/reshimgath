@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { 
   User, 
@@ -40,6 +40,7 @@ export const MyProfilePage = ({ onNavigate }) => {
     name: user?.name || '',
     gender: user?.gender || 'female',
     age: user?.age || '24',
+    religion: user?.religion || 'Hindu',
     district: user?.district || 'Pune',
     nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
     caste: user?.caste || 'Brahmin',
@@ -101,6 +102,7 @@ export const MyProfilePage = ({ onNavigate }) => {
       name: user?.name || '',
       gender: user?.gender || 'female',
       age: user?.age || '24',
+      religion: user?.religion || 'Hindu',
       district: user?.district || 'Pune',
       nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
       caste: user?.caste || 'Brahmin',
@@ -209,7 +211,7 @@ export const MyProfilePage = ({ onNavigate }) => {
               <VerificationBadge size="small" />
             </div>
             <p className="text-xs text-brand-gray mt-0.5">
-              {user?.district || 'Pune'}, Maharashtra • {user?.caste || 'Brahmin'}
+              {user?.district || 'Pune'}, Maharashtra • {user?.religion || 'Hindu'} ({user?.caste || 'Brahmin'})
             </p>
           </div>
         </div>
@@ -501,7 +503,21 @@ export const MyProfilePage = ({ onNavigate }) => {
                   />
                 </div>
 
-                {/* 4. Maharashtra District */}
+                {/* 4. Religion */}
+                <div>
+                  <label className="block font-semibold mb-1 text-brand-charcoal">Religion (धर्म)</label>
+                  <select
+                    value={editFormData.religion}
+                    onChange={(e) => setEditFormData({ ...editFormData, religion: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                  >
+                    {RELIGIONS.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 5. Maharashtra District */}
                 <div>
                   <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District (जिल्हा)</label>
                   <select
@@ -515,7 +531,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                   </select>
                 </div>
 
-                {/* 5. Native Place */}
+                {/* 6. Native Place */}
                 <div>
                   <label className="block font-semibold mb-1 text-brand-charcoal">Native Place (मूळ गाव)</label>
                   <input
@@ -526,7 +542,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                   />
                 </div>
 
-                {/* 6. Community / Caste */}
+                {/* 7. Community / Caste */}
                 <div>
                   <label className="block font-semibold mb-1 text-brand-charcoal">Community / Caste (जात)</label>
                   <select
@@ -540,7 +556,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                   </select>
                 </div>
 
-                {/* 7. Education */}
+                {/* 8. Education */}
                 <div>
                   <label className="block font-semibold mb-1 text-brand-charcoal">Education (शिक्षण)</label>
                   <input
@@ -551,8 +567,8 @@ export const MyProfilePage = ({ onNavigate }) => {
                   />
                 </div>
 
-                {/* 8. Occupation */}
-                <div>
+                {/* 9. Occupation */}
+                <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1 text-brand-charcoal">Occupation (नोकरी / व्यवसाय)</label>
                   <input
                     type="text"
@@ -563,7 +579,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* 9. About Me (Bio) */}
+              {/* 10. About Me (Bio) */}
               <div>
                 <label className="block font-semibold mb-1 text-brand-charcoal">About Me (Bio / परिच्छेद)</label>
                 <textarea
@@ -574,7 +590,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                 />
               </div>
 
-              {/* 10. Maharashtrian Biodata PDF Upload Section */}
+              {/* 11. Maharashtrian Biodata PDF Upload Section */}
               <div className="pt-2 border-t border-gray-100 space-y-1.5">
                 <label className="block font-bold text-brand-plum flex items-center space-x-1.5">
                   <FileText className="w-4 h-4 text-brand-kesari" />

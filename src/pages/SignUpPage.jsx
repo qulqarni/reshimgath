@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS } from '../data/maharashtraData';
 import { Heart, User, Mail, Lock, Phone, MapPin, Sparkles } from 'lucide-react';
 
 export const SignUpPage = ({ onNavigate }) => {
@@ -15,6 +15,7 @@ export const SignUpPage = ({ onNavigate }) => {
     password: '',
     gender: 'female',
     age: '24',
+    religion: 'Hindu',
     district: 'Pune',
     caste: 'Maratha'
   });
@@ -114,6 +115,22 @@ export const SignUpPage = ({ onNavigate }) => {
               </div>
             </div>
 
+            {/* Religion */}
+            <div>
+              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
+                Religion (धर्म) *
+              </label>
+              <select
+                value={formData.religion}
+                onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
+              >
+                {RELIGIONS.map(rel => (
+                  <option key={rel} value={rel}>{rel}</option>
+                ))}
+              </select>
+            </div>
+
             {/* District */}
             <div>
               <label className="block text-xs font-semibold text-brand-charcoal mb-1">
@@ -131,7 +148,7 @@ export const SignUpPage = ({ onNavigate }) => {
             </div>
 
             {/* Caste */}
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-brand-charcoal mb-1">
                 Community / Caste (जात) *
               </label>

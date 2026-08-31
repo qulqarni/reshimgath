@@ -55,6 +55,16 @@ export const MAHARASHTRA_COMMUNITIES = [
   'Other Maharashtrian Community'
 ];
 
+export const RELIGIONS = [
+  'Hindu',
+  'Jain',
+  'Buddhism',
+  'Sikhism',
+  'Christianity',
+  'Islam',
+  'Other'
+];
+
 export const EDUCATION_LEVELS = [
   'B.E. / B.Tech',
   'M.E. / M.Tech',
