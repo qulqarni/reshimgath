@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
-import { Heart, User, Mail, Lock, Phone, MapPin, Sparkles, FileText, CheckCircle2 } from 'lucide-react';
+import { Heart, User, Mail, Lock, Phone, MapPin, Sparkles } from 'lucide-react';
 
 export const SignUpPage = ({ onNavigate }) => {
   const { signup } = useAuth();
@@ -19,30 +19,9 @@ export const SignUpPage = ({ onNavigate }) => {
     caste: 'Maratha'
   });
 
-  const [biodataPdf, setBiodataPdf] = useState(null);
-
-  const handleBiodataFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      alert('Please select a valid PDF file.');
-      return;
-    }
-    const fileSizeFormatted = file.size > 1024 * 1024 
-      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
-      : `${Math.round(file.size / 1024)} KB`;
-
-    setBiodataPdf({
-      fileName: file.name,
-      fileSize: fileSizeFormatted,
-      uploadedAt: new Date().toISOString().split('T')[0],
-      url: URL.createObjectURL(file)
-    });
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    signup({ ...formData, biodataPdf });
+    signup(formData);
     onNavigate('/profile-setup');
   };
 
@@ -184,27 +163,6 @@ export const SignUpPage = ({ onNavigate }) => {
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
               />
             </div>
-          </div>
-
-          {/* Optional Biodata PDF Upload Field */}
-          <div className="bg-brand-ivory/80 p-3.5 rounded-2xl border border-brand-rose/20 space-y-1.5">
-            <label className="block text-xs font-bold text-brand-plum flex items-center space-x-1.5">
-              <FileText className="w-4 h-4 text-brand-kesari" />
-              <span>Maharashtrian Biodata PDF (Optional / बायोडेटा PDF)</span>
-            </label>
-            <p className="text-[11px] text-brand-gray">Upload your family biodata PDF file now (up to 10MB)</p>
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleBiodataFileChange}
-              className="w-full text-xs text-brand-charcoal file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-plum file:text-white hover:file:bg-brand-plumDark cursor-pointer"
-            />
-            {biodataPdf && (
-              <p className="text-[11px] text-emerald-700 font-bold flex items-center space-x-1 pt-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Selected: {biodataPdf.fileName}</span>
-              </p>
-            )}
           </div>
 
           <button
