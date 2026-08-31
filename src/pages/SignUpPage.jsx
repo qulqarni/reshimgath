@@ -16,8 +16,8 @@ export const SignUpPage = ({ onNavigate }) => {
     gender: 'female',
     age: '24',
     religion: 'Hindu',
-    district: 'Pune',
-    caste: 'Maratha'
+    caste: 'Maratha',
+    district: 'Pune'
   });
 
   const handleSubmit = (e) => {
@@ -131,24 +131,8 @@ export const SignUpPage = ({ onNavigate }) => {
               </select>
             </div>
 
-            {/* District */}
+            {/* Community / Caste */}
             <div>
-              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-                Maharashtra District (जिल्हा) *
-              </label>
-              <select
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
-              >
-                {MAHARASHTRA_DISTRICTS.map(dist => (
-                  <option key={dist} value={dist}>{dist}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Caste */}
-            <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-brand-charcoal mb-1">
                 Community / Caste (जात) *
               </label>
@@ -159,6 +143,22 @@ export const SignUpPage = ({ onNavigate }) => {
               >
                 {MAHARASHTRA_COMMUNITIES.map(c => (
                   <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* District */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
+                Maharashtra District (जिल्हा) *
+              </label>
+              <select
+                value={formData.district}
+                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
+              >
+                {MAHARASHTRA_DISTRICTS.map(dist => (
+                  <option key={dist} value={dist}>{dist}</option>
                 ))}
               </select>
             </div>

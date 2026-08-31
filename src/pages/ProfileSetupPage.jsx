@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 
@@ -14,7 +14,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     dob: user?.dob || '1998-06-15',
     height: user?.height || '5\' 6" (168 cm)',
     maritalStatus: 'Never Married',
-    religion: 'Hindu',
+    religion: user?.religion || 'Hindu',
     caste: user?.caste || 'Maratha',
     motherTongue: 'Marathi',
     bloodGroup: 'O+',
@@ -84,6 +84,32 @@ export const ProfileSetupPage = ({ onNavigate }) => {
           
           {step === 1 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Religion (धर्म)</label>
+                <select
+                  value={formData.religion}
+                  onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                >
+                  {RELIGIONS.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Community / Caste (जात)</label>
+                <select
+                  value={formData.caste}
+                  onChange={(e) => setFormData({ ...formData, caste: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                >
+                  {MAHARASHTRA_COMMUNITIES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1">Date of Birth</label>
                 <input
