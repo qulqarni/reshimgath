@@ -275,7 +275,7 @@ export const HomePage = ({ onNavigate }) => {
       {selectedStory && (
         <div 
           onClick={() => setSelectedStory(null)}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fade-in"
+          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 select-none animate-fade-in"
         >
           {/* Close Button Top Right */}
           <button
