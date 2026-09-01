@@ -174,24 +174,23 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                   )}
                 </div>
 
-                {/* Logged in User Menu (Desktop Only) */}
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-2 p-1.5 rounded-full border-2 border-brand-gold/60 hover:border-brand-plum transition-all"
+                    className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-gray-200 hover:border-brand-plum bg-white shadow-sm hover:shadow transition-all"
                   >
                     {(user?.avatar || user?.photos?.[0]) ? (
                       <img
                         src={user.avatar || user.photos[0]}
                         alt={user?.name}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-7 h-7 rounded-full object-cover border border-gray-100"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-brand-plum text-brand-gold flex items-center justify-center font-serif text-xs font-bold shrink-0 border border-brand-gold/40">
+                      <div className="w-7 h-7 rounded-full bg-brand-plum text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                         {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                       </div>
                     )}
-                    <span className="hidden lg:block text-xs font-bold text-brand-plum max-w-[100px] truncate">
+                    <span className="hidden lg:block text-xs font-bold text-brand-charcoal max-w-[100px] truncate">
                       {user?.name?.split(' ')[0]}
                     </span>
                   </button>

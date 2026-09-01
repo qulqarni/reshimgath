@@ -238,18 +238,18 @@ export const MyProfilePage = ({ onNavigate }) => {
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-brand-gold shadow-md shrink-0 transition-transform group-hover:scale-105"
                 />
               ) : (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-plum text-brand-gold flex items-center justify-center border-2 border-brand-gold shadow-md shrink-0 font-serif font-bold text-2xl transition-transform group-hover:scale-105">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-8 h-8 text-brand-gold" />}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-plum text-white flex items-center justify-center border-2 border-white shadow-md shrink-0 font-serif font-bold text-2xl transition-transform group-hover:scale-105">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-8 h-8 text-white" />}
                 </div>
               )}
 
               {/* Camera Badge Icon */}
               <button
                 type="button"
-                className="absolute bottom-0 right-0 p-1.5 bg-brand-plum text-brand-gold border-2 border-white rounded-full shadow-md hover:bg-brand-plumDark transition-all"
+                className="absolute bottom-0 right-0 p-1.5 bg-brand-plum text-white border-2 border-white rounded-full shadow-md hover:bg-brand-plumDark transition-all"
                 title="Edit profile photo"
               >
-                <Camera className="w-3.5 h-3.5" />
+                <Camera className="w-3.5 h-3.5 text-white" />
               </button>
             </div>
 
