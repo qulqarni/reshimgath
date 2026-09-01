@@ -3,6 +3,19 @@ import { DEMO_USER } from '../data/mockProfiles';
 
 const AuthContext = createContext();
 
+export const ADMIN_USER = {
+  id: 'admin_1',
+  name: 'Bureau Administrator',
+  email: 'admin@sambodhisarang.com',
+  role: 'admin',
+  isAdmin: true,
+  gender: 'male',
+  district: 'Ichalkaranji',
+  verified: true,
+  avatar: null,
+  photos: []
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('reshimgath_user');
@@ -20,18 +33,25 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = (email, password) => {
+    // Admin credentials check
+    if (email === ADMIN_USER.email || email === 'admin@reshimgath.com' || email === 'admin') {
+      setUser(ADMIN_USER);
+      return { success: true, user: ADMIN_USER };
+    }
+
     // Basic simulation logic
     if (email === DEMO_USER.email || email.includes('aditya') || email === 'demo@reshimgath.com') {
       setUser(DEMO_USER);
       return { success: true, user: DEMO_USER };
     }
+
     const customUser = {
       id: "u_" + Date.now(),
       name: email.split('@')[0].replace('.', ' '),
       email: email,
       gender: "male",
       age: 27,
-      district: "Pune",
+      district: "Ichalkaranji",
       education: "Graduate",
       occupation: "Professional",
       verified: true,
@@ -47,6 +67,11 @@ export const AuthProvider = ({ children }) => {
     setPrivacyAlert(false);
   };
 
+  const loginAsAdmin = () => {
+    setUser(ADMIN_USER);
+    setPrivacyAlert(false);
+  };
+
   const signup = (signupData) => {
     const newUser = {
       id: "u_" + Date.now(),
@@ -54,7 +79,7 @@ export const AuthProvider = ({ children }) => {
       email: signupData.email,
       gender: signupData.gender || "female",
       age: signupData.age || 25,
-      district: signupData.district || "Pune",
+      district: signupData.district || "Ichalkaranji",
       maritalStatus: "Never Married",
       religion: "Hindu",
       caste: signupData.caste || "Maratha",
@@ -66,7 +91,7 @@ export const AuthProvider = ({ children }) => {
       biodataPdf: signupData.biodataPdf || null,
       partnerPref: {
         ageRange: "24 - 30",
-        districts: ["Pune", "Mumbai", "Kolhapur"]
+        districts: ["Ichalkaranji", "Kolhapur", "Sangli", "Pune"]
       }
     };
     setUser(newUser);
@@ -95,8 +120,10 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: user?.isAdmin === true || user?.role === 'admin',
         login,
         loginAsDemo,
+        loginAsAdmin,
         signup,
         logout,
         updateProfile,
@@ -109,4 +136,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

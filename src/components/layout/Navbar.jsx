@@ -212,6 +212,14 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                       </button>
 
                       <button
+                        onClick={() => handleNav('/admin')}
+                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-brand-plum hover:bg-brand-lightBg flex items-center space-x-2"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <span>Admin Panel</span>
+                      </button>
+
+                      <button
                         onClick={() => handleNav('/settings')}
                         className="w-full text-left px-4 py-2.5 text-xs font-medium text-brand-charcoal hover:bg-brand-lightBg flex items-center space-x-2"
                       >

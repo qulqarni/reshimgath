@@ -5,7 +5,15 @@ import confetti from 'canvas-confetti';
 const ProfileContext = createContext();
 
 export const ProfileProvider = ({ children }) => {
-  const [profiles, setProfiles] = useState(MOCK_PROFILES);
+  const [profiles, setProfiles] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_profiles');
+    if (saved) return JSON.parse(saved);
+    return MOCK_PROFILES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('reshimgath_profiles', JSON.stringify(profiles));
+  }, [profiles]);
   
   // Initial interest states for lively demo experience
   const [interests, setInterests] = useState(() => {
@@ -30,7 +38,7 @@ export const ProfileProvider = ({ children }) => {
     return {
       'p1': [
         { id: 1, sender: 'p1', text: 'Namaste Aditya! I went through your profile. We share a common interest in Hindustani music and Sahyadri treks.', timestamp: '10:30 AM' },
-        { id: 2, sender: 'user', text: 'Namaste Dr. Ananya! Thank you for accepting the ReshimGath connection. I read about your medical practice in Pune.', timestamp: '10:32 AM' },
+        { id: 2, sender: 'user', text: 'Namaste Dr. Ananya! Thank you for accepting the Sambodhi Sarang connection. I read about your medical practice in Pune.', timestamp: '10:32 AM' },
         { id: 3, sender: 'p1', text: 'Yes! Our families would also love to interact. Would weekend filter coffee at Kothrud be convenient?', timestamp: '10:35 AM' }
       ]
     };
@@ -39,7 +47,7 @@ export const ProfileProvider = ({ children }) => {
   // Notifications
   const [notifications, setNotifications] = useState([
     { id: 1, type: 'interest', profileId: 'p1', title: 'New Interest Received', text: 'Dr. Ananya Deshmukh expressed interest in your profile.', time: '2 hours ago', unread: true },
-    { id: 2, type: 'accepted', profileId: 'p1', title: 'ReshimGath Match Accepted!', text: 'Dr. Ananya Deshmukh accepted your interest. Private messaging is now active.', time: '3 hours ago', unread: true },
+    { id: 2, type: 'accepted', profileId: 'p1', title: 'Match Accepted!', text: 'Dr. Ananya Deshmukh accepted your interest. Private messaging is now active.', time: '3 hours ago', unread: true },
     { id: 3, type: 'view', profileId: 'p4', title: 'Profile Viewed', text: 'Rohan Joshi (CA, Mumbai) viewed your profile.', time: '5 hours ago', unread: false }
   ]);
 
@@ -104,10 +112,10 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const addToast = (message, type = 'info') => {
-    const newToast = { id: Date.now(), message, type };
-    setToasts((prev) => [...prev, newToast]);
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
   };
 
@@ -119,51 +127,37 @@ export const ProfileProvider = ({ children }) => {
       sent: [...prev.sent, profileId]
     }));
 
-    const profile = profiles.find((p) => p.id === profileId);
-    const targetName = profile ? profile.name : 'Profile';
-
-    addToast(`Interest successfully sent to ${targetName}!`, 'success');
+    addToast('Interest sent successfully! Communication will unlock once accepted.', 'success');
   };
 
   const acceptInterest = (profileId) => {
     setInterests((prev) => ({
       ...prev,
-      received: prev.received.filter((r) => r.profileId !== profileId),
+      received: prev.received.filter((item) => item.profileId !== profileId),
       accepted: [...prev.accepted, profileId]
     }));
 
-    // Trigger celebratory confetti for match acceptance!
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#54263D', '#C8752A', '#C9A35B', '#C9909D']
-    });
-
-    const profile = profiles.find((p) => p.id === profileId);
-    const targetName = profile ? profile.name : 'Match';
-
-    addToast(`ReshimGath Match Confirmed! You can now chat with ${targetName}.`, 'success');
-
-    // Create initial welcome chat thread if none exists
-    if (!chats[profileId]) {
-      setChats((prev) => ({
-        ...prev,
-        [profileId]: [
-          { id: Date.now(), sender: profileId, text: `Namaste! Excited to connect on ReshimGath Matrimony.`, timestamp: 'Just now' }
-        ]
-      }));
+    // Trigger celebration confetti
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    } catch (e) {
+      // fallback
     }
+
+    addToast('Interest Accepted! You can now start private chat.', 'success');
   };
 
   const declineInterest = (profileId) => {
     setInterests((prev) => ({
       ...prev,
-      received: prev.received.filter((r) => r.profileId !== profileId),
+      received: prev.received.filter((item) => item.profileId !== profileId),
       declined: [...prev.declined, profileId]
     }));
-
-    addToast(`Request declined respectfully.`, 'info');
+    addToast('Interest declined.', 'info');
   };
 
   const toggleShortlist = (profileId) => {
@@ -172,9 +166,12 @@ export const ProfileProvider = ({ children }) => {
       const updated = isShortlisted
         ? prev.shortlisted.filter((id) => id !== profileId)
         : [...prev.shortlisted, profileId];
-      
-      const target = profiles.find(p => p.id === profileId);
-      addToast(isShortlisted ? `Removed ${target?.name} from saved profiles.` : `Saved ${target?.name} to your shortlist.`, 'info');
+
+      if (!isShortlisted) {
+        addToast('Profile saved to shortlist!', 'success');
+      } else {
+        addToast('Profile removed from shortlist.', 'info');
+      }
 
       return {
         ...prev,
@@ -184,15 +181,12 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const sendMessage = (profileId, text) => {
-    if (!interests.accepted.includes(profileId)) {
-      addToast('Messaging is only permitted after interest is accepted by both partners.', 'warning');
-      return false;
-    }
+    if (!text.trim()) return false;
 
     const newMsg = {
       id: Date.now(),
       sender: 'user',
-      text: text,
+      text: text.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -206,7 +200,7 @@ export const ProfileProvider = ({ children }) => {
       const replies = [
         "That sounds wonderful! Family discussions are so important to us as well.",
         "Thank you for your message. Let me speak with my parents this evening and share our update.",
-        "Glad to hear from you! How was your day in Pune?",
+        "Glad to hear from you!",
         "Yes, our family values and career expectations align very nicely."
       ];
       const randomReply = replies[Math.floor(Math.random() * replies.length)];
@@ -234,6 +228,51 @@ export const ProfileProvider = ({ children }) => {
     );
   };
 
+  // ADMIN METHODS
+  const toggleVerifyProfile = (profileId) => {
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === profileId ? { ...p, verified: !p.verified } : p))
+    );
+    addToast('Profile verification status updated successfully!', 'success');
+  };
+
+  const addProfile = (newProfileData) => {
+    const id = 'p_' + Date.now();
+    const createdProfile = {
+      id,
+      verified: true,
+      photos: newProfileData.photos || ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800'],
+      avatar: newProfileData.avatar || newProfileData.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
+      maritalStatus: 'Never Married',
+      religion: 'Hindu',
+      motherTongue: 'Marathi',
+      diet: 'Vegetarian',
+      smoking: 'No',
+      drinking: 'No',
+      siblings: '1 Sister',
+      familyType: 'Nuclear',
+      fatherOccupation: 'Business',
+      motherOccupation: 'Homemaker',
+      ...newProfileData
+    };
+
+    setProfiles((prev) => [createdProfile, ...prev]);
+    addToast('New profile registered successfully!', 'success');
+    return createdProfile;
+  };
+
+  const updateAdminProfile = (profileId, updatedData) => {
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === profileId ? { ...p, ...updatedData } : p))
+    );
+    addToast('Profile updated successfully by Admin!', 'success');
+  };
+
+  const deleteProfile = (profileId) => {
+    setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+    addToast('Profile deleted successfully.', 'info');
+  };
+
   return (
     <ProfileContext.Provider
       value={{
@@ -250,7 +289,11 @@ export const ProfileProvider = ({ children }) => {
         sendMessage,
         markNotificationRead,
         recordProfileView,
-        addToast
+        addToast,
+        toggleVerifyProfile,
+        addProfile,
+        updateAdminProfile,
+        deleteProfile
       }}
     >
       {children}

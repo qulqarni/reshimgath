@@ -24,6 +24,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
+import { AdminPage } from './pages/AdminPage';
 
 function AppContent() {
   // Helper to determine initial path from browser address bar URL slug
@@ -123,6 +124,8 @@ function AppContent() {
         return <AboutPage onNavigate={handleNavigate} />;
       case '/contact':
         return <ContactPage onNavigate={handleNavigate} />;
+      case '/admin':
+        return <AdminPage onNavigate={handleNavigate} />;
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }
