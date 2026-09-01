@@ -99,8 +99,6 @@ export const Footer = ({ onNavigate }) => {
             <button onClick={() => onNavigate('/about')} className="hover:text-brand-plum transition-colors">Privacy Policy</button>
             <span>•</span>
             <button onClick={() => onNavigate('/about')} className="hover:text-brand-plum transition-colors">Terms of Service</button>
-            <span>•</span>
-            <button onClick={() => onNavigate('/admin')} className="hover:text-brand-plum font-semibold transition-colors">Admin Portal</button>
           </div>
         </div>
       </div>
