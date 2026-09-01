@@ -25,50 +25,10 @@ import {
 export const HomePage = ({ onNavigate }) => {
   const { user, isAuthenticated, loginAsDemo } = useAuth();
   const { t } = useLanguage();
-  const { profiles } = useProfiles();
+  const { profiles, homeContent, stories } = useProfiles();
 
   const [selectedStory, setSelectedStory] = useState(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
-
-  // High quality realistic success stories
-  const stories = [
-    {
-      id: 1,
-      names: "Snehal & Swapnil",
-      location: "Pune & Mumbai",
-      quote: "“We found our perfect match within 3 weeks of registering. Sambodhi Sarang brought our two traditional families together seamlessly!”",
-      weddingDate: "January 2026 • Pune Palace Ground",
-      photos: [
-        { url: "/story1.jpg", caption: "Snehal & Swapnil in traditional green Paithani saree & royal Sherwani at mandap" },
-        { url: "/story1_2.jpg", caption: "Sweet wedding moment exchanging varmala garland" },
-        { url: "/story2.jpg", caption: "Family blessings ritual ceremony" }
-      ]
-    },
-    {
-      id: 2,
-      names: "Pooja & Varun",
-      location: "Kolhapur & Sangli",
-      quote: "“The verified profile feature and family privacy gate made us feel 100% safe. Highly recommended for all families.”",
-      weddingDate: "November 2025 • Sangli Wedding Hall",
-      photos: [
-        { url: "/story2.jpg", caption: "Pooja & Varun laughing happily in yellow Paithani saree during mandap rituals" },
-        { url: "/story2_2.jpg", caption: "Walking together holding hands amidst marigold flower path" },
-        { url: "/story1.jpg", caption: "Auspicious wedding couple portrait" }
-      ]
-    },
-    {
-      id: 3,
-      names: "Dr. Radhika & Rohan",
-      location: "Nashik & Satara",
-      quote: "“Authentic verified profiles gave our parents absolute confidence. Today we are happily married for over 2 years!”",
-      weddingDate: "February 2024 • Nashik Grand Reception",
-      photos: [
-        { url: "/story3.jpg", caption: "Dr. Radhika & Rohan at their fairy-lit evening reception in maroon Nauvari saree" },
-        { url: "/story3_2.jpg", caption: "Auspicious wedding ring ritual ceremony" },
-        { url: "/story1_2.jpg", caption: "Grand Varmala flower garland celebration" }
-      ]
-    }
-  ];
 
   return (
     <div className="space-y-16 sm:space-y-24 pb-12">
@@ -91,21 +51,21 @@ export const HomePage = ({ onNavigate }) => {
               {/* Tagline Badge */}
               <div className="inline-flex items-center gap-1.5 bg-brand-plum/30 border border-brand-rose/50 text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-md backdrop-blur-md max-w-full">
                 <Sparkles className="w-3.5 h-3.5 text-brand-rose shrink-0" />
-                <span className="truncate">{t('heroBadge')}</span>
+                <span className="truncate">{homeContent.heroBadge || t('heroBadge')}</span>
               </div>
 
               {/* Headlines */}
               <div className="space-y-2 sm:space-y-4">
                 <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-snug sm:leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] break-words">
-                  {t('heroTitle')}
+                  {homeContent.heroTitle || t('heroTitle')}
                 </h1>
                 <p className="font-serif-marathi text-2xl sm:text-3xl lg:text-4xl text-amber-300 font-bold pt-1 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] break-words">
-                  “{t('heroTitleMr')}”
+                  “{homeContent.heroTitleMr || t('heroTitleMr')}”
                 </p>
               </div>
 
               <p className="text-xs sm:text-base lg:text-lg text-gray-100 max-w-2xl mx-auto lg:mx-0 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] break-words font-medium">
-                {t('heroSubtext')}
+                {homeContent.heroSubtext || t('heroSubtext')}
               </p>
 
               {/* Hero CTA Buttons */}
@@ -137,15 +97,15 @@ export const HomePage = ({ onNavigate }) => {
               <div className="pt-5 sm:pt-8 border-t border-white/25 flex flex-col items-center justify-center space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4 text-center sm:text-left">
                 <div className="flex items-center justify-center space-x-2 sm:space-x-2.5">
                   <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
-                  <span className="text-xs sm:text-xs font-semibold text-white drop-shadow">{t('verifiedProfilesCount')}</span>
+                  <span className="text-xs sm:text-xs font-semibold text-white drop-shadow">{homeContent.verifiedProfilesCountText || t('verifiedProfilesCount')}</span>
                 </div>
                 <div className="flex items-center justify-center space-x-2 sm:space-x-2.5">
                   <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400 fill-rose-400 shrink-0" />
-                  <span className="text-xs sm:text-xs font-semibold text-white drop-shadow">{t('happyCouplesCount')}</span>
+                  <span className="text-xs sm:text-xs font-semibold text-white drop-shadow">{homeContent.happyCouplesCountText || t('happyCouplesCount')}</span>
                 </div>
                 <div className="flex items-center justify-center space-x-2 sm:space-x-2.5">
                   <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 shrink-0" />
-                  <span className="text-xs sm:text-xs font-semibold text-white drop-shadow">Privacy Protected</span>
+                  <span className="text-xs sm:text-xs font-semibold text-white drop-shadow">{homeContent.privacyProtectedText || "Privacy Protected"}</span>
                 </div>
               </div>
 
@@ -162,13 +122,13 @@ export const HomePage = ({ onNavigate }) => {
                   
                   <div className="space-y-2 border-b border-white/15 pb-4">
                     <span className="text-brand-rose text-xs font-bold uppercase tracking-wider">
-                      Sambodhi Sarang Marriage Bureau
+                      {homeContent.rightCardTitle || "Sambodhi Sarang Marriage Bureau"}
                     </span>
                     <h3 className="font-serif-marathi text-2xl font-bold text-amber-300">
-                      ॥ शुभमंगल सावधान ॥
+                      {homeContent.rightCardSubtitle || "॥ शुभमंगल सावधान ॥"}
                     </h3>
                     <p className="text-xs text-gray-200 leading-relaxed">
-                      Connecting verified families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji & worldwide.
+                      {homeContent.rightCardDesc || "Connecting verified families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji & worldwide."}
                     </p>
                   </div>
 

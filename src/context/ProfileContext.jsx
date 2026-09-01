@@ -4,6 +4,62 @@ import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
 
+export const DEFAULT_HOME_CONTENT = {
+  heroBadge: "Sambodhi Sarang Matrimony",
+  heroTitle: "Find Your Perfect Life Partner",
+  heroTitleMr: "तुमच्या आयुष्याचा सुंदर सोबती शोधा",
+  heroSubtext: "Connecting hearts with trust, tradition, and dignity across Maharashtra.",
+  verifiedProfilesCountText: "100% Verified Profiles",
+  happyCouplesCountText: "15,000+ Happy Couples",
+  privacyProtectedText: "Privacy Protected",
+  rightCardTitle: "Sambodhi Sarang Marriage Bureau",
+  rightCardSubtitle: "॥ शुभमंगल सावधान ॥",
+  rightCardDesc: "Connecting verified families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji & worldwide.",
+  whyChooseTitle: "Why Families Trust Sambodhi Sarang",
+  whyChooseSubtitle: "Designed with utmost dignity, cultural respect, and modern privacy protection",
+  ctaTitle: "Ready to Start Your Beautiful Matrimonial Journey?",
+  ctaSubtitle: "Join thousands of families who found love and trust at Sambodhi Sarang Marriage Bureau."
+};
+
+export const DEFAULT_STORIES = [
+  {
+    id: 1,
+    names: "Snehal & Swapnil",
+    location: "Pune & Mumbai",
+    quote: "“We found our perfect match within 3 weeks of registering. Sambodhi Sarang brought our two traditional families together seamlessly!”",
+    weddingDate: "January 2026 • Pune Palace Ground",
+    photos: [
+      { url: "/story1.jpg", caption: "Snehal & Swapnil in traditional green Paithani saree & royal Sherwani at mandap" },
+      { url: "/story1_2.jpg", caption: "Sweet wedding moment exchanging varmala garland" },
+      { url: "/story2.jpg", caption: "Family blessings ritual ceremony" }
+    ]
+  },
+  {
+    id: 2,
+    names: "Pooja & Varun",
+    location: "Kolhapur & Sangli",
+    quote: "“The verified profile feature and family privacy gate made us feel 100% safe. Highly recommended for all families.”",
+    weddingDate: "November 2025 • Sangli Wedding Hall",
+    photos: [
+      { url: "/story2.jpg", caption: "Pooja & Varun laughing happily in yellow Paithani saree during mandap rituals" },
+      { url: "/story2_2.jpg", caption: "Walking together holding hands amidst marigold flower path" },
+      { url: "/story1.jpg", caption: "Auspicious wedding couple portrait" }
+    ]
+  },
+  {
+    id: 3,
+    names: "Dr. Radhika & Rohan",
+    location: "Nashik & Satara",
+    quote: "“Authentic verified profiles gave our parents absolute confidence. Today we are happily married for over 2 years!”",
+    weddingDate: "February 2024 • Nashik Grand Reception",
+    photos: [
+      { url: "/story3.jpg", caption: "Dr. Radhika & Rohan at their fairy-lit evening reception in maroon Nauvari saree" },
+      { url: "/story3_2.jpg", caption: "Auspicious wedding ring ritual ceremony" },
+      { url: "/story1_2.jpg", caption: "Grand Varmala flower garland celebration" }
+    ]
+  }
+];
+
 export const ProfileProvider = ({ children }) => {
   const [profiles, setProfiles] = useState(() => {
     const saved = localStorage.getItem('reshimgath_profiles');
@@ -11,23 +67,43 @@ export const ProfileProvider = ({ children }) => {
     return MOCK_PROFILES;
   });
 
+  const [homeContent, setHomeContent] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_home_content');
+    if (saved) return JSON.parse(saved);
+    return DEFAULT_HOME_CONTENT;
+  });
+
+  const [stories, setStories] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_stories');
+    if (saved) return JSON.parse(saved);
+    return DEFAULT_STORIES;
+  });
+
   useEffect(() => {
     localStorage.setItem('reshimgath_profiles', JSON.stringify(profiles));
   }, [profiles]);
+
+  useEffect(() => {
+    localStorage.setItem('reshimgath_home_content', JSON.stringify(homeContent));
+  }, [homeContent]);
+
+  useEffect(() => {
+    localStorage.setItem('reshimgath_stories', JSON.stringify(stories));
+  }, [stories]);
   
   // Initial interest states for lively demo experience
   const [interests, setInterests] = useState(() => {
     const saved = localStorage.getItem('reshimgath_interests');
     if (saved) return JSON.parse(saved);
     return {
-      sent: ['p3'], // User A sent interest to Pooja Patil (p3)
+      sent: ['p3'],
       received: [
-        { profileId: 'p1', timestamp: '2 hours ago' }, // Dr. Ananya Deshmukh sent interest to demo user!
-        { profileId: 'p5', timestamp: '1 day ago' }     // Tejaswini Jadhav sent interest!
+        { profileId: 'p1', timestamp: '2 hours ago' },
+        { profileId: 'p5', timestamp: '1 day ago' }
       ],
-      accepted: ['p1'], // Pre-accepted connection with Dr. Ananya Deshmukh for instant chat demonstration!
+      accepted: ['p1'],
       declined: [],
-      shortlisted: ['p7'] // Saved profile Aishwarya Mahajan
+      shortlisted: ['p7']
     };
   });
 
@@ -96,7 +172,6 @@ export const ProfileProvider = ({ children }) => {
       ...prev.filter((v) => !(v.visitorId === viewEntry.visitorId && v.targetId === viewEntry.targetId))
     ]);
 
-    // Dispatch real-time notification
     setNotifications((prev) => [
       {
         id: Date.now(),
@@ -137,7 +212,6 @@ export const ProfileProvider = ({ children }) => {
       accepted: [...prev.accepted, profileId]
     }));
 
-    // Trigger celebration confetti
     try {
       confetti({
         particleCount: 80,
@@ -195,7 +269,6 @@ export const ProfileProvider = ({ children }) => {
       [profileId]: [...(prev[profileId] || []), newMsg]
     }));
 
-    // Auto-reply simulation for testing
     setTimeout(() => {
       const replies = [
         "That sounds wonderful! Family discussions are so important to us as well.",
@@ -273,6 +346,30 @@ export const ProfileProvider = ({ children }) => {
     addToast('Profile deleted successfully.', 'info');
   };
 
+  // HOMEPAGE CONTENT ADMIN METHODS
+  const updateHomeContent = (newContent) => {
+    setHomeContent((prev) => ({ ...prev, ...newContent }));
+    addToast('Homepage content updated successfully!', 'success');
+  };
+
+  const addSuccessStory = (storyData) => {
+    const newStory = {
+      id: Date.now(),
+      names: storyData.names,
+      location: storyData.location,
+      quote: storyData.quote,
+      weddingDate: storyData.weddingDate,
+      photos: storyData.photos || [{ url: '/story1.jpg', caption: 'Couple portrait' }]
+    };
+    setStories((prev) => [newStory, ...prev]);
+    addToast('New success story added to homepage!', 'success');
+  };
+
+  const deleteSuccessStory = (storyId) => {
+    setStories((prev) => prev.filter((s) => s.id !== storyId));
+    addToast('Success story removed from homepage.', 'info');
+  };
+
   return (
     <ProfileContext.Provider
       value={{
@@ -282,6 +379,8 @@ export const ProfileProvider = ({ children }) => {
         notifications,
         profileViews,
         toasts,
+        homeContent,
+        stories,
         sendInterest,
         acceptInterest,
         declineInterest,
@@ -293,7 +392,10 @@ export const ProfileProvider = ({ children }) => {
         toggleVerifyProfile,
         addProfile,
         updateAdminProfile,
-        deleteProfile
+        deleteProfile,
+        updateHomeContent,
+        addSuccessStory,
+        deleteSuccessStory
       }}
     >
       {children}

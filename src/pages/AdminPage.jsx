@@ -23,7 +23,10 @@ import {
   ArrowRight,
   X,
   Save,
-  MessageSquare
+  MessageSquare,
+  Layout,
+  Heart,
+  Camera
 } from 'lucide-react';
 
 export const AdminPage = ({ onNavigate }) => {
@@ -35,10 +38,15 @@ export const AdminPage = ({ onNavigate }) => {
     addProfile, 
     updateAdminProfile, 
     deleteProfile,
+    homeContent,
+    updateHomeContent,
+    stories,
+    addSuccessStory,
+    deleteSuccessStory,
     addToast 
   } = useProfiles();
 
-  const [activeTab, setActiveTab] = useState('profiles'); // 'overview', 'profiles', 'content', 'inquiries'
+  const [activeTab, setActiveTab] = useState('profiles'); // 'overview', 'profiles', 'content', 'stories', 'inquiries'
 
   // Profile Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +58,7 @@ export const AdminPage = ({ onNavigate }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
+  const [showAddStoryModal, setShowAddStoryModal] = useState(false);
 
   // New Profile Form
   const [newProfileData, setNewProfileData] = useState({
@@ -68,6 +77,18 @@ export const AdminPage = ({ onNavigate }) => {
     pincode: '416115',
     aboutMe: 'Educated, cultured, family-oriented individual looking for a compatible life partner.',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800'
+  });
+
+  // Homepage Content Editable Form State
+  const [editableHomeContent, setEditableHomeContent] = useState(homeContent);
+
+  // New Success Story Form
+  const [newStoryData, setNewStoryData] = useState({
+    names: '',
+    location: 'Ichalkaranji & Kolhapur',
+    quote: '“We found our perfect life partner through Sambodhi Sarang Marriage Bureau!”',
+    weddingDate: 'February 2026 • Ichalkaranji Wedding Hall',
+    photoUrl: '/story1.jpg'
   });
 
   // Bureau Contact Info (Editable)
@@ -176,6 +197,30 @@ export const AdminPage = ({ onNavigate }) => {
     setEditingProfile(null);
   };
 
+  const handleSaveHomeContent = (e) => {
+    e.preventDefault();
+    updateHomeContent(editableHomeContent);
+  };
+
+  const handleSaveNewStory = (e) => {
+    e.preventDefault();
+    addSuccessStory({
+      names: newStoryData.names,
+      location: newStoryData.location,
+      quote: newStoryData.quote,
+      weddingDate: newStoryData.weddingDate,
+      photos: [{ url: newStoryData.photoUrl || '/story1.jpg', caption: `${newStoryData.names} Wedding` }]
+    });
+    setShowAddStoryModal(false);
+    setNewStoryData({
+      names: '',
+      location: 'Ichalkaranji & Kolhapur',
+      quote: '“We found our perfect life partner through Sambodhi Sarang Marriage Bureau!”',
+      weddingDate: 'February 2026 • Ichalkaranji Wedding Hall',
+      photoUrl: '/story1.jpg'
+    });
+  };
+
   const toggleResolveInquiry = (id) => {
     setInquiries((prev) =>
       prev.map((item) => (item.id === id ? { ...item, resolved: !item.resolved } : item))
@@ -202,7 +247,7 @@ export const AdminPage = ({ onNavigate }) => {
             Administrator Control Center
           </h1>
           <p className="text-xs text-gray-200">
-            Manage members, 1-click verification badges, website content, and customer support inquiries.
+            Manage website content, homepage headlines, members, verification badges, and support inquiries.
           </p>
         </div>
 
@@ -249,8 +294,20 @@ export const AdminPage = ({ onNavigate }) => {
               : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
           }`}
         >
-          <FileText className="w-4 h-4" />
-          <span>Site Content & Bureau Info</span>
+          <Layout className="w-4 h-4" />
+          <span>Manage Homepage Content</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('stories')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
+            activeTab === 'stories'
+              ? 'bg-brand-plum text-white shadow-md'
+              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
+          }`}
+        >
+          <Heart className="w-4 h-4 text-rose-400" />
+          <span>Success Stories ({stories.length})</span>
         </button>
 
         <button
@@ -332,8 +389,8 @@ export const AdminPage = ({ onNavigate }) => {
                 onClick={() => setActiveTab('content')}
                 className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
               >
-                <Phone className="w-4 h-4" />
-                <span>Update Bureau Contact Info</span>
+                <Layout className="w-4 h-4" />
+                <span>Edit Homepage Headlines</span>
               </button>
             </div>
           </div>
@@ -498,10 +555,163 @@ export const AdminPage = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* TAB 3: SITE CONTENT MANAGEMENT */}
+      {/* TAB 3: MANAGE HOMEPAGE CONTENT */}
       {activeTab === 'content' && (
         <div className="space-y-8 animate-fade-in">
           
+          {/* Homepage Content Form */}
+          <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center space-x-2">
+                <Layout className="w-5 h-5 text-brand-plum" />
+                <h3 className="font-serif font-bold text-xl text-brand-plum">Edit Homepage Text & Headlines</h3>
+              </div>
+              <span className="text-xs text-brand-gray font-medium">Updates live site immediately</span>
+            </div>
+
+            <form onSubmit={handleSaveHomeContent} className="space-y-6 text-xs">
+              
+              {/* Hero Banner Section */}
+              <div className="space-y-4 border-b border-gray-100 pb-6">
+                <h4 className="font-bold text-brand-plum text-sm uppercase tracking-wider">1. Hero Banner Headlines</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Hero Tagline Badge *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.heroBadge}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, heroBadge: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Main English Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.heroTitle}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, heroTitle: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Marathi Quote Subtitle *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editableHomeContent.heroTitleMr}
+                    onChange={(e) => setEditableHomeContent({ ...editableHomeContent, heroTitleMr: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 font-bold text-brand-plum"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Hero Paragraph Description *</label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={editableHomeContent.heroSubtext}
+                    onChange={(e) => setEditableHomeContent({ ...editableHomeContent, heroSubtext: e.target.value })}
+                    className="w-full p-3 rounded-xl border border-gray-200 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Right Side Glass Card Content */}
+              <div className="space-y-4 border-b border-gray-100 pb-6">
+                <h4 className="font-bold text-brand-plum text-sm uppercase tracking-wider">2. Right Side Feature Card Text</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Card Header Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.rightCardTitle}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, rightCardTitle: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Card Marathi Subtitle *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.rightCardSubtitle}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, rightCardSubtitle: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Card Description *</label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={editableHomeContent.rightCardDesc}
+                    onChange={(e) => setEditableHomeContent({ ...editableHomeContent, rightCardDesc: e.target.value })}
+                    className="w-full p-3 rounded-xl border border-gray-200 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Trust Indicators Text */}
+              <div className="space-y-4 border-b border-gray-100 pb-6">
+                <h4 className="font-bold text-brand-plum text-sm uppercase tracking-wider">3. Trust Badges Text</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Badge 1 Text *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.verifiedProfilesCountText}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, verifiedProfilesCountText: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Badge 2 Text *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.happyCouplesCountText}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, happyCouplesCountText: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Badge 3 Text *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editableHomeContent.privacyProtectedText}
+                      onChange={(e) => setEditableHomeContent({ ...editableHomeContent, privacyProtectedText: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="px-6 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-lg hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Homepage Content Changes</span>
+              </button>
+            </form>
+          </div>
+
           {/* Contact Details Form */}
           <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
             <div className="flex items-center space-x-2">
@@ -558,7 +768,52 @@ export const AdminPage = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* TAB 4: SUPPORT INQUIRIES */}
+      {/* TAB 4: SUCCESS STORIES */}
+      {activeTab === 'stories' && (
+        <div className="space-y-6 animate-fade-in">
+          
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif font-bold text-xl text-brand-plum">Manage Success Stories</h3>
+            <button
+              onClick={() => setShowAddStoryModal(true)}
+              className="px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Success Story</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {stories.map((story) => (
+              <div key={story.id} className="bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury p-5 space-y-3 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <img src={story.photos?.[0]?.url || '/story1.jpg'} alt={story.names} className="w-full h-44 object-cover rounded-2xl" />
+                  <h4 className="font-serif font-bold text-base text-brand-plum">{story.names}</h4>
+                  <p className="text-xs text-brand-gray italic">{story.quote}</p>
+                  <span className="text-[10px] text-brand-plum font-semibold block">{story.weddingDate}</span>
+                </div>
+
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete story for ${story.names}?`)) {
+                        deleteSuccessStory(story.id);
+                      }
+                    }}
+                    className="p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 5: SUPPORT INQUIRIES */}
       {activeTab === 'inquiries' && (
         <div className="space-y-6 animate-fade-in">
           <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden p-6 space-y-4">
@@ -714,6 +969,98 @@ export const AdminPage = ({ onNavigate }) => {
                   className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
                 >
                   Save Profile
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD SUCCESS STORY */}
+      {showAddStoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl">
+            
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <h3 className="font-serif text-xl font-bold text-brand-plum">Add Success Story</h3>
+              <button onClick={() => setShowAddStoryModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewStory} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold mb-1">Couple Names *</label>
+                <input
+                  type="text"
+                  required
+                  value={newStoryData.names}
+                  onChange={(e) => setNewStoryData({ ...newStoryData, names: e.target.value })}
+                  placeholder="e.g. Snehal & Swapnil"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={newStoryData.location}
+                  onChange={(e) => setNewStoryData({ ...newStoryData, location: e.target.value })}
+                  placeholder="e.g. Ichalkaranji & Kolhapur"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Quote / Review *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={newStoryData.quote}
+                  onChange={(e) => setNewStoryData({ ...newStoryData, quote: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Wedding Date & Venue *</label>
+                <input
+                  type="text"
+                  required
+                  value={newStoryData.weddingDate}
+                  onChange={(e) => setNewStoryData({ ...newStoryData, weddingDate: e.target.value })}
+                  placeholder="e.g. February 2026 • Ichalkaranji Wedding Hall"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Wedding Photo Image URL *</label>
+                <input
+                  type="text"
+                  required
+                  value={newStoryData.photoUrl}
+                  onChange={(e) => setNewStoryData({ ...newStoryData, photoUrl: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div className="pt-4 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddStoryModal(false)}
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                >
+                  Save Success Story
                 </button>
               </div>
             </form>
