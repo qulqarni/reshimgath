@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { DEMO_USER } from '../data/mockProfiles';
+import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
 import { saveProfileToFirestore } from '../services/firebaseService';
 
 const AuthContext = createContext();
@@ -37,23 +37,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  const login = (email, password) => {
+  const login = (emailOrPhone, password) => {
+    const input = (emailOrPhone || '').trim().toLowerCase();
+
     // Admin credentials check
-    if (email === ADMIN_USER.email || email === 'admin@reshimgath.com' || email === 'admin') {
+    if (input === ADMIN_USER.email || input === 'admin@reshimgath.com' || input === 'admin') {
       setUser(ADMIN_USER);
       return { success: true, user: ADMIN_USER };
     }
 
-    // Basic simulation logic
-    if (email === DEMO_USER.email || email.includes('aditya') || email === 'demo@reshimgath.com') {
-      setUser(DEMO_USER);
-      return { success: true, user: DEMO_USER };
+    // Demo Profiles credentials check
+    const matchedProfile = DEMO_PROFILES.find(
+      (p) => p.email.toLowerCase() === input || p.phone === input
+    );
+
+    if (matchedProfile) {
+      setUser(matchedProfile);
+      return { success: true, user: matchedProfile };
     }
 
     const customUser = {
       id: "u_" + Date.now(),
-      name: email.split('@')[0].replace('.', ' '),
-      email: email,
+      name: input.split('@')[0].replace('.', ' '),
+      email: input,
       gender: "male",
       age: 27,
       district: "Ichalkaranji",

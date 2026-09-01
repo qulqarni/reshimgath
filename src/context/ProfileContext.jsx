@@ -78,9 +78,12 @@ export const ProfileProvider = ({ children }) => {
       const parsed = JSON.parse(saved);
       // Clean old demo profiles starting with 'p1', 'p2', etc.
       const cleaned = parsed.filter(p => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(p.id));
-      return cleaned;
+      const map = new Map();
+      MOCK_PROFILES.forEach(p => map.set(p.id, p));
+      cleaned.forEach(p => map.set(p.id, p));
+      return Array.from(map.values());
     }
-    return [];
+    return MOCK_PROFILES;
   });
 
   const [homeContent, setHomeContent] = useState(() => {
