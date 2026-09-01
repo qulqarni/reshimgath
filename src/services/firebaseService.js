@@ -137,6 +137,23 @@ export const deleteBiodataPdfFromFirebase = async (pdfUrl) => {
 // -------------------------------------------------------------
 
 /**
+ * Fetch Homepage Content from Firestore
+ */
+export const fetchHomeContentFromFirestore = async () => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const docSnap = await getDoc(doc(db, HOME_CONTENT_COLLECTION, 'homepage'));
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching homepage content from Firestore:', error);
+    return null;
+  }
+};
+
+/**
  * Save Homepage Content to Firestore
  */
 export const saveHomeContentToFirestore = async (contentData) => {
@@ -150,6 +167,24 @@ export const saveHomeContentToFirestore = async (contentData) => {
   } catch (error) {
     console.error('Error saving homepage content to Firestore:', error);
     return false;
+  }
+};
+
+/**
+ * Fetch Success Stories from Firestore
+ */
+export const fetchSuccessStoriesFromFirestore = async () => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const querySnapshot = await getDocs(collection(db, STORIES_COLLECTION));
+    const storiesList = [];
+    querySnapshot.forEach((docSnap) => {
+      storiesList.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    return storiesList.length > 0 ? storiesList : null;
+  } catch (error) {
+    console.error('Error fetching success stories from Firestore:', error);
+    return null;
   }
 };
 

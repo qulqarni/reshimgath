@@ -5,7 +5,9 @@ import {
   fetchProfilesFromFirestore, 
   saveProfileToFirestore, 
   deleteProfileFromFirestore,
+  fetchHomeContentFromFirestore,
   saveHomeContentToFirestore,
+  fetchSuccessStoriesFromFirestore,
   saveSuccessStoryToFirestore,
   deleteSuccessStoryFromFirestore
 } from '../services/firebaseService';
@@ -111,9 +113,9 @@ export const ProfileProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Fetch Firestore profiles on mount
+  // Fetch Firestore profiles, homepage content, and success stories on mount
   useEffect(() => {
-    const loadFirestoreProfiles = async () => {
+    const loadFirestoreData = async () => {
       const firestoreProfiles = await fetchProfilesFromFirestore();
       if (firestoreProfiles && firestoreProfiles.length > 0) {
         setProfiles((prev) => {
@@ -123,8 +125,18 @@ export const ProfileProvider = ({ children }) => {
           return Array.from(map.values());
         });
       }
+
+      const firestoreHome = await fetchHomeContentFromFirestore();
+      if (firestoreHome) {
+        setHomeContent((prev) => ({ ...prev, ...firestoreHome }));
+      }
+
+      const firestoreStories = await fetchSuccessStoriesFromFirestore();
+      if (firestoreStories && firestoreStories.length > 0) {
+        setStories(firestoreStories);
+      }
     };
-    loadFirestoreProfiles();
+    loadFirestoreData();
   }, []);
 
   useEffect(() => {

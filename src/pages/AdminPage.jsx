@@ -60,6 +60,10 @@ export const AdminPage = ({ onNavigate }) => {
   // Homepage Content Editable Form State
   const [editableHomeContent, setEditableHomeContent] = useState(homeContent);
 
+  React.useEffect(() => {
+    setEditableHomeContent(homeContent);
+  }, [homeContent]);
+
   // New Success Story Form
   const [newStoryData, setNewStoryData] = useState({
     names: '',
