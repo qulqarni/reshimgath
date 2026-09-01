@@ -71,8 +71,13 @@ export const DEFAULT_STORIES = [
 export const ProfileProvider = ({ children }) => {
   const [profiles, setProfiles] = useState(() => {
     const saved = localStorage.getItem('reshimgath_profiles');
-    if (saved) return JSON.parse(saved);
-    return MOCK_PROFILES;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Clean old demo profiles starting with 'p1', 'p2', etc.
+      const cleaned = parsed.filter(p => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(p.id));
+      return cleaned;
+    }
+    return [];
   });
 
   const [homeContent, setHomeContent] = useState(() => {
@@ -92,7 +97,6 @@ export const ProfileProvider = ({ children }) => {
     const loadFirestoreProfiles = async () => {
       const firestoreProfiles = await fetchProfilesFromFirestore();
       if (firestoreProfiles && firestoreProfiles.length > 0) {
-        // Merge with existing local profiles
         setProfiles((prev) => {
           const map = new Map();
           prev.forEach((p) => map.set(p.id, p));
@@ -116,52 +120,47 @@ export const ProfileProvider = ({ children }) => {
     localStorage.setItem('reshimgath_stories', JSON.stringify(stories));
   }, [stories]);
   
-  // Initial interest states for lively demo experience
+  // Clean interest states
   const [interests, setInterests] = useState(() => {
     const saved = localStorage.getItem('reshimgath_interests');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Clean demo IDs
+      return {
+        sent: (parsed.sent || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id)),
+        received: (parsed.received || []).filter(item => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(item.profileId)),
+        accepted: (parsed.accepted || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id)),
+        declined: (parsed.declined || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id)),
+        shortlisted: (parsed.shortlisted || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id))
+      };
+    }
     return {
-      sent: ['p3'],
-      received: [
-        { profileId: 'p1', timestamp: '2 hours ago' },
-        { profileId: 'p5', timestamp: '1 day ago' }
-      ],
-      accepted: ['p1'],
+      sent: [],
+      received: [],
+      accepted: [],
       declined: [],
-      shortlisted: ['p7']
+      shortlisted: []
     };
   });
 
-  // Chat messages store
+  // Clean chat messages store
   const [chats, setChats] = useState(() => {
     const saved = localStorage.getItem('reshimgath_chats');
-    if (saved) return JSON.parse(saved);
-    return {
-      'p1': [
-        { id: 1, sender: 'p1', text: 'Namaste Aditya! I went through your profile. We share a common interest in Hindustani music and Sahyadri treks.', timestamp: '10:30 AM' },
-        { id: 2, sender: 'user', text: 'Namaste Dr. Ananya! Thank you for accepting the Sambodhi Sarang connection. I read about your medical practice in Pune.', timestamp: '10:32 AM' },
-        { id: 3, sender: 'p1', text: 'Yes! Our families would also love to interact. Would weekend filter coffee at Kothrud be convenient?', timestamp: '10:35 AM' }
-      ]
-    };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      delete parsed['p1'];
+      delete parsed['p3'];
+      delete parsed['p5'];
+      return parsed;
+    }
+    return {};
   });
 
-  // Notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'interest', profileId: 'p1', title: 'New Interest Received', text: 'Dr. Ananya Deshmukh expressed interest in your profile.', time: '2 hours ago', unread: true },
-    { id: 2, type: 'accepted', profileId: 'p1', title: 'Match Accepted!', text: 'Dr. Ananya Deshmukh accepted your interest. Private messaging is now active.', time: '3 hours ago', unread: true },
-    { id: 3, type: 'view', profileId: 'p4', title: 'Profile Viewed', text: 'Rohan Joshi (CA, Mumbai) viewed your profile.', time: '5 hours ago', unread: false }
-  ]);
+  // Clean notifications
+  const [notifications, setNotifications] = useState([]);
 
-  // Profile Views / Visitors store
-  const [profileViews, setProfileViews] = useState(() => {
-    const saved = localStorage.getItem('reshimgath_profile_views');
-    if (saved) return JSON.parse(saved);
-    return [
-      { id: 1, visitorId: 'p1', visitorName: 'Dr. Ananya Deshmukh', occupation: 'MD Pediatrics', location: 'Pune', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600', timestamp: '10 minutes ago' },
-      { id: 2, visitorId: 'p3', visitorName: 'Pooja Patil', occupation: 'Architect', location: 'Kolhapur', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800', timestamp: '2 hours ago' },
-      { id: 3, visitorId: 'p5', visitorName: 'Tejaswini Jadhav', occupation: 'Software Engineer', location: 'Mumbai', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=800', timestamp: '1 day ago' }
-    ];
-  });
+  // Clean Profile Views / Visitors store
+  const [profileViews, setProfileViews] = useState([]);
 
   // Toast notifications trigger queue
   const [toasts, setToasts] = useState([]);
@@ -183,11 +182,11 @@ export const ProfileProvider = ({ children }) => {
 
     const viewEntry = {
       id: Date.now(),
-      visitorId: viewerUser?.id || 'demo_user',
-      visitorName: viewerUser?.name || 'Aditya Kulkarni',
-      occupation: viewerUser?.occupation || 'Software Engineer',
-      location: viewerUser?.district || 'Pune',
-      avatar: viewerUser?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600',
+      visitorId: viewerUser?.id || 'user',
+      visitorName: viewerUser?.name || 'A Member',
+      occupation: viewerUser?.occupation || 'Professional',
+      location: viewerUser?.district || 'Maharashtra',
+      avatar: viewerUser?.avatar || null,
       timestamp: 'Just now',
       targetId: targetProfile.id
     };
@@ -201,7 +200,7 @@ export const ProfileProvider = ({ children }) => {
       {
         id: Date.now(),
         type: 'view',
-        profileId: viewerUser?.id || 'demo_user',
+        profileId: viewerUser?.id || 'user',
         title: 'Profile Visited! 👁️',
         text: `${viewerUser?.name || 'A verified member'} viewed your profile.`,
         time: 'Just now',
@@ -294,29 +293,6 @@ export const ProfileProvider = ({ children }) => {
       [profileId]: [...(prev[profileId] || []), newMsg]
     }));
 
-    setTimeout(() => {
-      const replies = [
-        "That sounds wonderful! Family discussions are so important to us as well.",
-        "Thank you for your message. Let me speak with my parents this evening and share our update.",
-        "Glad to hear from you!",
-        "Yes, our family values and career expectations align very nicely."
-      ];
-      const randomReply = replies[Math.floor(Math.random() * replies.length)];
-      
-      setChats((prev) => ({
-        ...prev,
-        [profileId]: [
-          ...(prev[profileId] || []),
-          {
-            id: Date.now() + 1,
-            sender: profileId,
-            text: randomReply,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]
-      }));
-    }, 1500);
-
     return true;
   };
 
@@ -346,8 +322,8 @@ export const ProfileProvider = ({ children }) => {
     const createdProfile = {
       id,
       verified: true,
-      photos: newProfileData.photos || ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800'],
-      avatar: newProfileData.avatar || newProfileData.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
+      photos: newProfileData.photos || [],
+      avatar: newProfileData.avatar || null,
       maritalStatus: 'Never Married',
       religion: 'Hindu',
       motherTongue: 'Marathi',
