@@ -48,7 +48,7 @@ export const InterestsPage = ({ onNavigate }) => {
           {t('interestsTitle')}
         </h1>
         <p className="text-xs text-brand-gray mt-1">
-          Manage your incoming partner requests, sent interests, and saved profiles.
+          {t('interestsSubtitle')}
         </p>
       </div>
 

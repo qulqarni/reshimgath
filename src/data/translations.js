@@ -80,6 +80,19 @@ export const translations = {
     recommendedMatches: "Recommended Matches for You",
     viewAllMatches: "View All Matches",
 
+    // Interests Page
+    interestsTitle: "Interests & Requests",
+    interestsSubtitle: "Manage your incoming partner requests, sent interests, and saved profiles.",
+    receivedTab: "Interests Received",
+    sentTab: "Interests Sent",
+    shortlistedTab: "Shortlisted Profiles",
+    noReceivedInterests: "No interest requests received yet.",
+    noSentInterests: "You haven't sent any interests yet.",
+    noShortlisted: "No saved or shortlisted profiles yet.",
+    sendMessage: "Send Message",
+    requestDeclined: "Declined",
+    pendingStatus: "Pending Approval",
+
     // Discovery & Filters
     discoverTitle: "Discover Matrimonial Matches",
     discoverSubtitle: "Handpicked profiles matching your community and location criteria",
@@ -212,6 +225,19 @@ export const translations = {
     recentVisitorsSubtitle: "नुकतेच तुमची प्रोफाईल पाहणारे नोंदणीकृत सदस्य",
     recommendedMatches: "तुमच्यासाठी सुचवलेले वर-वधू",
     viewAllMatches: "सर्व प्रोफाईल्स पहा",
+
+    // Interests Page
+    interestsTitle: "पसंती व विनंत्या",
+    interestsSubtitle: "तुमच्यासाठी आलेले प्रतिसाद, पाठवलेल्या पसंती आणि जतन केलेले प्रोफाईल्स व्यवस्थापित करा.",
+    receivedTab: "आलेले प्रतिसाद",
+    sentTab: "पाठवलेले प्रतिसाद",
+    shortlistedTab: "शॉर्टलिस्ट केलेले प्रोफाईल्स",
+    noReceivedInterests: "अद्याप कोणताही प्रतिसाद आलेला नाही.",
+    noSentInterests: "तुम्ही अद्याप कोणत्याही प्रोफाईलला पसंती पाठवलेली नाही.",
+    noShortlisted: "अद्याप कोणतेही प्रोफाईल शॉर्टलिस्ट केलेले नाही.",
+    sendMessage: "संदेश पाठवा",
+    requestDeclined: "नाकारले",
+    pendingStatus: "प्रतिक्षेत (पेंडिंग)",
 
     // Discovery & Filters
     discoverTitle: "वर-वधू प्रोफाईल्स शोधा",
