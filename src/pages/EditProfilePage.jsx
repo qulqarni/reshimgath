@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { uploadBiodataPdfToFirebase } from '../services/firebaseService';
 import { 
   Save, 
   ArrowLeft, 
@@ -39,7 +40,7 @@ export const EditProfilePage = ({ onNavigate }) => {
 
   const biodata = user?.biodataPdf;
 
-  const handlePdfUpload = (e) => {
+  const handlePdfUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -57,14 +58,29 @@ export const EditProfilePage = ({ onNavigate }) => {
       ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
       : `${Math.round(file.size / 1024)} KB`;
 
-    const newBiodata = {
-      fileName: file.name,
-      fileSize: fileSizeFormatted,
-      uploadedAt: new Date().toISOString().split('T')[0],
-      url: URL.createObjectURL(file)
-    };
+    try {
+      // Connect to Firebase Storage Service Architecture
+      const downloadUrl = await uploadBiodataPdfToFirebase(file, user?.id || 'guest');
+      
+      const newBiodata = {
+        fileName: file.name,
+        fileSize: fileSizeFormatted,
+        uploadedAt: new Date().toISOString().split('T')[0],
+        url: downloadUrl || URL.createObjectURL(file)
+      };
 
-    updateProfile({ biodataPdf: newBiodata });
+      updateProfile({ biodataPdf: newBiodata });
+    } catch (err) {
+      console.error('PDF Upload failed:', err);
+      // Fallback object URL
+      const newBiodata = {
+        fileName: file.name,
+        fileSize: fileSizeFormatted,
+        uploadedAt: new Date().toISOString().split('T')[0],
+        url: URL.createObjectURL(file)
+      };
+      updateProfile({ biodataPdf: newBiodata });
+    }
   };
 
   const handleSubmit = (e) => {
