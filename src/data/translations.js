@@ -93,6 +93,11 @@ export const translations = {
     requestDeclined: "Declined",
     pendingStatus: "Pending Approval",
 
+    // Messages Page
+    messagesTitle: "Private Messages & Chats",
+    messagesSubtext: "Direct end-to-end private messaging with accepted matrimonial matches.",
+    messagingBlockedNotice: "Private messaging is locked for security until an interest request is accepted by both families.",
+
     // Discovery & Filters
     discoverTitle: "Discover Matrimonial Matches",
     discoverSubtitle: "Handpicked profiles matching your community and location criteria",
@@ -239,6 +244,11 @@ export const translations = {
     sendMessage: "संदेश पाठवा",
     requestDeclined: "नाकारले",
     pendingStatus: "प्रतिक्षेत (पेंडिंग)",
+
+    // Messages Page
+    messagesTitle: "खाजगी संदेश व संवाद",
+    messagesSubtext: "स्वीकृत केलेल्या वर-वधूंशी खाजगी सुरक्षित संवाद साधा.",
+    messagingBlockedNotice: "कुटुंबांच्या सुरक्षेसाठी, समोरासमोर पसंती स्वीकारल्यानंतरच खाजगी संदेश सुविधेचा वापर करता येईल.",
 
     // Discovery & Filters
     discoverTitle: "वर-वधू प्रोफाईल्स शोधा",
