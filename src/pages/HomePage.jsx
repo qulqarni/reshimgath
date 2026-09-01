@@ -36,9 +36,9 @@ export const HomePage = ({ onNavigate }) => {
       {/* HERO SECTION WITH SHARP BACKGROUND IMAGE AND HIGH-CONTRAST TEXT */}
       <section className="relative overflow-hidden min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] py-12 sm:py-16 lg:py-20 bg-cover bg-center bg-no-repeat flex items-center" style={{ backgroundImage: `url('/hero-bg.jpg')` }}>
         
-        {/* Light & Crisp Overlay for Bright Hero Image Clarity */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-black/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        {/* Rich Black Shade Overlay for Contrast & Elegance */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/20" />
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 w-full overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
