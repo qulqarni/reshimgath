@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import { MOCK_PROFILES } from '../data/mockProfiles';
 import { 
   fetchProfilesFromFirestore, 
@@ -91,6 +92,24 @@ export const ProfileProvider = ({ children }) => {
     if (saved) return JSON.parse(saved);
     return DEFAULT_STORIES;
   });
+
+  const { user } = useAuth();
+
+  // Sync logged-in user profile changes (avatar, photos, details) into profiles array in real-time
+  useEffect(() => {
+    if (user && user.id) {
+      setProfiles((prev) => {
+        const index = prev.findIndex((p) => p.id === user.id);
+        if (index !== -1) {
+          const updated = [...prev];
+          updated[index] = { ...updated[index], ...user };
+          return updated;
+        } else {
+          return [user, ...prev];
+        }
+      });
+    }
+  }, [user]);
 
   // Fetch Firestore profiles on mount
   useEffect(() => {
