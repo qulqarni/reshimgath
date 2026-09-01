@@ -7,7 +7,6 @@ import {
   ShieldCheck, 
   UserCheck, 
   Users, 
-  Plus, 
   Edit3, 
   Trash2, 
   Search, 
@@ -26,7 +25,7 @@ import {
   MessageSquare,
   Layout,
   Heart,
-  Camera
+  Plus
 } from 'lucide-react';
 
 export const AdminPage = ({ onNavigate }) => {
@@ -35,7 +34,6 @@ export const AdminPage = ({ onNavigate }) => {
   const { 
     profiles, 
     toggleVerifyProfile, 
-    addProfile, 
     updateAdminProfile, 
     deleteProfile,
     homeContent,
@@ -55,29 +53,9 @@ export const AdminPage = ({ onNavigate }) => {
   const [districtFilter, setDistrictFilter] = useState('all');
 
   // Modals state
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [showAddStoryModal, setShowAddStoryModal] = useState(false);
-
-  // New Profile Form
-  const [newProfileData, setNewProfileData] = useState({
-    name: '',
-    gender: 'female',
-    age: '24',
-    height: "5'4\"",
-    district: 'Ichalkaranji',
-    caste: 'Maratha',
-    religion: 'Hindu',
-    education: 'B.E. Computer Science',
-    college: 'DKTE Ichalkaranji',
-    occupation: 'Software Engineer',
-    income: '₹12 Lakhs / yr',
-    city: 'Ichalkaranji',
-    pincode: '416115',
-    aboutMe: 'Educated, cultured, family-oriented individual looking for a compatible life partner.',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800'
-  });
 
   // Homepage Content Editable Form State
   const [editableHomeContent, setEditableHomeContent] = useState(homeContent);
@@ -161,29 +139,6 @@ export const AdminPage = ({ onNavigate }) => {
   const verifiedCount = profiles.filter((p) => p.verified).length;
   const unverifiedCount = profiles.filter((p) => !p.verified).length;
 
-  const handleSaveNewProfile = (e) => {
-    e.preventDefault();
-    addProfile(newProfileData);
-    setShowAddModal(false);
-    setNewProfileData({
-      name: '',
-      gender: 'female',
-      age: '24',
-      height: "5'4\"",
-      district: 'Ichalkaranji',
-      caste: 'Maratha',
-      religion: 'Hindu',
-      education: 'B.E.',
-      college: 'DKTE Ichalkaranji',
-      occupation: 'Software Engineer',
-      income: '₹12 Lakhs / yr',
-      city: 'Ichalkaranji',
-      pincode: '416115',
-      aboutMe: 'Educated and cultured individual looking for a life partner.',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800'
-    });
-  };
-
   const handleOpenEdit = (p) => {
     setEditingProfile({ ...p });
     setShowEditModal(true);
@@ -247,17 +202,9 @@ export const AdminPage = ({ onNavigate }) => {
             Administrator Control Center
           </h1>
           <p className="text-xs text-gray-200">
-            Manage website content, homepage headlines, members, verification badges, and support inquiries.
+            Manage website content, homepage headlines, member verification badges, and support inquiries.
           </p>
         </div>
-
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-5 py-3 bg-white text-brand-plum font-bold text-xs rounded-2xl shadow-xl hover:bg-brand-ivory transition-all flex items-center space-x-2 shrink-0 border border-white/30"
-        >
-          <Plus className="w-4 h-4 text-brand-plum" />
-          <span>Register New Profile</span>
-        </button>
       </div>
 
       {/* Admin Tabs */}
@@ -368,21 +315,13 @@ export const AdminPage = ({ onNavigate }) => {
 
           <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
             <h3 className="font-serif font-bold text-lg text-brand-plum">Quick Bureau Actions</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Member Profile</span>
-              </button>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => setActiveTab('profiles')}
                 className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Verify Profiles (1-Click)</span>
+                <span>Verify / Manage Profiles (1-Click)</span>
               </button>
 
               <button
@@ -390,7 +329,7 @@ export const AdminPage = ({ onNavigate }) => {
                 className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
               >
                 <Layout className="w-4 h-4" />
-                <span>Edit Homepage Headlines</span>
+                <span>Edit Homepage Content & Headlines</span>
               </button>
             </div>
           </div>
@@ -858,121 +797,6 @@ export const AdminPage = ({ onNavigate }) => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: ADD NEW PROFILE */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl max-h-[90vh] overflow-y-auto">
-            
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <h3 className="font-serif text-xl font-bold text-brand-plum">Register New Profile (Admin)</h3>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveNewProfile} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProfileData.name}
-                    onChange={(e) => setNewProfileData({ ...newProfileData, name: e.target.value })}
-                    placeholder="e.g. Swara Kulkarni"
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">Gender *</label>
-                  <select
-                    value={newProfileData.gender}
-                    onChange={(e) => setNewProfileData({ ...newProfileData, gender: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  >
-                    <option value="female">Female (Bride)</option>
-                    <option value="male">Male (Groom)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">Age *</label>
-                  <input
-                    type="number"
-                    required
-                    value={newProfileData.age}
-                    onChange={(e) => setNewProfileData({ ...newProfileData, age: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">District / City *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProfileData.district}
-                    onChange={(e) => setNewProfileData({ ...newProfileData, district: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">Caste *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProfileData.caste}
-                    onChange={(e) => setNewProfileData({ ...newProfileData, caste: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">Occupation *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProfileData.occupation}
-                    onChange={(e) => setNewProfileData({ ...newProfileData, occupation: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Profile Photo Image URL</label>
-                <input
-                  type="text"
-                  value={newProfileData.avatar}
-                  onChange={(e) => setNewProfileData({ ...newProfileData, avatar: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full p-2.5 rounded-xl border border-gray-200"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
-                >
-                  Save Profile
-                </button>
-              </div>
-            </form>
-
           </div>
         </div>
       )}
