@@ -5,6 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
+import { compressImage } from '../utils/imageCompressor';
 import { 
   User, 
   MapPin, 
@@ -107,22 +108,22 @@ export const MyProfilePage = ({ onNavigate }) => {
   const currentAvatar = user?.avatar || null;
 
   // Avatar Handlers
-  const handleAvatarFileUpload = (e) => {
+  const handleAvatarFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Please select a valid image file.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result;
-      if (base64Url) {
-        updateProfile({ avatar: base64Url });
-      }
+    try {
+      // Compress image to lightweight ~30KB JPEG Base64 Data URL
+      const compressedBase64 = await compressImage(file, 600, 600, 0.8);
+      updateProfile({ avatar: compressedBase64 });
+    } catch (err) {
+      console.error('Error compressing avatar image:', err);
+    } finally {
       setShowAvatarMenu(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const handleRemoveAvatar = () => {
@@ -131,23 +132,22 @@ export const MyProfilePage = ({ onNavigate }) => {
   };
 
   // Gallery Photo Handlers
-  const handleGalleryFileUpload = (e) => {
+  const handleGalleryFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Please select a valid image file.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result;
-      if (base64Url) {
-        const updated = [...photos, base64Url];
-        updateProfile({ photos: updated });
-        setActivePhotoIdx(updated.length - 1);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress gallery photo to ~50KB JPEG Base64 Data URL
+      const compressedBase64 = await compressImage(file, 800, 800, 0.8);
+      const updated = [...photos, compressedBase64];
+      updateProfile({ photos: updated });
+      setActivePhotoIdx(updated.length - 1);
+    } catch (err) {
+      console.error('Error compressing gallery photo:', err);
+    }
   };
 
   const handleDeletePhoto = (index) => {

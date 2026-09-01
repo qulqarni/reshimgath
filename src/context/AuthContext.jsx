@@ -27,7 +27,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('reshimgath_user', JSON.stringify(user));
+      try {
+        localStorage.setItem('reshimgath_user', JSON.stringify(user));
+      } catch (err) {
+        console.warn('localStorage quota exceeded:', err);
+      }
     } else {
       localStorage.removeItem('reshimgath_user');
     }

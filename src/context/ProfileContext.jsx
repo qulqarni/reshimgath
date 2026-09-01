@@ -128,15 +128,23 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_profiles', JSON.stringify(profiles));
+    try {
+      localStorage.setItem('reshimgath_profiles', JSON.stringify(profiles));
+    } catch (e) {
+      console.warn('Profiles quota exceeded:', e);
+    }
   }, [profiles]);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_home_content', JSON.stringify(homeContent));
+    try {
+      localStorage.setItem('reshimgath_home_content', JSON.stringify(homeContent));
+    } catch (e) {}
   }, [homeContent]);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_stories', JSON.stringify(stories));
+    try {
+      localStorage.setItem('reshimgath_stories', JSON.stringify(stories));
+    } catch (e) {}
   }, [stories]);
   
   // Clean interest states
