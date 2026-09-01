@@ -36,9 +36,9 @@ export const HomePage = ({ onNavigate }) => {
       {/* HERO SECTION WITH SHARP BACKGROUND IMAGE AND HIGH-CONTRAST TEXT */}
       <section className="relative overflow-hidden min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] py-12 sm:py-16 lg:py-20 bg-cover bg-center bg-no-repeat flex items-center" style={{ backgroundImage: `url('/hero-bg.jpg')` }}>
         
-        {/* Subtle Dark Gradient Overlay for Maximum Hero Image Clarity & High Contrast Text */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40" />
+        {/* Light & Crisp Overlay for Bright Hero Image Clarity */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 w-full overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -104,8 +104,7 @@ export const HomePage = ({ onNavigate }) => {
             <div className="hidden lg:block lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md lg:max-w-none">
                 
-                {/* Decorative Blur Glow */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-brand-plum via-rose-600 to-indigo-600 rounded-3xl opacity-40 blur-2xl transform rotate-2" />
+
 
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/25 bg-slate-950/85 backdrop-blur-xl p-6 sm:p-8 space-y-6 text-white">
                   
