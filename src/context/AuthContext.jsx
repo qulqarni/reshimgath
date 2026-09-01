@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_USER } from '../data/mockProfiles';
+import { saveProfileToFirestore } from '../services/firebaseService';
 
 const AuthContext = createContext();
 
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }) => {
       photos: []
     };
     setUser(customUser);
+    saveProfileToFirestore(customUser.id, customUser);
     return { success: true, user: customUser };
   };
 
@@ -77,11 +79,12 @@ export const AuthProvider = ({ children }) => {
       id: "u_" + Date.now(),
       name: signupData.name || "Member",
       email: signupData.email,
+      phone: signupData.phone || "",
       gender: signupData.gender || "female",
       age: signupData.age || 25,
       district: signupData.district || "Ichalkaranji",
       maritalStatus: "Never Married",
-      religion: "Hindu",
+      religion: signupData.religion || "Hindu",
       caste: signupData.caste || "Maratha",
       motherTongue: "Marathi",
       verified: false,
@@ -92,9 +95,13 @@ export const AuthProvider = ({ children }) => {
       partnerPref: {
         ageRange: "24 - 30",
         districts: ["Ichalkaranji", "Kolhapur", "Sangli", "Pune"]
-      }
+      },
+      createdAt: new Date().toISOString()
     };
+
     setUser(newUser);
+    // Push newly created user profile directly to Firebase Firestore Database!
+    saveProfileToFirestore(newUser.id, newUser);
     return { success: true, user: newUser };
   };
 
@@ -106,6 +113,10 @@ export const AuthProvider = ({ children }) => {
     setUser((prev) => {
       const updated = { ...prev, ...updatedFields };
       localStorage.setItem('reshimgath_user', JSON.stringify(updated));
+      // Sync profile update to Firebase Firestore Database!
+      if (updated.id) {
+        saveProfileToFirestore(updated.id, updated);
+      }
       return updated;
     });
   };

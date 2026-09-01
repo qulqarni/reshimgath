@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MOCK_PROFILES } from '../data/mockProfiles';
+import { 
+  fetchProfilesFromFirestore, 
+  saveProfileToFirestore, 
+  deleteProfileFromFirestore,
+  saveHomeContentToFirestore,
+  saveSuccessStoryToFirestore,
+  deleteSuccessStoryFromFirestore
+} from '../services/firebaseService';
 import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
@@ -78,6 +86,23 @@ export const ProfileProvider = ({ children }) => {
     if (saved) return JSON.parse(saved);
     return DEFAULT_STORIES;
   });
+
+  // Fetch Firestore profiles on mount
+  useEffect(() => {
+    const loadFirestoreProfiles = async () => {
+      const firestoreProfiles = await fetchProfilesFromFirestore();
+      if (firestoreProfiles && firestoreProfiles.length > 0) {
+        // Merge with existing local profiles
+        setProfiles((prev) => {
+          const map = new Map();
+          prev.forEach((p) => map.set(p.id, p));
+          firestoreProfiles.forEach((p) => map.set(p.id, p));
+          return Array.from(map.values());
+        });
+      }
+    };
+    loadFirestoreProfiles();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('reshimgath_profiles', JSON.stringify(profiles));
@@ -301,10 +326,17 @@ export const ProfileProvider = ({ children }) => {
     );
   };
 
-  // ADMIN METHODS
+  // ADMIN & MEMBER PROFILE FIRESTORE INTEGRATION
   const toggleVerifyProfile = (profileId) => {
     setProfiles((prev) =>
-      prev.map((p) => (p.id === profileId ? { ...p, verified: !p.verified } : p))
+      prev.map((p) => {
+        if (p.id === profileId) {
+          const updated = { ...p, verified: !p.verified };
+          saveProfileToFirestore(profileId, updated);
+          return updated;
+        }
+        return p;
+      })
     );
     addToast('Profile verification status updated successfully!', 'success');
   };
@@ -330,25 +362,38 @@ export const ProfileProvider = ({ children }) => {
     };
 
     setProfiles((prev) => [createdProfile, ...prev]);
+    saveProfileToFirestore(id, createdProfile);
     addToast('New profile registered successfully!', 'success');
     return createdProfile;
   };
 
   const updateAdminProfile = (profileId, updatedData) => {
     setProfiles((prev) =>
-      prev.map((p) => (p.id === profileId ? { ...p, ...updatedData } : p))
+      prev.map((p) => {
+        if (p.id === profileId) {
+          const updated = { ...p, ...updatedData };
+          saveProfileToFirestore(profileId, updated);
+          return updated;
+        }
+        return p;
+      })
     );
     addToast('Profile updated successfully by Admin!', 'success');
   };
 
   const deleteProfile = (profileId) => {
     setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+    deleteProfileFromFirestore(profileId);
     addToast('Profile deleted successfully.', 'info');
   };
 
   // HOMEPAGE CONTENT ADMIN METHODS
   const updateHomeContent = (newContent) => {
-    setHomeContent((prev) => ({ ...prev, ...newContent }));
+    setHomeContent((prev) => {
+      const updated = { ...prev, ...newContent };
+      saveHomeContentToFirestore(updated);
+      return updated;
+    });
     addToast('Homepage content updated successfully!', 'success');
   };
 
@@ -362,11 +407,13 @@ export const ProfileProvider = ({ children }) => {
       photos: storyData.photos || [{ url: '/story1.jpg', caption: 'Couple portrait' }]
     };
     setStories((prev) => [newStory, ...prev]);
+    saveSuccessStoryToFirestore(newStory);
     addToast('New success story added to homepage!', 'success');
   };
 
   const deleteSuccessStory = (storyId) => {
     setStories((prev) => prev.filter((s) => s.id !== storyId));
+    deleteSuccessStoryFromFirestore(storyId);
     addToast('Success story removed from homepage.', 'info');
   };
 
