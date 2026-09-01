@@ -359,53 +359,7 @@ export const HomePage = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* HOW IT WORKS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto space-y-3">
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-brand-plum">
-            {t('howItWorksTitle')}
-          </h2>
-          <p className="text-sm text-brand-gray">
-            {t('howItWorksSubtitle')}
-          </p>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-          
-          <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all space-y-3 relative group">
-            <div className="w-12 h-12 rounded-2xl bg-brand-plum/10 text-brand-plum flex items-center justify-center font-serif font-bold text-xl">
-              1
-            </div>
-            <h3 className="font-serif text-lg font-bold text-brand-plum">{t('step1Title')}</h3>
-            <p className="text-xs text-brand-gray leading-relaxed">{t('step1Desc')}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all space-y-3 relative group">
-            <div className="w-12 h-12 rounded-2xl bg-brand-plum/10 text-brand-plum flex items-center justify-center font-serif font-bold text-xl">
-              2
-            </div>
-            <h3 className="font-serif text-lg font-bold text-brand-plum">{t('step2Title')}</h3>
-            <p className="text-xs text-brand-gray leading-relaxed">{t('step2Desc')}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all space-y-3 relative group">
-            <div className="w-12 h-12 rounded-2xl bg-brand-plum/10 text-brand-plum flex items-center justify-center font-serif font-bold text-xl">
-              3
-            </div>
-            <h3 className="font-serif text-lg font-bold text-brand-plum">{t('step3Title')}</h3>
-            <p className="text-xs text-brand-gray leading-relaxed">{t('step3Desc')}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all space-y-3 relative group">
-            <div className="w-12 h-12 rounded-2xl bg-brand-plum/10 text-brand-plum flex items-center justify-center font-serif font-bold text-xl">
-              4
-            </div>
-            <h3 className="font-serif text-lg font-bold text-brand-plum">{t('step4Title')}</h3>
-            <p className="text-xs text-brand-gray leading-relaxed">{t('step4Desc')}</p>
-          </div>
-
-        </div>
-      </section>
 
       {/* WHY CHOOSE SECTION */}
       <section className="bg-brand-ivory/80 py-16 border-y border-brand-rose/15">
