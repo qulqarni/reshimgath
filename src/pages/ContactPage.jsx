@@ -30,14 +30,14 @@ export const ContactPage = () => {
         
         {/* Contact Info */}
         <div className="lg:col-span-5 bg-brand-plum text-white p-8 rounded-3xl space-y-6 shadow-2xl relative overflow-hidden">
-          <h3 className="font-serif font-bold text-xl text-brand-gold">Maharashtrian Helpline HQ</h3>
+          <h3 className="font-serif font-bold text-xl text-brand-rose">Sambodhi Sarang Helpline HQ</h3>
 
           <div className="space-y-4 text-xs text-gray-200">
             <div className="flex items-start space-x-3">
-              <Phone className="w-5 h-5 text-brand-gold shrink-0 mt-0.5" />
+              <Phone className="w-5 h-5 text-brand-rose shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-white">Call Helpline</p>
-                <p>+91 98220 12345 / 020 25678900</p>
+                <p className="font-bold text-white">Call Helpline / WhatsApp</p>
+                <p className="text-sm font-bold text-white mt-0.5">+91 9823425404</p>
                 <span className="text-[10px] text-brand-rose">Mon - Sat: 9:30 AM to 7:00 PM IST</span>
               </div>
             </div>
@@ -46,15 +46,15 @@ export const ContactPage = () => {
               <Mail className="w-5 h-5 text-brand-rose shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-white">Email Support</p>
-                <p>support@reshimgath.com</p>
+                <p className="text-sm font-bold text-white mt-0.5">pk9823435404@gmail.com</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
-              <MapPin className="w-5 h-5 text-brand-kesari shrink-0 mt-0.5" />
+              <MapPin className="w-5 h-5 text-brand-rose shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-white">Pune Office Address</p>
-                <p>ReshimGath Matrimony HQ, FC Road, Shivajinagar, Pune, Maharashtra 411005</p>
+                <p className="font-bold text-white">Bureau Address</p>
+                <p className="text-sm text-white mt-0.5">Sambodhi Sarang Marriage Bureau, Ichalkaranji, Maharashtra</p>
               </div>
             </div>
           </div>
@@ -67,7 +67,7 @@ export const ContactPage = () => {
           {submitted && (
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 font-bold flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Thank you! Our Maharashtrian customer representative will reach out shortly.</span>
+              <span>Thank you! Our customer representative will reach out shortly.</span>
             </div>
           )}
 
@@ -92,7 +92,7 @@ export const ContactPage = () => {
                   required
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+91 98220 00000"
+                  placeholder="+91 9823425404"
                   className="w-full p-2.5 rounded-xl border border-gray-200"
                 />
               </div>
@@ -105,29 +105,29 @@ export const ContactPage = () => {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="name@gmail.com"
+                placeholder="pk9823435404@gmail.com"
                 className="w-full p-2.5 rounded-xl border border-gray-200"
               />
             </div>
 
             <div>
-              <label className="block font-semibold mb-1">Your Message or Inquiry *</label>
+              <label className="block font-semibold mb-1">Message / Inquiry *</label>
               <textarea
                 rows={4}
                 required
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                placeholder="How can we assist you with your matrimonial search?"
+                placeholder="Write your inquiry or question for Sambodhi Sarang Marriage Bureau..."
                 className="w-full p-3 rounded-xl border border-gray-200"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-2"
+              className="w-full py-3.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-2"
             >
-              <Send className="w-4 h-4 text-brand-gold" />
-              <span>Submit Inquiry</span>
+              <Send className="w-4 h-4" />
+              <span>Send Message</span>
             </button>
           </form>
         </div>

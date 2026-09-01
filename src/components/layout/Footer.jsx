@@ -27,7 +27,7 @@ export const Footer = ({ onNavigate }) => {
             </p>
 
             <p className="hidden sm:block text-brand-gray text-xs leading-relaxed">
-              Designed exclusively for families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji and worldwide.
+              Designed exclusively for families across Ichalkaranji, Kolhapur, Sangli, Pune, Mumbai, Satara, Solapur, Nashik and worldwide.
             </p>
 
             <div className="pt-1 flex items-center justify-center md:justify-start space-x-3 sm:space-x-4 text-[11px] sm:text-xs">
@@ -77,15 +77,15 @@ export const Footer = ({ onNavigate }) => {
             <div className="flex flex-col items-center md:items-start space-y-1.5 sm:space-y-2 text-xs text-brand-charcoal font-medium">
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
-                <span>+91 98220 12345 / 020 25678900</span>
+                <span>+91 9823425404</span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
-                <span>support@sambodhisarang.com</span>
+                <span>pk9823435404@gmail.com</span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2 text-center md:text-left">
                 <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
-                <span>Sambodhi Sarang Bureau, Maharashtra</span>
+                <span>Sambodhi Sarang Marriage Bureau, Ichalkaranji, Maharashtra</span>
               </div>
             </div>
           </div>
