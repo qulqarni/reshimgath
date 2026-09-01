@@ -73,13 +73,10 @@ export const DiscoverPage = ({ onNavigate }) => {
               {t('login')} to Discover Profiles
             </button>
             <button
-              onClick={() => {
-                loginAsDemo();
-              }}
-              className="w-full py-3.5 bg-amber-50 text-amber-900 border border-amber-300 font-bold text-xs rounded-xl shadow hover:bg-amber-100 transition-all flex items-center justify-center space-x-2"
+              onClick={() => onNavigate('/signup')}
+              className="w-full py-3.5 bg-rose-50 text-brand-plum border border-brand-rose/40 font-bold text-xs rounded-xl shadow hover:bg-rose-100 transition-all"
             >
-              <Sparkles className="w-4 h-4 text-brand-kesari" />
-              <span>Instant Demo Access</span>
+              {t('signup')} & Create Profile
             </button>
           </div>
         </div>
