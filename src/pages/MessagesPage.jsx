@@ -184,7 +184,7 @@ export const MessagesPage = ({ onNavigate }) => {
             <div className="text-center my-4">
               <span className="bg-emerald-50 text-emerald-800 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
                 <Heart className="w-3.5 h-3.5 text-brand-rose fill-brand-rose" />
-                <span>ReshimGath Interest Accepted on {new Date().toLocaleDateString()}</span>
+                <span>Sambodhi Sarang Connection Accepted on {new Date().toLocaleDateString()}</span>
               </span>
             </div>
 

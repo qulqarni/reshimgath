@@ -21,7 +21,7 @@ export const ResetPasswordPage = ({ onNavigate }) => {
             Set New Password
           </h2>
           <p className="text-xs text-brand-gray">
-            Create a strong new password for your ReshimGath account.
+            Create a strong new password for your Sambodhi Sarang account.
           </p>
         </div>
 

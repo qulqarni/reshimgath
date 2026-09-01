@@ -91,7 +91,7 @@ export const SettingsPage = ({ onNavigate }) => {
             className="px-4 py-2 bg-rose-50 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 hover:bg-rose-100 flex items-center space-x-1.5"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Delete My ReshimGath Account</span>
+            <span>Delete my Sambodhi Sarang Account</span>
           </button>
         </div>
 

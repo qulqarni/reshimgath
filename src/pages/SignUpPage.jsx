@@ -145,7 +145,7 @@ export const SignUpPage = ({ onNavigate }) => {
 
         <div className="text-center pt-2 border-t border-gray-100">
           <p className="text-xs text-brand-gray">
-            Already registered on ReshimGath?{' '}
+            Already registered on Sambodhi Sarang?{' '}
             <button
               onClick={() => onNavigate('/login')}
               className="font-bold text-brand-plum hover:underline"

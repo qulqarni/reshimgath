@@ -281,7 +281,7 @@ export const EditProfilePage = ({ onNavigate }) => {
             <div className="text-center border-b border-brand-rose/20 pb-4 space-y-1">
               <p className="text-brand-plum font-serif font-bold text-sm tracking-widest">॥ श्री गणेशाय नमः ॥</p>
               <h3 className="font-serif text-2xl font-bold text-brand-plum">
-                {user?.name} - ReshimGath Biodata
+                {user?.name} - Sambodhi Sarang Biodata
               </h3>
               <p className="text-xs text-brand-gray">
                 Verified Maharashtrian Family Background & Profile Summary
