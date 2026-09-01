@@ -106,49 +106,49 @@ export const HomePage = ({ onNavigate }) => {
                 
 
 
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/60 bg-white/80 backdrop-blur-2xl p-6 sm:p-8 space-y-6 text-brand-charcoal">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/25 bg-slate-950/85 backdrop-blur-xl p-6 sm:p-8 space-y-6 text-white">
                   
-                  <div className="space-y-2 border-b border-gray-200/80 pb-4">
+                  <div className="space-y-2 border-b border-white/15 pb-4">
                     <span className="text-brand-rose text-xs font-bold uppercase tracking-wider">
                       {homeContent.rightCardTitle || "Sambodhi Sarang Marriage Bureau"}
                     </span>
-                    <h3 className="font-serif-marathi text-2xl font-bold text-brand-plum">
+                    <h3 className="font-serif-marathi text-2xl font-bold text-amber-300">
                       {homeContent.rightCardSubtitle || "॥ शुभमंगल सावधान ॥"}
                     </h3>
-                    <p className="text-xs text-brand-gray leading-relaxed font-medium">
+                    <p className="text-xs text-gray-200 leading-relaxed">
                       {homeContent.rightCardDesc || "Connecting verified families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji & worldwide."}
                     </p>
                   </div>
 
                   <div className="space-y-3 text-xs">
-                    <div className="flex items-center space-x-3 bg-rose-50/70 p-3 rounded-2xl border border-brand-rose/20">
-                      <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-2xl border border-white/15">
+                      <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                       <div>
-                        <p className="font-bold text-brand-plum">100% Genuine & Trusted Profiles</p>
-                        <p className="text-[11px] text-brand-gray">Guaranteed authentic verified profiles</p>
+                        <p className="font-bold text-white">100% Genuine & Trusted Profiles</p>
+                        <p className="text-[11px] text-gray-300">Guaranteed authentic verified profiles</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 bg-amber-50/70 p-3 rounded-2xl border border-amber-200">
-                      <Star className="w-5 h-5 text-amber-600 fill-amber-500 shrink-0" />
+                    <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-2xl border border-white/15">
+                      <Star className="w-5 h-5 text-amber-300 fill-amber-300 shrink-0" />
                       <div>
-                        <p className="font-bold text-brand-plum">Biodata PDF</p>
-                        <p className="text-[11px] text-brand-gray">Detailed family background & PDF biodata sharing</p>
+                        <p className="font-bold text-white">Biodata PDF</p>
+                        <p className="text-[11px] text-gray-300">Detailed family background & PDF biodata sharing</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 bg-rose-50/70 p-3 rounded-2xl border border-brand-rose/20">
-                      <Lock className="w-5 h-5 text-brand-rose shrink-0" />
+                    <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-2xl border border-white/15">
+                      <Lock className="w-5 h-5 text-rose-400 shrink-0" />
                       <div>
-                        <p className="font-bold text-brand-plum">Strict Family Privacy Gate</p>
-                        <p className="text-[11px] text-brand-gray">Protected profile photos & contact details</p>
+                        <p className="font-bold text-white">Strict Family Privacy Gate</p>
+                        <p className="text-[11px] text-gray-300">Protected profile photos & contact details</p>
                       </div>
                     </div>
                   </div>
 
                   <button
                     onClick={() => onNavigate(isAuthenticated ? '/discover' : '/signup')}
-                    className="w-full py-3.5 bg-gradient-to-r from-brand-plum to-rose-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xl hover:opacity-95 transition-all text-center border border-white/20"
+                    className="w-full py-3.5 bg-gradient-to-r from-brand-plum to-rose-600 text-white font-bold text-xs rounded-xl shadow-xl hover:opacity-95 transition-all text-center border border-white/20"
                   >
                     Browse Verified Matches
                   </button>
