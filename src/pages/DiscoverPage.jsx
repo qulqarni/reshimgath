@@ -65,18 +65,12 @@ export const DiscoverPage = ({ onNavigate }) => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 max-w-md mx-auto">
+          <div className="flex justify-center pt-4 max-w-xs mx-auto">
             <button
               onClick={() => onNavigate('/login')}
-              className="w-full py-3.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all"
+              className="w-full py-3.5 px-6 bg-brand-plum text-white font-bold text-sm rounded-2xl shadow-xl hover:bg-brand-plumDark transition-all"
             >
-              {t('login')} to Discover Profiles
-            </button>
-            <button
-              onClick={() => onNavigate('/signup')}
-              className="w-full py-3.5 bg-rose-50 text-brand-plum border border-brand-rose/40 font-bold text-xs rounded-xl shadow hover:bg-rose-100 transition-all"
-            >
-              {t('signup')} & Create Profile
+              Login / Register to Discover Profiles
             </button>
           </div>
         </div>
