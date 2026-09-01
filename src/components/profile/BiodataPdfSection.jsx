@@ -37,23 +37,26 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
 
     setIsUploading(true);
 
-    setTimeout(() => {
-      const fileSizeFormatted = file.size > 1024 * 1024 
-        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
-        : `${Math.round(file.size / 1024)} KB`;
+    const fileSizeFormatted = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
 
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result;
       const newBiodata = {
         fileName: file.name,
         fileSize: fileSizeFormatted,
         uploadedAt: new Date().toISOString().split('T')[0],
-        url: URL.createObjectURL(file)
+        url: base64Url
       };
 
       updateProfile({ biodataPdf: newBiodata });
       setIsUploading(false);
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
-    }, 800);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemove = () => {

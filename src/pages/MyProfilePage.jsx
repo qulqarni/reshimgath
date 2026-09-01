@@ -114,9 +114,15 @@ export const MyProfilePage = ({ onNavigate }) => {
       alert('Please select a valid image file.');
       return;
     }
-    const newAvatarUrl = URL.createObjectURL(file);
-    updateProfile({ avatar: newAvatarUrl });
-    setShowAvatarMenu(false);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result;
+      if (base64Url) {
+        updateProfile({ avatar: base64Url });
+      }
+      setShowAvatarMenu(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveAvatar = () => {
@@ -132,10 +138,16 @@ export const MyProfilePage = ({ onNavigate }) => {
       alert('Please select a valid image file.');
       return;
     }
-    const uploadedUrl = URL.createObjectURL(file);
-    const updated = [...photos, uploadedUrl];
-    updateProfile({ photos: updated });
-    setActivePhotoIdx(updated.length - 1);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result;
+      if (base64Url) {
+        const updated = [...photos, base64Url];
+        updateProfile({ photos: updated });
+        setActivePhotoIdx(updated.length - 1);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDeletePhoto = (index) => {
