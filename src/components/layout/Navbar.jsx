@@ -341,15 +341,6 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                 >
                   {t('signup')}
                 </button>
-                <button
-                  onClick={() => {
-                    loginAsDemo();
-                    handleNav('/discover');
-                  }}
-                  className="w-full py-2 text-center text-xs font-semibold text-brand-kesari bg-amber-50 rounded-xl border border-amber-200 mt-1"
-                >
-                  {t('demoUserBtn')}
-                </button>
               </div>
             )}
           </div>

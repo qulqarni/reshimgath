@@ -20,7 +20,7 @@ export const ADMIN_USER = {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('reshimgath_user');
-    return saved ? JSON.parse(saved) : DEMO_USER; // Default logged in as DEMO_USER for interactive exploration
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [privacyAlert, setPrivacyAlert] = useState(false);

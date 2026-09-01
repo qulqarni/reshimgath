@@ -79,18 +79,7 @@ export const HomePage = ({ onNavigate }) => {
                   <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" />
                 </button>
 
-                {!isAuthenticated && (
-                  <button
-                    onClick={() => {
-                      loginAsDemo();
-                      onNavigate('/discover');
-                    }}
-                    className="w-[85%] sm:w-auto max-w-xs sm:max-w-none px-4 sm:px-6 py-3 sm:py-4 bg-slate-900/80 hover:bg-slate-900 text-white border border-white/40 backdrop-blur-md font-bold text-[11px] sm:text-sm rounded-xl sm:rounded-2xl shadow-xl transition-all flex items-center justify-center space-x-2"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                    <span>{t('demoUserBtn')}</span>
-                  </button>
-                )}
+
               </div>
 
               {/* Trust Indicators */}

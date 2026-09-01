@@ -40,27 +40,7 @@ export const LoginPage = ({ onNavigate }) => {
           </p>
         </div>
 
-        {/* Instant Demo Login Callout */}
-        <div className="bg-amber-50 border border-amber-300/80 p-4 rounded-2xl space-y-2">
-          <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs">
-            <Sparkles className="w-4 h-4 text-brand-kesari" />
-            <span>Instant Live Demo Access</span>
-          </div>
-          <p className="text-[11px] text-amber-800">
-            {t('demoUserNotice')}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              loginAsDemo();
-              onNavigate('/discover');
-            }}
-            className="w-full py-2.5 px-3 bg-gradient-to-r from-brand-kesari to-amber-600 text-white font-bold text-xs rounded-xl shadow hover:opacity-95 transition-all flex items-center justify-center space-x-2"
-          >
-            <span>{t('demoUserBtn')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+
 
         {error && (
           <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
