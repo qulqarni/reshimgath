@@ -119,6 +119,7 @@ export const translations = {
     reportProfile: "Report Profile",
     shareProfile: "Share Profile",
     verifiedBadge: "Verified Profile",
+    verifiedTag: "Verified",
     
     // Profile Tabs & Sections
     basicDetails: "Basic Details",
@@ -265,6 +266,7 @@ export const translations = {
     reportProfile: "तक्रार नोंदवा",
     shareProfile: "प्रोफाईल शेअर करा",
     verifiedBadge: "पडताळलेले प्रोफाईल",
+    verifiedTag: "खात्रीशीर (Verified)",
     
     // Profile Tabs & Sections
     basicDetails: "प्राथमिक माहिती",
