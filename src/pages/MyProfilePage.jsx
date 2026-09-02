@@ -50,10 +50,10 @@ export const MyProfilePage = ({ onNavigate }) => {
     }
   };
 
-  const receivedCount = interests?.received?.length || 2;
-  const sentCount = interests?.sent?.length || 1;
-  const acceptedCount = interests?.accepted?.length || 1;
-  const visitsCount = profileViews?.length || 3;
+  const receivedCount = interests?.received?.length || 0;
+  const sentCount = interests?.sent?.length || 0;
+  const acceptedCount = interests?.accepted?.length || 0;
+  const visitsCount = profileViews?.length || 0;
 
   const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
   const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
@@ -416,31 +416,38 @@ export const MyProfilePage = ({ onNavigate }) => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-          {profileViews.map((visitor) => (
-            <div
-              key={visitor.id}
-              onClick={() => onNavigate(`/profile/${visitor.visitorId}`)}
-              className="bg-brand-lightBg/60 p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
-            >
-              <img
-                src={visitor.avatar}
-                alt={visitor.visitorName}
-                className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform"
-              />
-              <div className="min-w-0 flex-1">
-                <h4 className="font-serif font-bold text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
-                  {visitor.visitorName}
-                </h4>
-                <p className="text-xs text-brand-gray truncate">{visitor.occupation} • {visitor.location}</p>
-                <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-1">
-                  <Clock className="w-3 h-3" />
-                  <span>Viewed {visitor.timestamp}</span>
+        {profileViews.length === 0 ? (
+          <div className="text-center py-8 text-xs font-medium text-brand-gray bg-brand-lightBg/50 rounded-2xl border border-dashed border-brand-rose/20 space-y-1">
+            <p className="font-semibold text-brand-plum">No Profile Visitors Yet</p>
+            <p className="text-[11px]">As verified members view your profile, they will appear here automatically.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+            {profileViews.map((visitor) => (
+              <div
+                key={visitor.id}
+                onClick={() => onNavigate(`/profile/${visitor.visitorId}`)}
+                className="bg-brand-lightBg/60 p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
+              >
+                <img
+                  src={visitor.avatar}
+                  alt={visitor.visitorName}
+                  className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform"
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-serif font-bold text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
+                    {visitor.visitorName}
+                  </h4>
+                  <p className="text-xs text-brand-gray truncate">{visitor.occupation} • {visitor.location}</p>
+                  <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Viewed {visitor.timestamp}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 4. INDEPENDENT IMAGE GALLERY SECTION */}
