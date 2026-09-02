@@ -247,9 +247,10 @@ export const MessagesPage = ({ onNavigate }) => {
             />
             <button
               type="submit"
-              className="p-3 bg-brand-plum text-white rounded-2xl shadow hover:bg-brand-plumDark transition-all"
+              className="p-3.5 bg-brand-plum text-white rounded-2xl shadow-md hover:bg-brand-plumDark hover:scale-105 transition-all flex items-center justify-center shrink-0"
+              title="Send message"
             >
-              <Send className="w-4 h-4 text-brand-gold" />
+              <Send className="w-4 h-4 text-white stroke-[2.5]" />
             </button>
           </form>
 
