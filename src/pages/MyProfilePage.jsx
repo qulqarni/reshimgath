@@ -50,10 +50,17 @@ export const MyProfilePage = ({ onNavigate }) => {
     }
   };
 
+  const myProfileViews = (profileViews || []).filter((v) => {
+    if (!user) return false;
+    if (String(v.visitorId) === String(user.id) || (user.email && v.visitorId === user.email)) return false;
+    if (v.targetId && String(v.targetId) !== String(user.id) && (user.email ? v.targetId !== user.email : true)) return false;
+    return true;
+  });
+
   const receivedCount = interests?.received?.length || 0;
   const sentCount = interests?.sent?.length || 0;
   const acceptedCount = interests?.accepted?.length || 0;
-  const visitsCount = profileViews?.length || 0;
+  const visitsCount = myProfileViews.length;
 
   const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
   const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
@@ -416,14 +423,14 @@ export const MyProfilePage = ({ onNavigate }) => {
           </span>
         </div>
 
-        {profileViews.length === 0 ? (
+        {myProfileViews.length === 0 ? (
           <div className="text-center py-8 text-xs font-medium text-brand-gray bg-brand-lightBg/50 rounded-2xl border border-dashed border-brand-rose/20 space-y-1">
             <p className="font-semibold text-brand-plum">No Profile Visitors Yet</p>
             <p className="text-[11px]">As verified members view your profile, they will appear here automatically.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            {profileViews.map((visitor) => (
+            {myProfileViews.map((visitor) => (
               <div
                 key={visitor.id}
                 onClick={() => onNavigate(`/profile/${visitor.visitorId}`)}

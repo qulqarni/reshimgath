@@ -5,7 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { Bell, Heart, CheckCircle, Eye, ShieldCheck } from 'lucide-react';
 
 export const NotificationsPage = ({ onNavigate }) => {
-  const { isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { notifications, markNotificationRead } = useProfiles();
 
@@ -14,6 +14,13 @@ export const NotificationsPage = ({ onNavigate }) => {
     onNavigate('/login');
     return null;
   }
+
+  const userNotifications = notifications.filter((n) => {
+    if (!user) return true;
+    if (n.type === 'view' && String(n.profileId) === String(user.id)) return false;
+    if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
+    return true;
+  });
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
@@ -28,7 +35,13 @@ export const NotificationsPage = ({ onNavigate }) => {
       </div>
 
       <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden divide-y divide-gray-100">
-        {notifications.map((n) => (
+        {userNotifications.length === 0 ? (
+          <div className="p-8 text-center text-xs font-medium text-brand-gray space-y-1">
+            <p className="font-semibold text-brand-plum">No New Notifications</p>
+            <p className="text-[11px]">When candidates express interest or visit your profile, notifications will appear here.</p>
+          </div>
+        ) : (
+          userNotifications.map((n) => (
           <div
             key={n.id}
             onClick={() => {
@@ -52,7 +65,8 @@ export const NotificationsPage = ({ onNavigate }) => {
               <p className="text-xs text-brand-gray mt-1">{n.text}</p>
             </div>
           </div>
-        ))}
+        ))
+      )}
       </div>
     </div>
   );

@@ -205,11 +205,25 @@ export const ProfileProvider = ({ children }) => {
     return {};
   });
 
-  // Clean notifications
-  const [notifications, setNotifications] = useState([]);
+  // Clean notifications store
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_notifications');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.filter((n) => !(n.type === 'view' && String(n.profileId) === String(n.targetUserId)));
+    }
+    return [];
+  });
 
-  // Clean Profile Views / Visitors store
-  const [profileViews, setProfileViews] = useState([]);
+  // Clean Profile Views / Visitors store (filter out self views)
+  const [profileViews, setProfileViews] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_profile_views');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.filter((v) => String(v.visitorId) !== String(v.targetId));
+    }
+    return [];
+  });
 
   // Toast notifications trigger queue
   const [toasts, setToasts] = useState([]);
@@ -226,32 +240,45 @@ export const ProfileProvider = ({ children }) => {
     localStorage.setItem('reshimgath_profile_views', JSON.stringify(profileViews));
   }, [profileViews]);
 
+  useEffect(() => {
+    localStorage.setItem('reshimgath_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
   const recordProfileView = (targetProfile, viewerUser) => {
-    if (!targetProfile) return;
+    if (!targetProfile || !viewerUser) return;
+
+    // DO NOT record view if user is viewing their own profile
+    if (
+      String(viewerUser.id) === String(targetProfile.id) ||
+      (viewerUser.email && targetProfile.email && viewerUser.email === targetProfile.email)
+    ) {
+      return;
+    }
 
     const viewEntry = {
       id: Date.now(),
-      visitorId: viewerUser?.id || 'user',
-      visitorName: viewerUser?.name || 'A Member',
-      occupation: viewerUser?.occupation || 'Professional',
-      location: viewerUser?.district || 'Maharashtra',
-      avatar: viewerUser?.avatar || null,
+      visitorId: viewerUser.id,
+      visitorName: viewerUser.name || 'A Member',
+      occupation: viewerUser.occupation || 'Professional',
+      location: viewerUser.district || 'Maharashtra',
+      avatar: viewerUser.avatar || null,
       timestamp: 'Just now',
       targetId: targetProfile.id
     };
 
     setProfileViews((prev) => [
       viewEntry,
-      ...prev.filter((v) => !(v.visitorId === viewEntry.visitorId && v.targetId === viewEntry.targetId))
+      ...prev.filter((v) => !(String(v.visitorId) === String(viewEntry.visitorId) && String(v.targetId) === String(viewEntry.targetId)))
     ]);
 
     setNotifications((prev) => [
       {
         id: Date.now(),
         type: 'view',
-        profileId: viewerUser?.id || 'user',
+        profileId: viewerUser.id,
+        targetUserId: targetProfile.id,
         title: 'Profile Visited! 👁️',
-        text: `${viewerUser?.name || 'A verified member'} viewed your profile.`,
+        text: `${viewerUser.name || 'A verified member'} viewed your profile.`,
         time: 'Just now',
         unread: true
       },

@@ -34,10 +34,10 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const profile = profiles.find((p) => String(p.id) === String(profileId)) || profiles[0];
 
   React.useEffect(() => {
-    if (profile) {
+    if (profile && user && String(profile.id) !== String(user.id) && (user.email ? profile.email !== user.email : true)) {
       recordProfileView(profile, user);
     }
-  }, [profileId]);
+  }, [profileId, user]);
 
   const isSent = interests.sent.includes(profile.id);
   const isAccepted = interests.accepted.includes(profile.id);

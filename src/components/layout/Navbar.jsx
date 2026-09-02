@@ -27,7 +27,14 @@ export const Navbar = ({ currentPath, onNavigate }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const userNotifications = notifications.filter((n) => {
+    if (!user) return true;
+    if (n.type === 'view' && String(n.profileId) === String(user.id)) return false;
+    if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
+    return true;
+  });
+
+  const unreadCount = userNotifications.filter(n => n.unread).length;
 
   const handleNav = (path) => {
     onNavigate(path);
@@ -147,7 +154,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                         </span>
                       </div>
                       <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                        {notifications.map((n) => (
+                        {userNotifications.map((n) => (
                           <div
                             key={n.id}
                             onClick={() => {
