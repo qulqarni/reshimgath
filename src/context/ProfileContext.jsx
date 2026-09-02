@@ -120,14 +120,21 @@ export const ProfileProvider = ({ children }) => {
   useEffect(() => {
     const loadFirestoreData = async () => {
       const firestoreProfiles = await fetchProfilesFromFirestore();
-      if (firestoreProfiles && firestoreProfiles.length > 0) {
-        setProfiles((prev) => {
-          const map = new Map();
-          prev.forEach((p) => map.set(p.id, p));
+      
+      // Save MOCK_PROFILES to Firestore if needed
+      MOCK_PROFILES.forEach((demoProfile) => {
+        saveProfileToFirestore(demoProfile.id, demoProfile);
+      });
+
+      setProfiles((prev) => {
+        const map = new Map();
+        MOCK_PROFILES.forEach((p) => map.set(p.id, p));
+        prev.forEach((p) => map.set(p.id, p));
+        if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((p) => map.set(p.id, p));
-          return Array.from(map.values());
-        });
-      }
+        }
+        return Array.from(map.values());
+      });
 
       const firestoreHome = await fetchHomeContentFromFirestore();
       if (firestoreHome) {

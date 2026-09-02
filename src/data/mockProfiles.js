@@ -45,8 +45,8 @@ export const DEMO_PROFILES = [
       diet: "Vegetarian"
     },
     verified: true,
-    avatar: "/story1_2.jpg",
-    photos: ["/story1_2.jpg", "/story1.jpg"]
+    avatar: "/rohan_deshmukh.jpg",
+    photos: ["/rohan_deshmukh.jpg"]
   },
   {
     id: "demo_m2",
@@ -93,8 +93,8 @@ export const DEMO_PROFILES = [
       diet: "Vegetarian"
     },
     verified: true,
-    avatar: "/story3_2.jpg",
-    photos: ["/story3_2.jpg", "/story2.jpg"]
+    avatar: "/omkar_patil.jpg",
+    photos: ["/omkar_patil.jpg"]
   },
   {
     id: "demo_f1",
@@ -141,8 +141,8 @@ export const DEMO_PROFILES = [
       diet: "Vegetarian"
     },
     verified: true,
-    avatar: "/story1.jpg",
-    photos: ["/story1.jpg", "/story2_2.jpg"]
+    avatar: "/ananya_joshi.jpg",
+    photos: ["/ananya_joshi.jpg"]
   },
   {
     id: "demo_f2",
@@ -189,8 +189,8 @@ export const DEMO_PROFILES = [
       diet: "Vegetarian"
     },
     verified: true,
-    avatar: "/story2.jpg",
-    photos: ["/story2.jpg", "/story3.jpg"]
+    avatar: "/pooja_kulkarni.jpg",
+    photos: ["/pooja_kulkarni.jpg"]
   }
 ];
 

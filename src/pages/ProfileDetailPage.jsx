@@ -31,7 +31,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
   const [activeTab, setActiveTab] = useState('about');
 
-  const profile = profiles.find((p) => p.id === profileId) || profiles[0];
+  const profile = profiles.find((p) => String(p.id) === String(profileId)) || profiles[0];
 
   React.useEffect(() => {
     if (profile) {

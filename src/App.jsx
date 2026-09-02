@@ -41,12 +41,11 @@ function AppContent() {
     const handlePopState = () => {
       const path = getPathFromLocation();
       
-      // Handle dynamic profile path like /profile/3
+      // Handle dynamic profile path like /profile/demo_f1
       if (path.startsWith('/profile/')) {
         const idStr = path.replace('/profile/', '');
-        const numericId = parseInt(idStr, 10);
-        if (!isNaN(numericId)) {
-          setSelectedProfileId(numericId);
+        if (idStr) {
+          setSelectedProfileId(idStr);
           setCurrentPath('/profile');
           return;
         }
@@ -64,12 +63,11 @@ function AppContent() {
     let cleanPath = targetPath;
     let profId = null;
 
-    // Handle dynamic profile route like /profile/2
+    // Handle dynamic profile route like /profile/demo_m1
     if (targetPath.startsWith('/profile/')) {
       const idStr = targetPath.replace('/profile/', '');
-      const numericId = parseInt(idStr, 10);
-      if (!isNaN(numericId)) {
-        profId = numericId;
+      if (idStr) {
+        profId = idStr;
         cleanPath = '/profile';
       }
     }

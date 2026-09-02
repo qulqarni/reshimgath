@@ -7,7 +7,7 @@ import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharash
 import { Search, Filter, ShieldCheck, X, Sparkles, Lock, ArrowRight } from 'lucide-react';
 
 export const DiscoverPage = ({ onNavigate }) => {
-  const { isAuthenticated, loginAsDemo } = useAuth();
+  const { user, isAuthenticated, loginAsDemo } = useAuth();
   const { t } = useLanguage();
   const { profiles } = useProfiles();
 
@@ -15,7 +15,11 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedCaste, setSelectedCaste] = useState('All');
-  const [genderFilter, setGenderFilter] = useState('female');
+  const [genderFilter, setGenderFilter] = useState(() => {
+    if (user && user.gender === 'male') return 'female';
+    if (user && user.gender === 'female') return 'male';
+    return 'all';
+  });
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [loading, setLoading] = useState(false);
