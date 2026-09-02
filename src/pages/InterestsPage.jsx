@@ -5,7 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { Heart, Check, X, MessageSquare, Clock, ShieldCheck, UserCheck } from 'lucide-react';
 
 export const InterestsPage = ({ onNavigate }) => {
-  const { isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, acceptInterest, declineInterest } = useProfiles();
 
@@ -17,27 +17,57 @@ export const InterestsPage = ({ onNavigate }) => {
     return null;
   }
 
-  // Received profiles
-  const receivedList = interests.received.map(r => {
-    const p = profiles.find(item => item.id === r.profileId);
-    return { ...p, time: r.timestamp };
-  }).filter(Boolean);
+  // Received profiles for current logged-in user
+  const receivedList = (interests.received || [])
+    .filter((r) => {
+      if (!user) return true;
+      if (r.targetUserId) {
+        return String(r.targetUserId) === String(user.id) || r.targetUserId === user.email;
+      }
+      return String(r.profileId) !== String(user.id);
+    })
+    .map((r) => {
+      const p = profiles.find((item) => String(item.id) === String(r.profileId));
+      return p ? { ...p, time: r.timestamp || 'Recently' } : null;
+    })
+    .filter(Boolean);
 
-  // Sent profiles
-  const sentList = interests.sent.map(id => {
-    const p = profiles.find(item => item.id === id);
-    const isAccepted = interests.accepted.includes(id);
-    const isDeclined = interests.declined.includes(id);
-    return {
-      ...p,
-      status: isAccepted ? 'Accepted' : isDeclined ? 'Declined' : 'Pending'
-    };
-  }).filter(Boolean);
+  // Sent profiles by current logged-in user
+  const sentList = (interests.sent || [])
+    .filter((s) => {
+      if (!user) return true;
+      if (typeof s === 'object' && s.senderId) {
+        return String(s.senderId) === String(user.id) || s.senderId === user.email;
+      }
+      return true;
+    })
+    .map((s) => {
+      const targetId = typeof s === 'object' ? s.profileId : s;
+      const p = profiles.find((item) => String(item.id) === String(targetId));
+      if (!p) return null;
+
+      const isAccepted = (interests.accepted || []).some((a) =>
+        typeof a === 'string'
+          ? a === targetId
+          : String(a.user1) === String(targetId) || String(a.user2) === String(targetId) || String(a.profileId) === String(targetId)
+      );
+      const isDeclined = (interests.declined || []).some((d) =>
+        typeof d === 'string'
+          ? d === targetId
+          : String(d.user1) === String(targetId) || String(d.user2) === String(targetId) || String(d.profileId) === String(targetId)
+      );
+
+      return {
+        ...p,
+        status: isAccepted ? 'Accepted' : isDeclined ? 'Declined' : 'Pending'
+      };
+    })
+    .filter(Boolean);
 
   // Shortlisted profiles
-  const shortlistedList = interests.shortlisted.map(id => {
-    return profiles.find(item => item.id === id);
-  }).filter(Boolean);
+  const shortlistedList = (interests.shortlisted || [])
+    .map((id) => profiles.find((item) => String(item.id) === String(id)))
+    .filter(Boolean);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

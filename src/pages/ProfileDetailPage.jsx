@@ -39,11 +39,31 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
   }, [profileId, user]);
 
-  const isSent = interests.sent.includes(profile.id);
-  const isAccepted = interests.accepted.includes(profile.id);
-  const isDeclined = interests.declined.includes(profile.id);
-  const isReceived = interests.received.some(r => r.profileId === profile.id);
-  const isShortlisted = interests.shortlisted.includes(profile.id);
+  const isSent = (interests.sent || []).some(s => 
+    typeof s === 'string' 
+      ? s === profile.id 
+      : (String(s.profileId) === String(profile.id) && String(s.senderId) === String(user?.id))
+  );
+
+  const isReceived = (interests.received || []).some(r => 
+    typeof r === 'string'
+      ? r === profile.id
+      : (String(r.profileId) === String(profile.id) && String(r.targetUserId) === String(user?.id))
+  );
+
+  const isAccepted = (interests.accepted || []).some(a => 
+    typeof a === 'string' 
+      ? a === profile.id 
+      : (String(a.profileId) === String(profile.id) || String(a.user1) === String(profile.id) || String(a.user2) === String(profile.id))
+  );
+
+  const isDeclined = (interests.declined || []).some(d => 
+    typeof d === 'string' 
+      ? d === profile.id 
+      : (String(d.profileId) === String(profile.id) || String(d.user1) === String(profile.id) || String(d.user2) === String(profile.id))
+  );
+
+  const isShortlisted = (interests.shortlisted || []).includes(profile.id);
 
   const handleAction = () => {
     if (!isAuthenticated) {

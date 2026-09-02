@@ -295,22 +295,74 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const sendInterest = (profileId) => {
-    if (interests.sent.includes(profileId)) return;
+    if (!user) return;
+
+    // Check if already sent
+    const alreadySent = (interests.sent || []).some((item) =>
+      typeof item === 'string'
+        ? item === profileId
+        : (String(item.profileId) === String(profileId) && String(item.senderId) === String(user.id))
+    );
+    if (alreadySent) return;
+
+    const senderName = user.name || 'A verified member';
+    const sentEntry = { profileId: profileId, senderId: user.id, timestamp: 'Just now' };
+    const receivedEntry = { profileId: user.id, targetUserId: profileId, timestamp: 'Just now' };
 
     setInterests((prev) => ({
       ...prev,
-      sent: [...prev.sent, profileId]
+      sent: [...prev.sent, sentEntry],
+      received: [
+        ...prev.received.filter(
+          (item) => !(String(item.profileId) === String(user.id) && String(item.targetUserId) === String(profileId))
+        ),
+        receivedEntry
+      ]
     }));
+
+    // Add notification for target user receiving the interest
+    setNotifications((prev) => [
+      {
+        id: Date.now(),
+        type: 'interest',
+        profileId: user.id,
+        targetUserId: profileId,
+        title: 'New Interest Received! ❤️',
+        text: `${senderName} expressed interest in your profile.`,
+        time: 'Just now',
+        unread: true
+      },
+      ...prev
+    ]);
 
     addToast('Interest sent successfully! Communication will unlock once accepted.', 'success');
   };
 
   const acceptInterest = (profileId) => {
+    if (!user) return;
+
+    const acceptedEntry = { user1: user.id, user2: profileId, profileId: profileId, timestamp: 'Just now' };
+
     setInterests((prev) => ({
       ...prev,
-      received: prev.received.filter((item) => item.profileId !== profileId),
-      accepted: [...prev.accepted, profileId]
+      received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
+      accepted: [...prev.accepted, acceptedEntry]
     }));
+
+    // Add notification for candidate whose interest was accepted
+    setNotifications((prev) => [
+      {
+        id: Date.now(),
+        type: 'accepted',
+        profileId: user.id,
+        targetUserId: profileId,
+        title: 'Interest Accepted! 💕',
+        text: `${user.name || 'A verified member'} accepted your interest request! You can now start chatting.`,
+        time: 'Just now',
+        unread: true
+      },
+      ...prev
+    ]);
 
     try {
       confetti({
@@ -326,10 +378,12 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const declineInterest = (profileId) => {
+    if (!user) return;
+
     setInterests((prev) => ({
       ...prev,
-      received: prev.received.filter((item) => item.profileId !== profileId),
-      declined: [...prev.declined, profileId]
+      received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
+      declined: [...prev.declined, { user1: user.id, user2: profileId, profileId: profileId }]
     }));
     addToast('Interest declined.', 'info');
   };
