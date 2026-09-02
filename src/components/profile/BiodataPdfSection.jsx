@@ -65,6 +65,10 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
     }
   };
 
+  if (!isEditable && !biodata) {
+    return null;
+  }
+
   return (
     <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
       
@@ -91,7 +95,9 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
               </span>
             </div>
             <p className="text-xs text-brand-gray">
-              Upload your complete family biodata PDF to share with interested families & prospective matches.
+              {isEditable 
+                ? "Upload your complete family biodata PDF to share with interested families & prospective matches."
+                : "Official family biodata PDF document attached by candidate."}
             </p>
           </div>
         </div>
