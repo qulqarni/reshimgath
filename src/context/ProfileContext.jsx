@@ -346,7 +346,7 @@ export const ProfileProvider = ({ children }) => {
     setInterests((prev) => ({
       ...prev,
       received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
-      accepted: [...prev.accepted, acceptedEntry]
+      accepted: [...prev.accepted, acceptedEntry, profileId]
     }));
 
     // Add notification for candidate whose interest was accepted

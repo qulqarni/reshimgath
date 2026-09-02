@@ -14,13 +14,36 @@ import {
 } from 'lucide-react';
 
 export const MessagesPage = ({ onNavigate }) => {
-  const { isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, chats, sendMessage } = useProfiles();
 
-  // Get all accepted connection profile IDs
-  const acceptedIds = interests.accepted;
-  const acceptedProfiles = profiles.filter((p) => acceptedIds.includes(p.id));
+  // Get all accepted connection profiles for current logged-in user
+  const acceptedProfiles = profiles.filter((p) => {
+    if (!user) return false;
+    if (String(p.id) === String(user.id) || (user.email && p.email === user.email)) return false;
+
+    return (interests.accepted || []).some((a) => {
+      if (typeof a === 'string') {
+        return String(a) === String(p.id);
+      }
+      if (typeof a === 'object' && a !== null) {
+        const u1 = String(a.user1);
+        const u2 = String(a.user2);
+        const pid = String(a.profileId);
+        const me = String(user.id);
+        const other = String(p.id);
+
+        return (
+          (u1 === me && u2 === other) ||
+          (u2 === me && u1 === other) ||
+          (pid === other) ||
+          (pid === me)
+        );
+      }
+      return false;
+    });
+  });
 
   const [activePartnerId, setActivePartnerId] = useState(() => {
     return acceptedProfiles.length > 0 ? acceptedProfiles[0].id : null;
@@ -65,12 +88,13 @@ export const MessagesPage = ({ onNavigate }) => {
 
   const [mobileView, setMobileView] = useState('list'); // 'list' or 'chat'
 
-  const currentPartner = profiles.find((p) => p.id === activePartnerId) || acceptedProfiles[0];
-  const activeThread = chats[currentPartner.id] || [];
+  const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || acceptedProfiles[0];
+  const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
+  const activeThread = (convoKey && chats[convoKey]) || (currentPartner ? chats[currentPartner.id] : []) || [];
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() || !currentPartner) return;
     sendMessage(currentPartner.id, messageInput.trim());
     setMessageInput('');
   };
