@@ -26,6 +26,16 @@ export const DiscoverPage = ({ onNavigate }) => {
 
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
+      // 1. Exclude logged-in user's own profile
+      if (user && (String(p.id) === String(user.id) || (user.email && p.email === user.email))) {
+        return false;
+      }
+
+      // 2. Exclude Admin profiles
+      if (p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'))) {
+        return false;
+      }
+
       if (genderFilter !== 'all' && p.gender !== genderFilter) return false;
       if (selectedDistrict !== 'All' && p.district !== selectedDistrict) return false;
       if (selectedCaste !== 'All' && !p.caste.includes(selectedCaste)) return false;
@@ -41,7 +51,7 @@ export const DiscoverPage = ({ onNavigate }) => {
       }
       return true;
     });
-  }, [profiles, genderFilter, selectedDistrict, selectedCaste, verifiedOnly, searchQuery]);
+  }, [profiles, user, genderFilter, selectedDistrict, selectedCaste, verifiedOnly, searchQuery]);
 
   const handleReset = () => {
     setSelectedDistrict('All');
