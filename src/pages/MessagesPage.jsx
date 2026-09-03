@@ -118,18 +118,23 @@ export const MessagesPage = ({ onNavigate }) => {
   }
 
   const [mobileView, setMobileView] = useState('list'); // 'list' or 'chat'
-  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || acceptedProfiles[0];
   const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
   const activeThread = (convoKey && chats[convoKey]) ? chats[convoKey] : [];
 
-  const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
-    scrollToBottom(true);
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 50);
+    return () => clearTimeout(timer);
   }, [activeThread, activePartnerId]);
 
   const handleSend = (e) => {
@@ -243,7 +248,7 @@ export const MessagesPage = ({ onNavigate }) => {
           </div>
 
           {/* Chat Messages Body */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-white via-brand-ivory/40 to-white min-h-0">
+          <div ref={chatContainerRef} className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-white via-brand-ivory/40 to-white min-h-0">
             
             {/* Accepted Connection Banner inside Chat */}
             <div className="text-center my-4">
@@ -275,7 +280,6 @@ export const MessagesPage = ({ onNavigate }) => {
                 </div>
               );
             })}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Box */}
