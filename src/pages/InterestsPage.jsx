@@ -28,7 +28,20 @@ export const InterestsPage = ({ onNavigate }) => {
     })
     .map((r) => {
       const p = profiles.find((item) => String(item.id) === String(r.profileId));
-      return p ? { ...p, time: r.timestamp || 'Recently' } : null;
+      if (p) return { ...p, time: r.timestamp || 'Recently' };
+      
+      // Fallback for newly created profiles before profiles array update
+      return {
+        id: r.profileId || r.senderId || 'user_' + Date.now(),
+        name: r.senderName || 'Verified Candidate',
+        gender: r.senderGender || 'female',
+        district: r.senderDistrict || 'Maharashtra',
+        caste: r.senderCaste || 'Maratha',
+        avatar: r.senderPhoto || null,
+        photos: r.senderPhoto ? [r.senderPhoto] : [],
+        verified: true,
+        time: r.timestamp || 'Recently'
+      };
     })
     .filter(Boolean);
 

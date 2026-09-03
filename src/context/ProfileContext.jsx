@@ -349,19 +349,42 @@ export const ProfileProvider = ({ children }) => {
     if (alreadySent) return;
 
     const senderName = user.name || 'A verified member';
-    const sentEntry = { profileId: profileId, senderId: user.id, timestamp: 'Just now' };
-    const receivedEntry = { profileId: user.id, targetUserId: profileId, timestamp: 'Just now' };
+    const senderPhoto = user.avatar || user.photos?.[0] || null;
 
-    setInterests((prev) => ({
-      ...prev,
-      sent: [...prev.sent, sentEntry],
-      received: [
-        ...prev.received.filter(
-          (item) => !(String(item.profileId) === String(user.id) && String(item.targetUserId) === String(profileId))
-        ),
-        receivedEntry
-      ]
-    }));
+    const sentEntry = { 
+      profileId: profileId, 
+      senderId: user.id, 
+      senderName: senderName,
+      senderPhoto: senderPhoto,
+      timestamp: 'Just now' 
+    };
+
+    const receivedEntry = { 
+      profileId: user.id, 
+      targetUserId: profileId, 
+      senderId: user.id,
+      senderName: senderName,
+      senderPhoto: senderPhoto,
+      senderGender: user.gender,
+      senderDistrict: user.district,
+      senderCaste: user.caste,
+      timestamp: 'Just now' 
+    };
+
+    setInterests((prev) => {
+      const updated = {
+        ...prev,
+        sent: [...prev.sent, sentEntry],
+        received: [
+          ...prev.received.filter(
+            (item) => !(String(item.profileId) === String(user.id) && String(item.targetUserId) === String(profileId))
+          ),
+          receivedEntry
+        ]
+      };
+      saveInterestsToFirestore(updated);
+      return updated;
+    });
 
     // Add notification for target user receiving the interest
     setNotifications((prev) => [
