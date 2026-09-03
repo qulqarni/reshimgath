@@ -72,10 +72,10 @@ export const MobileBottomNav = ({ currentPath, onNavigate }) => {
                 onClick={() => onNavigate(item.path)}
                 className="flex flex-col items-center justify-center -mt-5 group focus:outline-none"
               >
-                <div className={`w-11 h-11 rounded-full bg-gradient-to-tr from-brand-plum via-purple-950 to-brand-plum text-brand-gold flex items-center justify-center shadow-lg border-2 border-brand-gold transition-all group-hover:scale-105 active:scale-95 ${
-                  isActive ? 'ring-4 ring-brand-kesari/40 scale-105' : ''
+                <div className={`w-11 h-11 rounded-full bg-gradient-to-br from-pink-500 via-rose-600 to-pink-600 text-white flex items-center justify-center shadow-md border-2 border-white transition-all group-hover:scale-105 active:scale-95 ${
+                  isActive ? 'ring-4 ring-rose-300/60 scale-105' : ''
                 }`}>
-                  <Icon className="w-5 h-5 text-brand-gold fill-brand-gold/25 stroke-[2.2]" />
+                  <Icon className="w-5 h-5 text-white fill-white/20 stroke-[2.2]" />
                 </div>
                 <span className={`text-[10px] mt-1 font-bold truncate max-w-[64px] ${
                   isActive ? 'text-brand-plum font-extrabold' : 'text-brand-charcoal'
