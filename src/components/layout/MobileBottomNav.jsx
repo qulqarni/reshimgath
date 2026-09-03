@@ -49,7 +49,7 @@ export const MobileBottomNav = ({ currentPath, onNavigate }) => {
   const navItems = [
     { path: '/', label: t('home'), icon: Home },
     { path: '/discover', label: t('discover'), icon: Search },
-    { path: '/messages', label: t('messages'), icon: MessageSquare },
+    { path: '/messages', label: t('messages'), icon: MessageSquare, isHighlight: true },
     { path: '/interests', label: t('interests'), icon: Heart },
     { 
       path: isAuthenticated ? '/my-profile' : '/login', 
@@ -64,6 +64,27 @@ export const MobileBottomNav = ({ currentPath, onNavigate }) => {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPath === item.path;
+
+          if (item.isHighlight) {
+            return (
+              <button
+                key={item.path}
+                onClick={() => onNavigate(item.path)}
+                className="flex flex-col items-center justify-center -mt-5 group focus:outline-none"
+              >
+                <div className={`w-11 h-11 rounded-full bg-gradient-to-tr from-brand-plum via-purple-950 to-brand-plum text-brand-gold flex items-center justify-center shadow-lg border-2 border-brand-gold transition-all group-hover:scale-105 active:scale-95 ${
+                  isActive ? 'ring-4 ring-brand-kesari/40 scale-105' : ''
+                }`}>
+                  <Icon className="w-5 h-5 text-brand-gold fill-brand-gold/25 stroke-[2.2]" />
+                </div>
+                <span className={`text-[10px] mt-1 font-bold truncate max-w-[64px] ${
+                  isActive ? 'text-brand-plum font-extrabold' : 'text-brand-charcoal'
+                }`}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          }
 
           return (
             <button
