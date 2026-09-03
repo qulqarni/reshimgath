@@ -1,11 +1,50 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Home, Search, Heart, MessageSquare, User, LogIn } from 'lucide-react';
+import { Home, Search, Heart, MessageSquare, User, LogIn, ShieldCheck, LogOut } from 'lucide-react';
 
 export const MobileBottomNav = ({ currentPath, onNavigate }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin, logout } = useAuth();
   const { lang, t } = useLanguage();
+
+  if (isAdmin) {
+    return (
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-brand-rose/20 shadow-2xl px-4 py-2">
+        <div className="flex items-center justify-around">
+          <button
+            onClick={() => onNavigate('/admin')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+              currentPath === '/admin' ? 'text-brand-plum font-bold' : 'text-brand-gray'
+            }`}
+          >
+            <ShieldCheck className="w-5 h-5 text-brand-kesari" />
+            <span className="text-[10px] mt-1 font-bold">Admin Panel</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('/')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+              currentPath === '/' ? 'text-brand-plum font-bold' : 'text-brand-gray'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[10px] mt-1 font-bold">Main Site</span>
+          </button>
+
+          <button
+            onClick={() => {
+              logout();
+              onNavigate('/admin');
+            }}
+            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-rose-600 font-bold"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-[10px] mt-1 font-bold">Logout</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const navItems = [
     { path: '/', label: t('home'), icon: Home },

@@ -111,9 +111,9 @@ export const ProfileProvider = ({ children }) => {
 
   const { user } = useAuth();
 
-  // Sync logged-in user profile changes (avatar, photos, details) into profiles array in real-time
+  // Sync logged-in candidate user profile changes into profiles array in real-time (Excludes Admin)
   useEffect(() => {
-    if (user && user.id) {
+    if (user && user.id && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1') {
       setProfiles((prev) => {
         const index = prev.findIndex((p) => p.id === user.id);
         if (index !== -1) {
@@ -138,20 +138,22 @@ export const ProfileProvider = ({ children }) => {
         }
       })();
 
+      const isAdminCheck = (p) => p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'));
+
       setProfiles((prev) => {
         const map = new Map();
         MOCK_PROFILES.forEach((p) => {
-          if (!deletedIds.includes(p.id)) map.set(p.id, p);
+          if (!deletedIds.includes(p.id) && !isAdminCheck(p)) map.set(p.id, p);
         });
         if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((p) => {
-            if (!deletedIds.includes(p.id)) map.set(p.id, p);
+            if (!deletedIds.includes(p.id) && !isAdminCheck(p)) map.set(p.id, p);
           });
         }
         prev.forEach((p) => {
-          if (!deletedIds.includes(p.id)) map.set(p.id, p);
+          if (!deletedIds.includes(p.id) && !isAdminCheck(p)) map.set(p.id, p);
         });
-        return Array.from(map.values());
+        return Array.from(map.values()).filter((p) => !isAdminCheck(p));
       });
     });
 

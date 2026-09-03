@@ -37,6 +37,16 @@ export const MyProfilePage = ({ onNavigate }) => {
   const { t } = useLanguage();
   const { interests, profileViews } = useProfiles();
 
+  useEffect(() => {
+    if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
+      onNavigate('/admin');
+    }
+  }, [user, onNavigate]);
+
+  if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
+    return null;
+  }
+
   const [showPhotoManager, setShowPhotoManager] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
