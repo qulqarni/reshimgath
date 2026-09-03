@@ -240,7 +240,7 @@ export const MessagesPage = ({ onNavigate }) => {
                     <h3 className="font-serif font-bold text-xs sm:text-sm text-brand-plum">{currentPartner.name}</h3>
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-brand-gray">{currentPartner.district} • {currentPartner.caste}</p>
+                  <p className="text-[10px] sm:text-[11px] text-brand-gray">{currentPartner.district}</p>
                 </div>
               </div>
             </div>
