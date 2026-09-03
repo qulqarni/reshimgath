@@ -21,18 +21,32 @@ export const InterestsPage = ({ onNavigate }) => {
   const receivedList = (interests.received || [])
     .filter((r) => {
       if (!user) return true;
+      const targetIdStr = String(r.targetUserId || '').toLowerCase();
+      const userIdStr = String(user.id || '').toLowerCase();
+      const userEmailStr = String(user.email || '').toLowerCase();
+      const userNameStr = String(user.name || '').toLowerCase();
+
       if (r.targetUserId) {
-        return String(r.targetUserId) === String(user.id) || r.targetUserId === user.email;
+        return (
+          targetIdStr === userIdStr ||
+          (userEmailStr && targetIdStr === userEmailStr) ||
+          (userNameStr && targetIdStr === userNameStr)
+        );
       }
-      return String(r.profileId) !== String(user.id);
+      return String(r.profileId).toLowerCase() !== userIdStr;
     })
     .map((r) => {
-      const p = profiles.find((item) => String(item.id) === String(r.profileId));
+      const senderProfileId = r.profileId || r.senderId;
+      const p = profiles.find((item) => 
+        String(item.id).toLowerCase() === String(senderProfileId).toLowerCase() ||
+        (item.email && r.senderEmail && item.email.toLowerCase() === r.senderEmail.toLowerCase()) ||
+        (item.name && r.senderName && item.name.toLowerCase() === r.senderName.toLowerCase())
+      );
       if (p) return { ...p, time: r.timestamp || 'Recently' };
       
       // Fallback for newly created profiles before profiles array update
       return {
-        id: r.profileId || r.senderId || 'user_' + Date.now(),
+        id: senderProfileId || 'user_' + Date.now(),
         name: r.senderName || 'Verified Candidate',
         gender: r.senderGender || 'female',
         district: r.senderDistrict || 'Maharashtra',

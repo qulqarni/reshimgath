@@ -374,6 +374,7 @@ export const ProfileProvider = ({ children }) => {
       profileId: profileId, 
       senderId: user.id, 
       senderName: senderName,
+      senderEmail: user.email || '',
       senderPhoto: senderPhoto,
       timestamp: 'Just now' 
     };
@@ -383,6 +384,7 @@ export const ProfileProvider = ({ children }) => {
       targetUserId: profileId, 
       senderId: user.id,
       senderName: senderName,
+      senderEmail: user.email || '',
       senderPhoto: senderPhoto,
       senderGender: user.gender,
       senderDistrict: user.district,
