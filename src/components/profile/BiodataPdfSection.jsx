@@ -196,35 +196,37 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
 
       {/* FULL SCREEN BIODATA VIEWER MODAL */}
       {showViewerModal && biodata && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white max-w-4xl w-full max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white max-w-4xl w-full max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-200">
             
             {/* Modal Top Bar */}
-            <div className="bg-brand-plum text-white px-6 py-4 flex items-center justify-between border-b border-brand-gold/30">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-xl bg-brand-gold text-brand-plum flex items-center justify-center font-bold">
-                  <FileCheck className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                  <FileCheck className="w-5 h-5 text-slate-950 stroke-[2.2]" />
                 </div>
-                <div>
-                  <h3 className="font-serif font-bold text-base text-brand-gold">
+                <div className="min-w-0">
+                  <h3 className="font-serif font-bold text-base text-white truncate">
                     {user?.name} — Biodata
                   </h3>
-                  <p className="text-xs text-white/80">{biodata.fileName} • {biodata.fileSize}</p>
+                  <p className="text-xs text-slate-300 truncate">{biodata.fileName} • {biodata.fileSize}</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
                 <a
                   href={biodata.url || '#'}
                   download={biodata.fileName || 'Biodata'}
-                  className="px-3.5 py-1.5 bg-brand-gold text-brand-plum font-bold text-xs rounded-xl shadow hover:bg-amber-400 flex items-center space-x-1.5"
+                  className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center space-x-1.5"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Download File</span>
+                  <Download className="w-4 h-4 text-slate-950" />
+                  <span className="hidden sm:inline">Download File</span>
+                  <span className="sm:hidden">Download</span>
                 </a>
                 <button
+                  type="button"
                   onClick={() => setShowViewerModal(false)}
-                  className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10"
+                  className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -232,75 +234,75 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
             </div>
 
             {/* Modal Body: Digital Formatted Biodata Document */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-8 bg-brand-ivory">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 bg-slate-100">
               
               {/* Cultural Header Banner */}
-              <div className="text-center space-y-2 border-b-2 border-brand-gold pb-6">
-                <div className="text-brand-kesari text-sm font-bold font-serif-marathi">
+              <div className="text-center space-y-1.5 border-b border-slate-200 pb-4">
+                <div className="text-amber-600 text-xs font-bold font-serif-marathi tracking-widest">
                   ॥ श्री गणेशाय नमः ॥
                 </div>
-                <h1 className="font-serif text-3xl font-bold text-brand-plum">
-                  रेशीमगाठ विवाह बायोडेटा (Biodata)
+                <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                  बायोडेटा दस्तावेज (Biodata)
                 </h1>
-                <p className="text-xs text-brand-gray">
+                <p className="text-xs text-slate-500">
                   Verified Family Biodata Document • Confidential
                 </p>
               </div>
 
               {/* Profile Overview Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-brand-rose/20 shadow-sm">
-                <div className="space-y-3">
-                  <h4 className="font-serif font-bold text-sm text-brand-plum uppercase tracking-wider border-b pb-1">Personal Info</h4>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Full Name:</strong> {user?.name}</p>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Age / DOB:</strong> {user?.age || '26'} Years ({user?.dob || '1998-06-15'})</p>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Height:</strong> {user?.height || '5\' 6"'}</p>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Religion / Caste:</strong> {user?.religion || 'Hindu'} - {user?.caste || 'Maratha'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="space-y-2">
+                  <h4 className="font-serif font-bold text-xs text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-1">Personal Info</h4>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Full Name:</strong> {user?.name}</p>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Age / DOB:</strong> {user?.age || '26'} Years ({user?.dob || '1998-06-15'})</p>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Height:</strong> {user?.height || '5\' 6"'}</p>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Religion / Caste:</strong> {user?.religion || 'Hindu'} - {user?.caste || 'Maratha'}</p>
                 </div>
 
-                <div className="space-y-3">
-                  <h4 className="font-serif font-bold text-sm text-brand-plum uppercase tracking-wider border-b pb-1">Location & Career</h4>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">District:</strong> {user?.district || 'Pune'}</p>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Native Place:</strong> {user?.nativePlace || 'Satara'}</p>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Education:</strong> {user?.education || 'B.E. / B.Tech'}</p>
-                  <p className="text-xs text-brand-charcoal"><strong className="text-brand-plum">Occupation:</strong> {user?.occupation || 'Software Engineer'}</p>
+                <div className="space-y-2">
+                  <h4 className="font-serif font-bold text-xs text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-1">Location & Career</h4>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">District:</strong> {user?.district || 'Pune'}</p>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Native Place:</strong> {user?.nativePlace || 'Satara'}</p>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Education:</strong> {user?.education || 'B.E. / B.Tech'}</p>
+                  <p className="text-xs text-slate-700"><strong className="text-slate-900">Occupation:</strong> {user?.occupation || 'Software Engineer'}</p>
                 </div>
               </div>
 
               {/* Preview Frame Container (Image vs PDF) */}
-              <div className="bg-white rounded-2xl p-4 border border-brand-rose/20 shadow-md text-center space-y-4">
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center space-y-4">
                 {isBiodataImage ? (
                   <div className="flex flex-col items-center justify-center p-2 space-y-3">
                     <img 
                       src={biodata.url} 
                       alt="Biodata Document" 
-                      className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-md border border-gray-200"
+                      className="max-w-full max-h-[55vh] object-contain rounded-xl shadow-md border border-slate-200"
                     />
                     <a
                       href={biodata.url || '#'}
                       download={biodata.fileName || 'Biodata'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+                      className="px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow hover:bg-slate-800 transition-all flex items-center space-x-2"
                     >
-                      <Download className="w-4 h-4 text-brand-gold" />
+                      <Download className="w-4 h-4 text-amber-400" />
                       <span>Download High Resolution Image</span>
                     </a>
                   </div>
                 ) : (
-                  <div className="h-96 bg-gray-100 rounded-xl flex flex-col items-center justify-center p-6 space-y-3 border-2 border-dashed border-gray-300">
-                    <FileText className="w-16 h-16 text-brand-plum/40" />
+                  <div className="h-80 sm:h-96 bg-slate-50 rounded-xl flex flex-col items-center justify-center p-6 space-y-3 border border-dashed border-slate-300">
+                    <FileText className="w-14 h-14 text-slate-400" />
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-brand-plum">{biodata.fileName}</p>
-                      <p className="text-[11px] text-brand-gray">Interactive PDF View Mode • {biodata.fileSize}</p>
+                      <p className="text-xs font-bold text-slate-900">{biodata.fileName}</p>
+                      <p className="text-[11px] text-slate-500">Interactive PDF View Mode • {biodata.fileSize}</p>
                     </div>
                     <a
                       href={biodata.url || '#'}
                       download={biodata.fileName || 'Biodata.pdf'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+                      className="px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow hover:bg-slate-800 transition-all flex items-center space-x-2"
                     >
-                      <Download className="w-4 h-4 text-brand-gold" />
+                      <Download className="w-4 h-4 text-amber-400" />
                       <span>Open & Download Full PDF</span>
                     </a>
                   </div>
