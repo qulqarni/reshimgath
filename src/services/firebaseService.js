@@ -23,6 +23,8 @@ const PROFILES_COLLECTION = 'profiles';
 const HOME_CONTENT_COLLECTION = 'site_content';
 const STORIES_COLLECTION = 'success_stories';
 const INQUIRIES_COLLECTION = 'inquiries';
+const CHATS_COLLECTION = 'chats';
+const INTERESTS_COLLECTION = 'interests';
 
 // -------------------------------------------------------------
 // FIRESTORE PROFILES API
@@ -215,6 +217,97 @@ export const deleteSuccessStoryFromFirestore = async (storyId) => {
     return true;
   } catch (error) {
     console.error('Error deleting success story from Firestore:', error);
+    return false;
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE CHATS & MESSAGES API
+// -------------------------------------------------------------
+
+/**
+ * Fetch all conversation chats from Firestore
+ */
+export const fetchChatsFromFirestore = async () => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const querySnapshot = await getDocs(collection(db, CHATS_COLLECTION));
+    const chatsMap = {};
+    querySnapshot.forEach((docSnap) => {
+      chatsMap[docSnap.id] = docSnap.data().messages || [];
+    });
+    return chatsMap;
+  } catch (error) {
+    console.error('Error fetching chats from Firestore:', error);
+    return null;
+  }
+};
+
+/**
+ * Save or update a conversation thread in Firestore
+ * @param {string} convoKey - e.g. "demo_f2_demo_m1"
+ * @param {Array} messages - Array of message objects
+ */
+export const saveChatToFirestore = async (convoKey, messages) => {
+  if (!isFirebaseConfigured || !convoKey) return true;
+  try {
+    const chatRef = doc(db, CHATS_COLLECTION, convoKey);
+    const participants = convoKey.split('_');
+    await setDoc(
+      chatRef,
+      {
+        convoKey,
+        participants,
+        messages,
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (error) {
+    console.error('Error saving chat to Firestore:', error);
+    return false;
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE INTERESTS API
+// -------------------------------------------------------------
+
+/**
+ * Fetch global interests from Firestore
+ */
+export const fetchInterestsFromFirestore = async () => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const docSnap = await getDoc(doc(db, INTERESTS_COLLECTION, 'global'));
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching interests from Firestore:', error);
+    return null;
+  }
+};
+
+/**
+ * Save global interests to Firestore
+ */
+export const saveInterestsToFirestore = async (interestsData) => {
+  if (!isFirebaseConfigured) return true;
+  try {
+    await setDoc(
+      doc(db, INTERESTS_COLLECTION, 'global'),
+      {
+        ...interestsData,
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (error) {
+    console.error('Error saving interests to Firestore:', error);
     return false;
   }
 };

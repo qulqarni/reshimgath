@@ -9,7 +9,11 @@ import {
   saveHomeContentToFirestore,
   fetchSuccessStoriesFromFirestore,
   saveSuccessStoryToFirestore,
-  deleteSuccessStoryFromFirestore
+  deleteSuccessStoryFromFirestore,
+  fetchChatsFromFirestore,
+  saveChatToFirestore,
+  fetchInterestsFromFirestore,
+  saveInterestsToFirestore
 } from '../services/firebaseService';
 import confetti from 'canvas-confetti';
 
@@ -144,6 +148,22 @@ export const ProfileProvider = ({ children }) => {
       const firestoreStories = await fetchSuccessStoriesFromFirestore();
       if (firestoreStories && firestoreStories.length > 0) {
         setStories(firestoreStories);
+      }
+
+      const firestoreChats = await fetchChatsFromFirestore();
+      if (firestoreChats && Object.keys(firestoreChats).length > 0) {
+        setChats((prev) => ({ ...prev, ...firestoreChats }));
+      }
+
+      const firestoreInterests = await fetchInterestsFromFirestore();
+      if (firestoreInterests) {
+        setInterests((prev) => ({
+          sent: [...prev.sent, ...(firestoreInterests.sent || [])],
+          received: [...prev.received, ...(firestoreInterests.received || [])],
+          accepted: [...prev.accepted, ...(firestoreInterests.accepted || [])],
+          declined: [...prev.declined, ...(firestoreInterests.declined || [])],
+          shortlisted: [...prev.shortlisted, ...(firestoreInterests.shortlisted || [])]
+        }));
       }
     };
     loadFirestoreData();
@@ -431,11 +451,12 @@ export const ProfileProvider = ({ children }) => {
       const existingCombined = prev[combinedKey] || [];
       const updatedThread = [...existingCombined, newMsg];
 
+      // Save to Cloud Firestore
+      saveChatToFirestore(combinedKey, updatedThread);
+
       return {
         ...prev,
-        [combinedKey]: updatedThread,
-        [targetId]: updatedThread,
-        [senderId]: updatedThread
+        [combinedKey]: updatedThread
       };
     });
 

@@ -98,7 +98,7 @@ export const MessagesPage = ({ onNavigate }) => {
 
   const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || acceptedProfiles[0];
   const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
-  const activeThread = (convoKey && chats[convoKey]) || (currentPartner ? chats[currentPartner.id] : []) || [];
+  const activeThread = (convoKey && chats[convoKey]) ? chats[convoKey] : [];
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -132,7 +132,7 @@ export const MessagesPage = ({ onNavigate }) => {
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
             {acceptedProfiles.map((p) => {
               const pConvoKey = (user && p) ? [String(user.id), String(p.id)].sort().join('_') : null;
-              const thread = (pConvoKey && chats[pConvoKey]) || chats[p.id] || [];
+              const thread = (pConvoKey && chats[pConvoKey]) ? chats[pConvoKey] : [];
               const lastMsg = thread[thread.length - 1];
               const isSelected = currentPartner && String(p.id) === String(currentPartner.id);
 
