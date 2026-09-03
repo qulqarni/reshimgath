@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { compressImage } from '../utils/imageCompressor';
 import { 
@@ -770,12 +770,9 @@ export const MyProfilePage = ({ onNavigate }) => {
                       onChange={(e) => setEditFormData({ ...editFormData, height: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                     >
-                      <option value="5' 2&quot; (157 cm)">5' 2" (157 cm)</option>
-                      <option value="5' 4&quot; (163 cm)">5' 4" (163 cm)</option>
-                      <option value="5' 6&quot; (168 cm)">5' 6" (168 cm)</option>
-                      <option value="5' 8&quot; (172 cm)">5' 8" (172 cm)</option>
-                      <option value="5' 10&quot; (178 cm)">5' 10" (178 cm)</option>
-                      <option value="6' 0&quot; (183 cm)">6' 0" (183 cm)</option>
+                      {HEIGHT_OPTIONS.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
                     </select>
                   </div>
 
