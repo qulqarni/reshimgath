@@ -144,18 +144,19 @@ export const Navbar = ({ currentPath, onNavigate }) => {
             </button>
 
             {isAuthenticated ? (
-              <div className="hidden md:flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 
-                {/* Notification Dropdown (Desktop Only) */}
+                {/* Notification Dropdown (Mobile & Desktop) */}
                 {!isAdmin && (
                   <div className="relative">
                     <button
                       onClick={() => setShowNotifications(!showNotifications)}
                       className="p-2 rounded-full text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum relative transition-colors"
+                      title="Notifications"
                     >
-                      <Bell className="w-5 h-5" />
+                      <Bell className="w-5 h-5 text-brand-plum" />
                       {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 w-4 h-4 bg-brand-kesari text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                        <span className="absolute top-1 right-1 w-4 h-4 bg-brand-kesari text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-sm">
                           {unreadCount}
                         </span>
                       )}
@@ -163,7 +164,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
 
                     {/* Notification Center Popover */}
                     {showNotifications && (
-                      <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-brand-rose/30 py-3 z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="absolute -right-12 sm:right-0 mt-3 w-72 sm:w-96 bg-white rounded-2xl shadow-2xl border border-brand-rose/30 py-3 z-50 animate-in fade-in slide-in-from-top-2">
                         <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
                           <h4 className="font-serif font-bold text-brand-plum text-base">Notifications</h4>
                           <span className="text-xs bg-brand-rose/20 text-brand-plum px-2 py-0.5 rounded-full font-medium">
@@ -171,35 +172,41 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                           </span>
                         </div>
                         <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                          {userNotifications.map((n) => (
-                            <div
-                              key={n.id}
-                              onClick={() => {
-                                markNotificationRead(n.id);
-                                if (n.type === 'interest') handleNav('/interests');
-                                if (n.type === 'accepted') handleNav('/messages');
-                              }}
-                              className={`p-3.5 hover:bg-brand-ivory cursor-pointer transition-colors flex items-start space-x-3 ${
-                                n.unread ? 'bg-brand-rose/10' : ''
-                              }`}
-                            >
-                              <div className="w-8 h-8 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center shrink-0 mt-0.5">
-                                {n.type === 'interest' ? <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" /> : <CheckCircle className="w-4 h-4 text-brand-kesari" />}
+                          {userNotifications.length === 0 ? (
+                            <p className="p-4 text-xs text-brand-gray text-center">No notifications yet.</p>
+                          ) : (
+                            userNotifications.map((n) => (
+                              <div
+                                key={n.id}
+                                onClick={() => {
+                                  markNotificationRead(n.id);
+                                  setShowNotifications(false);
+                                  if (n.type === 'interest') handleNav('/interests');
+                                  if (n.type === 'accepted') handleNav('/messages');
+                                }}
+                                className={`p-3.5 hover:bg-brand-ivory cursor-pointer transition-colors flex items-start space-x-3 ${
+                                  n.unread ? 'bg-brand-rose/10' : ''
+                                }`}
+                              >
+                                <div className="w-8 h-8 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center shrink-0 mt-0.5">
+                                  {n.type === 'interest' ? <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" /> : <CheckCircle className="w-4 h-4 text-brand-kesari" />}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs font-semibold text-brand-charcoal">{n.title}</p>
+                                  <p className="text-xs text-brand-gray mt-0.5">{n.text}</p>
+                                  <span className="text-[10px] text-gray-400 mt-1 block">{n.time}</span>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <p className="text-xs font-semibold text-brand-charcoal">{n.title}</p>
-                                <p className="text-xs text-brand-gray mt-0.5">{n.text}</p>
-                                <span className="text-[10px] text-gray-400 mt-1 block">{n.time}</span>
-                              </div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="relative">
+                {/* User Avatar Dropdown (Desktop Only) */}
+                <div className="hidden md:block relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-gray-200 hover:border-brand-plum bg-white shadow-sm hover:shadow transition-all"
