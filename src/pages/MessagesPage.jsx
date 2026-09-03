@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -118,10 +118,19 @@ export const MessagesPage = ({ onNavigate }) => {
   }
 
   const [mobileView, setMobileView] = useState('list'); // 'list' or 'chat'
+  const messagesEndRef = useRef(null);
 
   const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || acceptedProfiles[0];
   const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
   const activeThread = (convoKey && chats[convoKey]) ? chats[convoKey] : [];
+
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  };
+
+  useEffect(() => {
+    scrollToBottom(true);
+  }, [activeThread, activePartnerId]);
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -266,6 +275,7 @@ export const MessagesPage = ({ onNavigate }) => {
                 </div>
               );
             })}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Box */}
