@@ -164,7 +164,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
 
                     {/* Notification Center Popover */}
                     {showNotifications && (
-                      <div className="absolute -right-12 sm:right-0 mt-3 w-72 sm:w-96 bg-white rounded-2xl shadow-2xl border border-brand-rose/30 py-3 z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="fixed top-16 left-3 right-3 sm:absolute sm:inset-auto sm:right-0 sm:mt-3 sm:w-96 bg-white rounded-2xl shadow-2xl border border-brand-rose/30 py-3 z-50 animate-in fade-in slide-in-from-top-2">
                         <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
                           <h4 className="font-serif font-bold text-brand-plum text-base">Notifications</h4>
                           <span className="text-xs bg-brand-rose/20 text-brand-plum px-2 py-0.5 rounded-full font-medium">
