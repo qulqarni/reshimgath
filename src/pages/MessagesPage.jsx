@@ -123,9 +123,10 @@ export const MessagesPage = ({ onNavigate }) => {
 
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
             {acceptedProfiles.map((p) => {
-              const thread = chats[p.id] || [];
+              const pConvoKey = (user && p) ? [String(user.id), String(p.id)].sort().join('_') : null;
+              const thread = (pConvoKey && chats[pConvoKey]) || chats[p.id] || [];
               const lastMsg = thread[thread.length - 1];
-              const isSelected = p.id === currentPartner.id;
+              const isSelected = currentPartner && String(p.id) === String(currentPartner.id);
 
               return (
                 <div
@@ -213,7 +214,7 @@ export const MessagesPage = ({ onNavigate }) => {
             </div>
 
             {activeThread.map((msg) => {
-              const isUser = msg.sender === 'user';
+              const isUser = user && (String(msg.senderId) === String(user.id));
               return (
                 <div
                   key={msg.id}

@@ -408,20 +408,32 @@ export const ProfileProvider = ({ children }) => {
     });
   };
 
-  const sendMessage = (profileId, text) => {
-    if (!text.trim()) return false;
+  const sendMessage = (partnerProfileId, text) => {
+    if (!text.trim() || !user) return false;
+
+    const senderId = String(user.id);
+    const targetId = String(partnerProfileId);
+    const combinedKey = [senderId, targetId].sort().join('_');
 
     const newMsg = {
       id: Date.now(),
+      senderId: senderId,
       sender: 'user',
       text: text.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setChats((prev) => ({
-      ...prev,
-      [profileId]: [...(prev[profileId] || []), newMsg]
-    }));
+    setChats((prev) => {
+      const existingCombined = prev[combinedKey] || [];
+      const updatedThread = [...existingCombined, newMsg];
+
+      return {
+        ...prev,
+        [combinedKey]: updatedThread,
+        [targetId]: updatedThread,
+        [senderId]: updatedThread
+      };
+    });
 
     return true;
   };
