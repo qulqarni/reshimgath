@@ -44,8 +44,11 @@ export const EditProfilePage = ({ onNavigate }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      alert('Please select a valid PDF file.');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(file.name);
+
+    if (!isPdf && !isImage) {
+      alert('Please select a valid PDF document or Image file (JPG, PNG, WEBP).');
       return;
     }
 
@@ -64,6 +67,7 @@ export const EditProfilePage = ({ onNavigate }) => {
       const newBiodata = {
         fileName: file.name,
         fileSize: fileSizeFormatted,
+        fileType: isImage ? 'image' : 'pdf',
         uploadedAt: new Date().toISOString().split('T')[0],
         url: base64Url
       };
@@ -183,10 +187,10 @@ export const EditProfilePage = ({ onNavigate }) => {
             />
           </div>
 
-          {/* COMPACT STANDARD FORM FIELD FOR BIODATA PDF */}
+          {/* COMPACT STANDARD FORM FIELD FOR BIODATA */}
           <div>
             <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-              Biodata PDF (बायोडेटा PDF)
+              Biodata (PDF / फोटो)
             </label>
             
             <div className="flex items-center gap-3 bg-brand-ivory/60 p-3 rounded-xl border border-gray-200">
@@ -223,7 +227,7 @@ export const EditProfilePage = ({ onNavigate }) => {
                         type="button"
                         onClick={() => updateProfile({ biodataPdf: null })}
                         className="p-1 text-rose-600 hover:bg-rose-100 rounded-lg transition-all"
-                        title="Remove PDF"
+                        title="Remove Biodata"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -231,14 +235,14 @@ export const EditProfilePage = ({ onNavigate }) => {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-brand-gray truncate">No Biodata PDF uploaded yet (PDF up to 10MB)</span>
+                    <span className="text-xs text-brand-gray truncate">No Biodata uploaded yet (PDF / Image up to 10MB)</span>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="px-3 py-1.5 bg-brand-plum text-white text-xs font-bold rounded-xl shadow hover:bg-brand-plumDark transition-all shrink-0 flex items-center space-x-1"
                     >
                       <UploadCloud className="w-3.5 h-3.5 text-brand-gold" />
-                      <span>Upload PDF</span>
+                      <span>Upload Biodata</span>
                     </button>
                   </div>
                 )}
@@ -249,7 +253,7 @@ export const EditProfilePage = ({ onNavigate }) => {
               type="file"
               ref={fileInputRef}
               onChange={handlePdfUpload}
-              accept="application/pdf"
+              accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
               className="hidden"
             />
           </div>

@@ -25,13 +25,16 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      alert('Please select a valid PDF document file.');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(file.name);
+
+    if (!isPdf && !isImage) {
+      alert('Please select a valid PDF document or Image file (JPG, PNG, WEBP).');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds 10MB. Please choose a smaller PDF file.');
+      alert('File size exceeds 10MB. Please choose a smaller file.');
       return;
     }
 
@@ -47,6 +50,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
       const newBiodata = {
         fileName: file.name,
         fileSize: fileSizeFormatted,
+        fileType: isImage ? 'image' : 'pdf',
         uploadedAt: new Date().toISOString().split('T')[0],
         url: base64Url
       };
@@ -60,7 +64,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
   };
 
   const handleRemove = () => {
-    if (window.confirm('Are you sure you want to remove your uploaded Biodata PDF?')) {
+    if (window.confirm('Are you sure you want to remove your uploaded Biodata?')) {
       updateProfile({ biodataPdf: null });
     }
   };
@@ -68,6 +72,8 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
   if (!isEditable && !biodata) {
     return null;
   }
+
+  const isBiodataImage = biodata?.fileType === 'image' || biodata?.url?.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(biodata?.fileName || '');
 
   return (
     <div className="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs space-y-3">
@@ -77,14 +83,14 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="application/pdf"
+        accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
         className="hidden"
       />
 
       {uploadSuccess && (
         <div className="flex items-center space-x-1.5 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl font-bold border border-emerald-200 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>Biodata PDF Uploaded Successfully!</span>
+          <span>Biodata Uploaded Successfully!</span>
         </div>
       )}
 
@@ -96,7 +102,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
             {/* File Info */}
             <div className="flex items-center space-x-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-brand-plum text-brand-gold flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                PDF
+                {isBiodataImage ? 'IMG' : 'PDF'}
               </div>
               <div className="min-w-0">
                 <h4 className="font-serif font-bold text-xs sm:text-sm text-brand-plum truncate">
@@ -123,7 +129,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
 
               <a
                 href={biodata.url || '#'}
-                download={biodata.fileName || 'Biodata.pdf'}
+                download={biodata.fileName || 'Biodata'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-1.5 bg-white text-brand-plum border border-gray-200 font-bold text-xs rounded-xl hover:bg-slate-50 transition-all flex items-center space-x-1"
@@ -139,7 +145,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     className="px-3 py-1.5 bg-amber-50 text-brand-kesari border border-amber-300 font-bold text-xs rounded-xl hover:bg-amber-100 transition-all flex items-center space-x-1"
-                    title="Upload New PDF"
+                    title="Upload New Biodata"
                   >
                     <UploadCloud className="w-3.5 h-3.5 shrink-0" />
                     <span>Replace</span>
@@ -149,7 +155,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                     type="button"
                     onClick={handleRemove}
                     className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                    title="Remove PDF"
+                    title="Remove Biodata"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -173,15 +179,15 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
             </div>
             <div>
               <h4 className="font-semibold text-xs text-brand-charcoal">
-                {isUploading ? 'Uploading Biodata PDF...' : 'Click to Upload Biodata PDF'}
+                {isUploading ? 'Uploading Biodata...' : 'Click to Upload Biodata'}
               </h4>
               <p className="text-[11px] text-brand-gray mt-0.5">
-                PDF format up to 10MB
+                PDF or Image format (JPG, PNG, WEBP) up to 10MB
               </p>
             </div>
             <div className="pt-1">
               <span className="inline-block px-3.5 py-1.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-sm hover:bg-brand-plumDark transition-all">
-                Select PDF File
+                Select File (PDF / Image)
               </span>
             </div>
           </div>
@@ -210,11 +216,11 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
               <div className="flex items-center space-x-3">
                 <a
                   href={biodata.url || '#'}
-                  download={biodata.fileName || 'Biodata.pdf'}
+                  download={biodata.fileName || 'Biodata'}
                   className="px-3.5 py-1.5 bg-brand-gold text-brand-plum font-bold text-xs rounded-xl shadow hover:bg-amber-400 flex items-center space-x-1.5"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download PDF</span>
+                  <span>Download File</span>
                 </a>
                 <button
                   onClick={() => setShowViewerModal(false)}
@@ -260,25 +266,45 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                 </div>
               </div>
 
-              {/* PDF Preview Frame Container */}
+              {/* Preview Frame Container (Image vs PDF) */}
               <div className="bg-white rounded-2xl p-4 border border-brand-rose/20 shadow-md text-center space-y-4">
-                <div className="h-96 bg-gray-100 rounded-xl flex flex-col items-center justify-center p-6 space-y-3 border-2 border-dashed border-gray-300">
-                  <FileText className="w-16 h-16 text-brand-plum/40" />
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-brand-plum">{biodata.fileName}</p>
-                    <p className="text-[11px] text-brand-gray">Interactive PDF View Mode • {biodata.fileSize}</p>
+                {isBiodataImage ? (
+                  <div className="flex flex-col items-center justify-center p-2 space-y-3">
+                    <img 
+                      src={biodata.url} 
+                      alt="Biodata Document" 
+                      className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-md border border-gray-200"
+                    />
+                    <a
+                      href={biodata.url || '#'}
+                      download={biodata.fileName || 'Biodata'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+                    >
+                      <Download className="w-4 h-4 text-brand-gold" />
+                      <span>Download High Resolution Image</span>
+                    </a>
                   </div>
-                  <a
-                    href={biodata.url || '#'}
-                    download={biodata.fileName || 'Biodata.pdf'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
-                  >
-                    <Download className="w-4 h-4 text-brand-gold" />
-                    <span>Open & Download Full PDF</span>
-                  </a>
-                </div>
+                ) : (
+                  <div className="h-96 bg-gray-100 rounded-xl flex flex-col items-center justify-center p-6 space-y-3 border-2 border-dashed border-gray-300">
+                    <FileText className="w-16 h-16 text-brand-plum/40" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-brand-plum">{biodata.fileName}</p>
+                      <p className="text-[11px] text-brand-gray">Interactive PDF View Mode • {biodata.fileSize}</p>
+                    </div>
+                    <a
+                      href={biodata.url || '#'}
+                      download={biodata.fileName || 'Biodata.pdf'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+                    >
+                      <Download className="w-4 h-4 text-brand-gold" />
+                      <span>Open & Download Full PDF</span>
+                    </a>
+                  </div>
+                )}
               </div>
 
             </div>
