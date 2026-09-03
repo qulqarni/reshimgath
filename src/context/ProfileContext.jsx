@@ -183,7 +183,17 @@ export const ProfileProvider = ({ children }) => {
 
     const unsubNotifs = subscribeToNotificationsFromFirestore((firestoreNotifs) => {
       if (firestoreNotifs && firestoreNotifs.length > 0) {
-        setNotifications(firestoreNotifs);
+        const readIds = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('reshimgath_read_notifications') || '[]');
+          } catch (e) {
+            return [];
+          }
+        })();
+        const updated = firestoreNotifs.map((n) =>
+          readIds.includes(n.id) ? { ...n, unread: false } : n
+        );
+        setNotifications(updated);
       }
     });
 
@@ -268,12 +278,22 @@ export const ProfileProvider = ({ children }) => {
     return {};
   });
 
-  // Clean notifications store
+  // Clean notifications store with persistent read IDs check
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('reshimgath_notifications');
+    const readIds = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('reshimgath_read_notifications') || '[]');
+      } catch (e) {
+        return [];
+      }
+    })();
+
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.filter((n) => !(n.type === 'view' && String(n.profileId) === String(n.targetUserId)));
+      return parsed
+        .filter((n) => !(n.type === 'view' && String(n.profileId) === String(n.targetUserId)))
+        .map((n) => (readIds.includes(n.id) ? { ...n, unread: false } : n));
     }
     return [];
   });
@@ -535,8 +555,43 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const markNotificationRead = (id) => {
+    try {
+      const readIds = JSON.parse(localStorage.getItem('reshimgath_read_notifications') || '[]');
+      if (!readIds.includes(id)) {
+        readIds.push(id);
+        localStorage.setItem('reshimgath_read_notifications', JSON.stringify(readIds));
+      }
+    } catch (e) {}
+
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
+      prev.map((n) => {
+        if (n.id === id) {
+          const updated = { ...n, unread: false };
+          saveNotificationToFirestore(updated);
+          return updated;
+        }
+        return n;
+      })
+    );
+  };
+
+  const markAllNotificationsRead = (targetIds) => {
+    const idsToMark = targetIds || notifications.map((n) => n.id);
+    try {
+      const readIds = JSON.parse(localStorage.getItem('reshimgath_read_notifications') || '[]');
+      const newReadIds = Array.from(new Set([...readIds, ...idsToMark]));
+      localStorage.setItem('reshimgath_read_notifications', JSON.stringify(newReadIds));
+    } catch (e) {}
+
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (idsToMark.includes(n.id)) {
+          const updated = { ...n, unread: false };
+          saveNotificationToFirestore(updated);
+          return updated;
+        }
+        return n;
+      })
     );
   };
 
@@ -671,6 +726,7 @@ export const ProfileProvider = ({ children }) => {
         toggleShortlist,
         sendMessage,
         markNotificationRead,
+        markAllNotificationsRead,
         recordProfileView,
         addToast,
         toggleVerifyProfile,

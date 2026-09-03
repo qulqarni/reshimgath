@@ -21,7 +21,7 @@ import {
 export const Navbar = ({ currentPath, onNavigate }) => {
   const { user, isAuthenticated, logout, loginAsDemo, isAdmin } = useAuth();
   const { lang, toggleLanguage, t } = useLanguage();
-  const { notifications, markNotificationRead } = useProfiles();
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useProfiles();
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -35,6 +35,14 @@ export const Navbar = ({ currentPath, onNavigate }) => {
   });
 
   const unreadCount = userNotifications.filter(n => n.unread).length;
+
+  const handleToggleNotifications = () => {
+    const nextState = !showNotifications;
+    setShowNotifications(nextState);
+    if (nextState && unreadCount > 0) {
+      markAllNotificationsRead(userNotifications.map((n) => n.id));
+    }
+  };
 
   const handleNav = (path) => {
     onNavigate(path);
@@ -150,7 +158,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                 {!isAdmin && (
                   <div className="relative">
                     <button
-                      onClick={() => setShowNotifications(!showNotifications)}
+                      onClick={handleToggleNotifications}
                       className="p-2 rounded-full text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum relative transition-colors"
                       title="Notifications"
                     >

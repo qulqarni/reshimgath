@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -7,13 +7,7 @@ import { Bell, Heart, CheckCircle, Eye, ShieldCheck } from 'lucide-react';
 export const NotificationsPage = ({ onNavigate }) => {
   const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { notifications, markNotificationRead } = useProfiles();
-
-  if (!isAuthenticated) {
-    triggerPrivacyAlert();
-    onNavigate('/login');
-    return null;
-  }
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useProfiles();
 
   const userNotifications = notifications.filter((n) => {
     if (!user) return true;
@@ -21,6 +15,18 @@ export const NotificationsPage = ({ onNavigate }) => {
     if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
     return true;
   });
+
+  useEffect(() => {
+    if (userNotifications.some((n) => n.unread)) {
+      markAllNotificationsRead(userNotifications.map((n) => n.id));
+    }
+  }, [userNotifications]);
+
+  if (!isAuthenticated) {
+    triggerPrivacyAlert();
+    onNavigate('/login');
+    return null;
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
