@@ -125,18 +125,37 @@ export const ProfileProvider = ({ children }) => {
     const loadFirestoreData = async () => {
       const firestoreProfiles = await fetchProfilesFromFirestore();
       
-      // Save MOCK_PROFILES to Firestore if needed
-      MOCK_PROFILES.forEach((demoProfile) => {
-        saveProfileToFirestore(demoProfile.id, demoProfile);
-      });
+      const deletedIds = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
+        } catch (e) {
+          return [];
+        }
+      })();
 
       setProfiles((prev) => {
         const map = new Map();
-        MOCK_PROFILES.forEach((p) => map.set(p.id, p));
-        prev.forEach((p) => map.set(p.id, p));
+        
         if (firestoreProfiles && firestoreProfiles.length > 0) {
-          firestoreProfiles.forEach((p) => map.set(p.id, p));
+          firestoreProfiles.forEach((p) => {
+            if (!deletedIds.includes(p.id)) {
+              map.set(p.id, p);
+            }
+          });
+        } else {
+          MOCK_PROFILES.forEach((p) => {
+            if (!deletedIds.includes(p.id)) {
+              map.set(p.id, p);
+            }
+          });
         }
+
+        prev.forEach((p) => {
+          if (!deletedIds.includes(p.id)) {
+            map.set(p.id, p);
+          }
+        });
+
         return Array.from(map.values());
       });
 
@@ -525,8 +544,17 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const deleteProfile = (profileId) => {
-    setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+    setProfiles((prev) => prev.filter((p) => String(p.id) !== String(profileId)));
     deleteProfileFromFirestore(profileId);
+
+    try {
+      const deletedSaved = JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
+      if (!deletedSaved.includes(profileId)) {
+        const updated = [...deletedSaved, profileId];
+        localStorage.setItem('reshimgath_deleted_profiles', JSON.stringify(updated));
+      }
+    } catch (e) {}
+
     addToast('Profile deleted successfully.', 'info');
   };
 
