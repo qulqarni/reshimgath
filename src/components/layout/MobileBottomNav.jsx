@@ -49,7 +49,7 @@ export const MobileBottomNav = ({ currentPath, onNavigate }) => {
   const navItems = [
     { path: '/', label: t('home'), icon: Home },
     { path: '/discover', label: t('discover'), icon: Search },
-    { path: '/messages', label: t('messages'), icon: MessageSquare, isHighlight: true },
+    { path: '/messages', label: t('messages'), icon: MessageSquare },
     { path: '/interests', label: t('interests'), icon: Heart },
     { 
       path: isAuthenticated ? '/my-profile' : '/login', 
@@ -64,27 +64,6 @@ export const MobileBottomNav = ({ currentPath, onNavigate }) => {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPath === item.path;
-
-          if (item.isHighlight) {
-            return (
-              <button
-                key={item.path}
-                onClick={() => onNavigate(item.path)}
-                className="flex flex-col items-center justify-center -mt-6 group focus:outline-none"
-              >
-                <div className={`w-12 h-12 rounded-full bg-gradient-to-b from-brand-plum via-brand-plumDark to-brand-plum text-brand-gold flex items-center justify-center shadow-luxury border-2 border-brand-gold/80 transition-all group-hover:scale-105 active:scale-95 ${
-                  isActive ? 'ring-4 ring-brand-gold/30 scale-105' : ''
-                }`}>
-                  <Icon className="w-5 h-5 text-brand-gold fill-brand-gold/20" />
-                </div>
-                <span className={`text-[10px] mt-0.5 font-bold truncate max-w-[64px] ${
-                  isActive ? 'text-brand-plum' : 'text-brand-charcoal'
-                }`}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          }
 
           return (
             <button
