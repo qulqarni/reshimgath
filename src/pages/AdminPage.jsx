@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { compressImage } from '../utils/imageCompressor';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -25,7 +26,10 @@ import {
   MessageSquare,
   Layout,
   Heart,
-  Plus
+  Plus,
+  Camera,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const AdminPage = ({ onNavigate }) => {
@@ -40,6 +44,7 @@ export const AdminPage = ({ onNavigate }) => {
     updateHomeContent,
     stories,
     addSuccessStory,
+    updateSuccessStory,
     deleteSuccessStory,
     addToast 
   } = useProfiles();
@@ -56,6 +61,8 @@ export const AdminPage = ({ onNavigate }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [showAddStoryModal, setShowAddStoryModal] = useState(false);
+  const [showEditStoryModal, setShowEditStoryModal] = useState(false);
+  const [editingStory, setEditingStory] = useState(null);
 
   // Homepage Content Editable Form State
   const [editableHomeContent, setEditableHomeContent] = useState(homeContent);
@@ -159,6 +166,64 @@ export const AdminPage = ({ onNavigate }) => {
   const handleSaveHomeContent = (e) => {
     e.preventDefault();
     updateHomeContent(editableHomeContent);
+  };
+
+  const handleAddStoryPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      const compressed = await compressImage(file, 800, 800, 0.8);
+      setNewStoryData((prev) => ({ ...prev, photoUrl: compressed }));
+      addToast('Photo uploaded from device successfully!', 'success');
+    } catch (err) {
+      console.error('Error compressing story photo:', err);
+    }
+  };
+
+  const handleEditStoryPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      const compressed = await compressImage(file, 800, 800, 0.8);
+      setEditingStory((prev) => ({ ...prev, photoUrl: compressed }));
+      addToast('Photo uploaded from device successfully!', 'success');
+    } catch (err) {
+      console.error('Error compressing story photo:', err);
+    }
+  };
+
+  const handleOpenEditStory = (story) => {
+    setEditingStory({
+      id: story.id,
+      names: story.names || '',
+      location: story.location || '',
+      quote: story.quote || '',
+      weddingDate: story.weddingDate || '',
+      photoUrl: story.photos?.[0]?.url || '/story1.jpg'
+    });
+    setShowEditStoryModal(true);
+  };
+
+  const handleSaveEditedStory = (e) => {
+    e.preventDefault();
+    if (!editingStory) return;
+    updateSuccessStory(editingStory.id, {
+      names: editingStory.names,
+      location: editingStory.location,
+      quote: editingStory.quote,
+      weddingDate: editingStory.weddingDate,
+      photos: [{ url: editingStory.photoUrl || '/story1.jpg', caption: `${editingStory.names} Wedding` }]
+    });
+    setShowEditStoryModal(false);
+    setEditingStory(null);
   };
 
   const handleSaveNewStory = (e) => {
@@ -736,7 +801,15 @@ export const AdminPage = ({ onNavigate }) => {
                   <span className="text-[10px] text-brand-plum font-semibold block">{story.weddingDate}</span>
                 </div>
 
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-end space-x-2">
+                  <button
+                    onClick={() => handleOpenEditStory(story)}
+                    className="p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
+                    title="Edit Success Story"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
                   <button
                     onClick={() => {
                       if (window.confirm(`Delete story for ${story.names}?`)) {
@@ -744,6 +817,7 @@ export const AdminPage = ({ onNavigate }) => {
                       }
                     }}
                     className="p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
+                    title="Delete Success Story"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete</span>
@@ -866,12 +940,29 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Wedding Photo Image URL *</label>
+                <label className="block font-semibold mb-1">Wedding Photo Image *</label>
+                <div className="flex items-center gap-3 mb-2">
+                  {newStoryData.photoUrl && (
+                    <img src={newStoryData.photoUrl} alt="Preview" className="w-16 h-16 object-cover rounded-xl border border-brand-rose/40" />
+                  )}
+                  <label className="cursor-pointer px-4 py-2.5 bg-brand-lightBg border border-brand-rose/30 text-brand-plum font-bold rounded-xl hover:bg-brand-rose/10 transition-all flex items-center space-x-2 text-xs">
+                    <Camera className="w-4 h-4 text-brand-plum" />
+                    <span>Upload Photo from Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAddStoryPhotoUpload}
+                    />
+                  </label>
+                </div>
+                <p className="text-[10px] text-gray-400 mb-1">Or paste an image URL below:</p>
                 <input
                   type="text"
                   required
                   value={newStoryData.photoUrl}
                   onChange={(e) => setNewStoryData({ ...newStoryData, photoUrl: e.target.value })}
+                  placeholder="https://..."
                   className="w-full p-2.5 rounded-xl border border-gray-200"
                 />
               </div>
@@ -889,6 +980,115 @@ export const AdminPage = ({ onNavigate }) => {
                   className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
                 >
                   Save Success Story
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT SUCCESS STORY */}
+      {showEditStoryModal && editingStory && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl">
+            
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <h3 className="font-serif text-xl font-bold text-brand-plum">Edit Success Story</h3>
+              <button onClick={() => setShowEditStoryModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedStory} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold mb-1">Couple Names *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStory.names}
+                  onChange={(e) => setEditingStory({ ...editingStory, names: e.target.value })}
+                  placeholder="e.g. Snehal & Swapnil"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStory.location}
+                  onChange={(e) => setEditingStory({ ...editingStory, location: e.target.value })}
+                  placeholder="e.g. Ichalkaranji & Kolhapur"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Quote / Review *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={editingStory.quote}
+                  onChange={(e) => setEditingStory({ ...editingStory, quote: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Wedding Date & Venue *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStory.weddingDate}
+                  onChange={(e) => setEditingStory({ ...editingStory, weddingDate: e.target.value })}
+                  placeholder="e.g. February 2026 • Ichalkaranji Wedding Hall"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Wedding Photo Image *</label>
+                <div className="flex items-center gap-3 mb-2">
+                  {editingStory.photoUrl && (
+                    <img src={editingStory.photoUrl} alt="Preview" className="w-16 h-16 object-cover rounded-xl border border-brand-rose/40" />
+                  )}
+                  <label className="cursor-pointer px-4 py-2.5 bg-brand-lightBg border border-brand-rose/30 text-brand-plum font-bold rounded-xl hover:bg-brand-rose/10 transition-all flex items-center space-x-2 text-xs">
+                    <Camera className="w-4 h-4 text-brand-plum" />
+                    <span>Upload Photo from Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleEditStoryPhotoUpload}
+                    />
+                  </label>
+                </div>
+                <p className="text-[10px] text-gray-400 mb-1">Or paste an image URL below:</p>
+                <input
+                  type="text"
+                  required
+                  value={editingStory.photoUrl}
+                  onChange={(e) => setEditingStory({ ...editingStory, photoUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div className="pt-4 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditStoryModal(false)}
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>

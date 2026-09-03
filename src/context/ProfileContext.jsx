@@ -632,6 +632,20 @@ export const ProfileProvider = ({ children }) => {
     addToast('New success story added to homepage!', 'success');
   };
 
+  const updateSuccessStory = (storyId, updatedStoryData) => {
+    setStories((prev) =>
+      prev.map((s) => {
+        if (String(s.id) === String(storyId)) {
+          const updated = { ...s, ...updatedStoryData };
+          saveSuccessStoryToFirestore(updated);
+          return updated;
+        }
+        return s;
+      })
+    );
+    addToast('Success story updated successfully!', 'success');
+  };
+
   const deleteSuccessStory = (storyId) => {
     setStories((prev) => prev.filter((s) => s.id !== storyId));
     deleteSuccessStoryFromFirestore(storyId);
@@ -663,6 +677,7 @@ export const ProfileProvider = ({ children }) => {
         deleteProfile,
         updateHomeContent,
         addSuccessStory,
+        updateSuccessStory,
         deleteSuccessStory
       }}
     >

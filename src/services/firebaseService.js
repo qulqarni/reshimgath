@@ -194,16 +194,17 @@ export const fetchSuccessStoriesFromFirestore = async () => {
 };
 
 /**
- * Save a Success Story to Firestore
+ * Save or update a Success Story in Firestore
  */
 export const saveSuccessStoryToFirestore = async (storyData) => {
-  if (!isFirebaseConfigured) return true;
+  if (!isFirebaseConfigured || !storyData) return true;
   try {
-    const docRef = await addDoc(collection(db, STORIES_COLLECTION), {
+    const docId = String(storyData.id || Date.now());
+    await setDoc(doc(db, STORIES_COLLECTION, docId), {
       ...storyData,
-      createdAt: new Date().toISOString()
-    });
-    return docRef.id;
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return docId;
   } catch (error) {
     console.error('Error saving success story to Firestore:', error);
     return null;
