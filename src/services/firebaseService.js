@@ -9,7 +9,8 @@ import {
   deleteDoc, 
   addDoc, 
   query, 
-  orderBy 
+  orderBy,
+  onSnapshot
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -25,6 +26,8 @@ const STORIES_COLLECTION = 'success_stories';
 const INQUIRIES_COLLECTION = 'inquiries';
 const CHATS_COLLECTION = 'chats';
 const INTERESTS_COLLECTION = 'interests';
+const PROFILE_VIEWS_COLLECTION = 'profile_views';
+const NOTIFICATIONS_COLLECTION = 'notifications';
 
 // -------------------------------------------------------------
 // FIRESTORE PROFILES API
@@ -309,5 +312,128 @@ export const saveInterestsToFirestore = async (interestsData) => {
   } catch (error) {
     console.error('Error saving interests to Firestore:', error);
     return false;
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE PROFILE VIEWS & NOTIFICATIONS API
+// -------------------------------------------------------------
+
+/**
+ * Save a profile view record to Firestore
+ */
+export const saveProfileViewToFirestore = async (viewEntry) => {
+  if (!isFirebaseConfigured || !viewEntry) return true;
+  try {
+    const docId = `${viewEntry.visitorId}_${viewEntry.targetId}`;
+    await setDoc(doc(db, PROFILE_VIEWS_COLLECTION, docId), {
+      ...viewEntry,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error saving profile view to Firestore:', error);
+    return false;
+  }
+};
+
+/**
+ * Save a notification record to Firestore
+ */
+export const saveNotificationToFirestore = async (notificationData) => {
+  if (!isFirebaseConfigured || !notificationData) return true;
+  try {
+    const docId = String(notificationData.id || Date.now());
+    await setDoc(doc(db, NOTIFICATIONS_COLLECTION, docId), {
+      ...notificationData,
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error saving notification to Firestore:', error);
+    return false;
+  }
+};
+
+// -------------------------------------------------------------
+// REAL-TIME FIRESTORE ONSNAPSHOT LISTENERS
+// -------------------------------------------------------------
+
+export const subscribeToProfilesFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(collection(db, PROFILES_COLLECTION), (snapshot) => {
+      const profilesList = [];
+      snapshot.forEach((docSnap) => {
+        profilesList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      callback(profilesList);
+    });
+  } catch (error) {
+    console.error('Error subscribing to profiles in Firestore:', error);
+    return () => {};
+  }
+};
+
+export const subscribeToChatsFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(collection(db, CHATS_COLLECTION), (snapshot) => {
+      const chatsMap = {};
+      snapshot.forEach((docSnap) => {
+        chatsMap[docSnap.id] = docSnap.data().messages || [];
+      });
+      callback(chatsMap);
+    });
+  } catch (error) {
+    console.error('Error subscribing to chats in Firestore:', error);
+    return () => {};
+  }
+};
+
+export const subscribeToInterestsFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(doc(db, INTERESTS_COLLECTION, 'global'), (docSnap) => {
+      if (docSnap.exists()) {
+        callback(docSnap.data());
+      }
+    });
+  } catch (error) {
+    console.error('Error subscribing to interests in Firestore:', error);
+    return () => {};
+  }
+};
+
+export const subscribeToProfileViewsFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(collection(db, PROFILE_VIEWS_COLLECTION), (snapshot) => {
+      const viewsList = [];
+      snapshot.forEach((docSnap) => {
+        viewsList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      callback(viewsList);
+    });
+  } catch (error) {
+    console.error('Error subscribing to profile views in Firestore:', error);
+    return () => {};
+  }
+};
+
+export const subscribeToNotificationsFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(collection(db, NOTIFICATIONS_COLLECTION), (snapshot) => {
+      const notificationsList = [];
+      snapshot.forEach((docSnap) => {
+        notificationsList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      notificationsList.sort((a, b) => (b.id || 0) - (a.id || 0));
+      callback(notificationsList);
+    });
+  } catch (error) {
+    console.error('Error subscribing to notifications in Firestore:', error);
+    return () => {};
   }
 };

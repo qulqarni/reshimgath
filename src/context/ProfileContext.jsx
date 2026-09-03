@@ -13,7 +13,14 @@ import {
   fetchChatsFromFirestore,
   saveChatToFirestore,
   fetchInterestsFromFirestore,
-  saveInterestsToFirestore
+  saveInterestsToFirestore,
+  saveProfileViewToFirestore,
+  saveNotificationToFirestore,
+  subscribeToProfilesFromFirestore,
+  subscribeToChatsFromFirestore,
+  subscribeToInterestsFromFirestore,
+  subscribeToProfileViewsFromFirestore,
+  subscribeToNotificationsFromFirestore
 } from '../services/firebaseService';
 import confetti from 'canvas-confetti';
 
@@ -120,11 +127,9 @@ export const ProfileProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Fetch Firestore profiles, homepage content, and success stories on mount
+  // Real-time Cloud Firestore data subscriptions (onSnapshot)
   useEffect(() => {
-    const loadFirestoreData = async () => {
-      const firestoreProfiles = await fetchProfilesFromFirestore();
-      
+    const unsubProfiles = subscribeToProfilesFromFirestore((firestoreProfiles) => {
       const deletedIds = (() => {
         try {
           return JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
@@ -135,57 +140,70 @@ export const ProfileProvider = ({ children }) => {
 
       setProfiles((prev) => {
         const map = new Map();
-        
+        MOCK_PROFILES.forEach((p) => {
+          if (!deletedIds.includes(p.id)) map.set(p.id, p);
+        });
         if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((p) => {
-            if (!deletedIds.includes(p.id)) {
-              map.set(p.id, p);
-            }
-          });
-        } else {
-          MOCK_PROFILES.forEach((p) => {
-            if (!deletedIds.includes(p.id)) {
-              map.set(p.id, p);
-            }
+            if (!deletedIds.includes(p.id)) map.set(p.id, p);
           });
         }
-
         prev.forEach((p) => {
-          if (!deletedIds.includes(p.id)) {
-            map.set(p.id, p);
-          }
+          if (!deletedIds.includes(p.id)) map.set(p.id, p);
         });
-
         return Array.from(map.values());
       });
+    });
 
+    const unsubChats = subscribeToChatsFromFirestore((firestoreChats) => {
+      if (firestoreChats && Object.keys(firestoreChats).length > 0) {
+        setChats((prev) => ({ ...prev, ...firestoreChats }));
+      }
+    });
+
+    const unsubInterests = subscribeToInterestsFromFirestore((firestoreInterests) => {
+      if (firestoreInterests) {
+        setInterests((prev) => ({
+          sent: firestoreInterests.sent || [],
+          received: firestoreInterests.received || [],
+          accepted: firestoreInterests.accepted || [],
+          declined: firestoreInterests.declined || [],
+          shortlisted: firestoreInterests.shortlisted || []
+        }));
+      }
+    });
+
+    const unsubViews = subscribeToProfileViewsFromFirestore((firestoreViews) => {
+      if (firestoreViews && firestoreViews.length > 0) {
+        setProfileViews(firestoreViews);
+      }
+    });
+
+    const unsubNotifs = subscribeToNotificationsFromFirestore((firestoreNotifs) => {
+      if (firestoreNotifs && firestoreNotifs.length > 0) {
+        setNotifications(firestoreNotifs);
+      }
+    });
+
+    const loadOtherContent = async () => {
       const firestoreHome = await fetchHomeContentFromFirestore();
       if (firestoreHome) {
         setHomeContent((prev) => ({ ...prev, ...firestoreHome }));
       }
-
       const firestoreStories = await fetchSuccessStoriesFromFirestore();
       if (firestoreStories && firestoreStories.length > 0) {
         setStories(firestoreStories);
       }
-
-      const firestoreChats = await fetchChatsFromFirestore();
-      if (firestoreChats && Object.keys(firestoreChats).length > 0) {
-        setChats((prev) => ({ ...prev, ...firestoreChats }));
-      }
-
-      const firestoreInterests = await fetchInterestsFromFirestore();
-      if (firestoreInterests) {
-        setInterests((prev) => ({
-          sent: [...prev.sent, ...(firestoreInterests.sent || [])],
-          received: [...prev.received, ...(firestoreInterests.received || [])],
-          accepted: [...prev.accepted, ...(firestoreInterests.accepted || [])],
-          declined: [...prev.declined, ...(firestoreInterests.declined || [])],
-          shortlisted: [...prev.shortlisted, ...(firestoreInterests.shortlisted || [])]
-        }));
-      }
     };
-    loadFirestoreData();
+    loadOtherContent();
+
+    return () => {
+      unsubProfiles();
+      unsubChats();
+      unsubInterests();
+      unsubViews();
+      unsubNotifs();
+    };
   }, []);
 
   useEffect(() => {
@@ -313,20 +331,21 @@ export const ProfileProvider = ({ children }) => {
       viewEntry,
       ...prev.filter((v) => !(String(v.visitorId) === String(viewEntry.visitorId) && String(v.targetId) === String(viewEntry.targetId)))
     ]);
+    saveProfileViewToFirestore(viewEntry);
 
-    setNotifications((prev) => [
-      {
-        id: Date.now(),
-        type: 'view',
-        profileId: viewerUser.id,
-        targetUserId: targetProfile.id,
-        title: 'Profile Visited! 👁️',
-        text: `${viewerUser.name || 'A verified member'} viewed your profile.`,
-        time: 'Just now',
-        unread: true
-      },
-      ...prev
-    ]);
+    const viewNotif = {
+      id: Date.now(),
+      type: 'view',
+      profileId: viewerUser.id,
+      targetUserId: targetProfile.id,
+      title: 'Profile Visited! 👁️',
+      text: `${viewerUser.name || 'A verified member'} viewed your profile.`,
+      time: 'Just now',
+      unread: true
+    };
+
+    setNotifications((prev) => [viewNotif, ...prev]);
+    saveNotificationToFirestore(viewNotif);
   };
 
   const addToast = (message, type = 'info') => {
@@ -387,19 +406,18 @@ export const ProfileProvider = ({ children }) => {
     });
 
     // Add notification for target user receiving the interest
-    setNotifications((prev) => [
-      {
-        id: Date.now(),
-        type: 'interest',
-        profileId: user.id,
-        targetUserId: profileId,
-        title: 'New Interest Received! ❤️',
-        text: `${senderName} expressed interest in your profile.`,
-        time: 'Just now',
-        unread: true
-      },
-      ...prev
-    ]);
+    const interestNotif = {
+      id: Date.now(),
+      type: 'interest',
+      profileId: user.id,
+      targetUserId: profileId,
+      title: 'New Interest Received! ❤️',
+      text: `${senderName} expressed interest in your profile.`,
+      time: 'Just now',
+      unread: true
+    };
+    setNotifications((prev) => [interestNotif, ...prev]);
+    saveNotificationToFirestore(interestNotif);
 
     addToast('Interest sent successfully! Communication will unlock once accepted.', 'success');
   };
@@ -409,26 +427,29 @@ export const ProfileProvider = ({ children }) => {
 
     const acceptedEntry = { user1: user.id, user2: profileId, profileId: profileId, timestamp: 'Just now' };
 
-    setInterests((prev) => ({
-      ...prev,
-      received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
-      accepted: [...prev.accepted, acceptedEntry, profileId]
-    }));
+    setInterests((prev) => {
+      const updated = {
+        ...prev,
+        received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
+        accepted: [...prev.accepted, acceptedEntry, profileId]
+      };
+      saveInterestsToFirestore(updated);
+      return updated;
+    });
 
     // Add notification for candidate whose interest was accepted
-    setNotifications((prev) => [
-      {
-        id: Date.now(),
-        type: 'accepted',
-        profileId: user.id,
-        targetUserId: profileId,
-        title: 'Interest Accepted! 💕',
-        text: `${user.name || 'A verified member'} accepted your interest request! You can now start chatting.`,
-        time: 'Just now',
-        unread: true
-      },
-      ...prev
-    ]);
+    const acceptedNotif = {
+      id: Date.now(),
+      type: 'accepted',
+      profileId: user.id,
+      targetUserId: profileId,
+      title: 'Interest Accepted! 💕',
+      text: `${user.name || 'A verified member'} accepted your interest request! You can now start chatting.`,
+      time: 'Just now',
+      unread: true
+    };
+    setNotifications((prev) => [acceptedNotif, ...prev]);
+    saveNotificationToFirestore(acceptedNotif);
 
     try {
       confetti({
@@ -446,11 +467,15 @@ export const ProfileProvider = ({ children }) => {
   const declineInterest = (profileId) => {
     if (!user) return;
 
-    setInterests((prev) => ({
-      ...prev,
-      received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
-      declined: [...prev.declined, { user1: user.id, user2: profileId, profileId: profileId }]
-    }));
+    setInterests((prev) => {
+      const updated = {
+        ...prev,
+        received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
+        declined: [...prev.declined, { user1: user.id, user2: profileId, profileId: profileId }]
+      };
+      saveInterestsToFirestore(updated);
+      return updated;
+    });
     addToast('Interest declined.', 'info');
   };
 

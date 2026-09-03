@@ -138,6 +138,42 @@ export const MyProfilePage = ({ onNavigate }) => {
     drinking: user?.drinking || 'No',
     aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
   });
+
+  useEffect(() => {
+    if (user) {
+      setEditFormData({
+        name: user.name || '',
+        gender: user.gender || 'female',
+        age: user.age || '24',
+        dob: user.dob || '1998-06-15',
+        height: user.height || '5\' 6" (168 cm)',
+        maritalStatus: user.maritalStatus || 'Never Married',
+        religion: RELIGIONS.includes(user.religion) ? (user.religion || 'Hindu') : 'Other',
+        customReligion: RELIGIONS.includes(user.religion) ? '' : (user.religion || ''),
+        caste: MAHARASHTRA_COMMUNITIES.includes(user.caste) ? (user.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other',
+        customCaste: MAHARASHTRA_COMMUNITIES.includes(user.caste) ? '' : (user.caste || ''),
+        motherTongue: user.motherTongue || 'Marathi',
+        district: user.district || 'Pune',
+        nativePlace: user.nativePlace || 'Ichalkaranji / Sangli',
+        city: user.city || 'Kothrud, Pune',
+        pincode: user.pincode || '411038',
+        education: EDUCATION_LEVELS.includes(user.education) ? (user.education || 'B.E. / B.Tech') : 'Other',
+        customEducation: EDUCATION_LEVELS.includes(user.education) ? '' : (user.education || ''),
+        college: user.college || '',
+        occupation: OCCUPATIONS.includes(user.occupation) ? (user.occupation || 'Software Engineer / IT Professional') : 'Other',
+        customOccupation: OCCUPATIONS.includes(user.occupation) ? '' : (user.occupation || ''),
+        income: user.income || '₹ 12 - 18 Lakhs per annum',
+        fatherOccupation: user.fatherOccupation || '',
+        motherOccupation: user.motherOccupation || '',
+        siblings: user.siblings || '1 Brother',
+        familyType: user.familyType || 'Nuclear Family',
+        diet: user.diet || 'Vegetarian',
+        smoking: user.smoking || 'No',
+        drinking: user.drinking || 'No',
+        aboutMe: user.aboutMe || ''
+      });
+    }
+  }, [user]);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const avatarFileInputRef = useRef(null);
