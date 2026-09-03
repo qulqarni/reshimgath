@@ -174,13 +174,17 @@ export const ProfileProvider = ({ children }) => {
     const saved = localStorage.getItem('reshimgath_interests');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Clean demo IDs
+      const cleanItem = (item) => {
+        if (!item) return false;
+        const idStr = typeof item === 'string' ? item : (item.profileId || item.user1);
+        return !['p1','p2','p3','p4','p5','p6','p7','p8','admin_1'].includes(idStr);
+      };
       return {
-        sent: (parsed.sent || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id)),
-        received: (parsed.received || []).filter(item => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(item.profileId)),
-        accepted: (parsed.accepted || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id)),
-        declined: (parsed.declined || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id)),
-        shortlisted: (parsed.shortlisted || []).filter(id => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(id))
+        sent: (parsed.sent || []).filter(cleanItem),
+        received: (parsed.received || []).filter(cleanItem),
+        accepted: (parsed.accepted || []).filter(cleanItem),
+        declined: (parsed.declined || []).filter(cleanItem),
+        shortlisted: (parsed.shortlisted || []).filter(cleanItem)
       };
     }
     return {

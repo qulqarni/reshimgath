@@ -21,8 +21,17 @@ export const MessagesPage = ({ onNavigate }) => {
   // Get all accepted connection profiles for current logged-in user
   const acceptedProfiles = profiles.filter((p) => {
     if (!user) return false;
+
+    // 1. Exclude self
     if (String(p.id) === String(user.id) || (user.email && p.email === user.email)) return false;
 
+    // 2. Exclude Admin accounts
+    if (p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'))) return false;
+
+    // 3. Exclude same-gender matches
+    if (user.gender && p.gender && p.gender === user.gender) return false;
+
+    // 4. Must be explicitly accepted for this user
     return (interests.accepted || []).some((a) => {
       if (typeof a === 'string') {
         return String(a) === String(p.id);
@@ -37,8 +46,7 @@ export const MessagesPage = ({ onNavigate }) => {
         return (
           (u1 === me && u2 === other) ||
           (u2 === me && u1 === other) ||
-          (pid === other) ||
-          (pid === me)
+          (pid === other && (a.targetUserId === me || a.senderId === me))
         );
       }
       return false;
@@ -164,10 +172,10 @@ export const MessagesPage = ({ onNavigate }) => {
         </aside>
 
         {/* Right Active Chat Window */}
-        <main className={`${mobileView === 'list' ? 'hidden md:flex' : 'flex'} md:col-span-8 lg:col-span-8 flex-col h-full bg-white`}>
+        <main className={`${mobileView === 'list' ? 'hidden md:flex' : 'flex'} md:col-span-8 lg:col-span-8 flex-col h-full min-h-0 bg-white relative justify-between overflow-hidden`}>
           
           {/* Active Partner Header */}
-          <div className="p-3.5 sm:p-4 border-b border-gray-100 flex items-center justify-between bg-brand-ivory">
+          <div className="p-3.5 sm:p-4 border-b border-gray-100 flex items-center justify-between bg-brand-ivory shrink-0">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <button
                 onClick={() => setMobileView('list')}
@@ -203,7 +211,7 @@ export const MessagesPage = ({ onNavigate }) => {
           </div>
 
           {/* Chat Messages Body */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-white via-brand-ivory/40 to-white">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-white via-brand-ivory/40 to-white min-h-0">
             
             {/* Accepted Connection Banner inside Chat */}
             <div className="text-center my-4">
@@ -238,7 +246,7 @@ export const MessagesPage = ({ onNavigate }) => {
           </div>
 
           {/* Input Box */}
-          <form onSubmit={handleSend} className="p-4 border-t border-gray-100 flex items-center gap-2 bg-white">
+          <form onSubmit={handleSend} className="p-3.5 sm:p-4 border-t border-gray-100 flex items-center gap-2 bg-white shrink-0 z-10">
             <input
               type="text"
               value={messageInput}
