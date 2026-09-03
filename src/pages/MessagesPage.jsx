@@ -10,7 +10,8 @@ import {
   User, 
   Heart, 
   Search,
-  ShieldCheck
+  ShieldCheck,
+  ArrowLeft
 } from 'lucide-react';
 
 export const MessagesPage = ({ onNavigate }) => {
@@ -163,6 +164,17 @@ export const MessagesPage = ({ onNavigate }) => {
         </p>
       </div>
 
+      {/* Mobile Back Button (Outside Message Box Container) */}
+      {mobileView === 'chat' && (
+        <button
+          onClick={() => setMobileView('list')}
+          className="md:hidden mb-3 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-white border border-brand-rose/30 text-brand-plum text-xs font-bold shadow-sm hover:bg-brand-rose/10 transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-brand-plum stroke-[2.5]" />
+          <span>Back to Connections</span>
+        </button>
+      )}
+
       {/* Main Chat Container */}
       <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[500px] sm:min-h-[600px] h-[72vh]">
         
@@ -220,12 +232,6 @@ export const MessagesPage = ({ onNavigate }) => {
           {/* Active Partner Header */}
           <div className="p-3.5 sm:p-4 border-b border-gray-100 flex items-center justify-between bg-brand-ivory shrink-0">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <button
-                onClick={() => setMobileView('list')}
-                className="md:hidden text-xs font-bold text-brand-plum hover:underline pr-1"
-              >
-                ← Back
-              </button>
               <div 
                 onClick={() => onNavigate(`/profile/${currentPartner.id}`)}
                 className="flex items-center space-x-2 sm:space-x-3 cursor-pointer"
