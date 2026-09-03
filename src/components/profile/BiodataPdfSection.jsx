@@ -101,14 +101,14 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
             
             {/* File Info */}
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-brand-plum text-brand-gold flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                 {isBiodataImage ? 'IMG' : 'PDF'}
               </div>
               <div className="min-w-0">
-                <h4 className="font-serif font-bold text-xs sm:text-sm text-brand-plum truncate">
+                <h4 className="font-serif font-bold text-xs sm:text-sm text-slate-900 truncate">
                   {biodata.fileName}
                 </h4>
-                <div className="flex items-center space-x-2 text-[11px] text-brand-gray mt-0.5">
+                <div className="flex items-center space-x-2 text-[11px] text-slate-500 mt-0.5">
                   <span>{biodata.fileSize}</span>
                   <span>•</span>
                   <span>Uploaded {biodata.uploadedAt}</span>
@@ -121,9 +121,9 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
               <button
                 type="button"
                 onClick={() => setShowViewerModal(true)}
-                className="px-3 py-1.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-sm hover:bg-brand-plumDark transition-all flex items-center space-x-1"
+                className="px-3.5 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-slate-800 transition-all flex items-center space-x-1.5"
               >
-                <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                <Eye className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>View</span>
               </button>
 
@@ -132,9 +132,9 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                 download={biodata.fileName || 'Biodata'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 bg-white text-brand-plum border border-gray-200 font-bold text-xs rounded-xl hover:bg-slate-50 transition-all flex items-center space-x-1"
+                className="px-3.5 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl hover:bg-slate-100 transition-all flex items-center space-x-1.5"
               >
-                <Download className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
+                <Download className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span>Download</span>
               </a>
 
@@ -144,17 +144,17 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="px-3 py-1.5 bg-amber-50 text-brand-kesari border border-amber-300 font-bold text-xs rounded-xl hover:bg-amber-100 transition-all flex items-center space-x-1"
+                    className="px-3.5 py-1.5 bg-amber-50/80 text-amber-900 border border-amber-300/70 font-bold text-xs rounded-xl hover:bg-amber-100 transition-all flex items-center space-x-1.5"
                     title="Upload New Biodata"
                   >
-                    <UploadCloud className="w-3.5 h-3.5 shrink-0" />
+                    <UploadCloud className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                     <span>Replace</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleRemove}
-                    className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                     title="Remove Biodata"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -169,24 +169,24 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
         /* Clean Neutral Drag & Drop Box */
         <div 
           onClick={() => isEditable && fileInputRef.current?.click()}
-          className={`border border-dashed border-gray-300 hover:border-brand-plum bg-white hover:bg-slate-50/50 rounded-xl p-5 text-center transition-all cursor-pointer ${
+          className={`border border-dashed border-slate-300 hover:border-slate-800 bg-white hover:bg-slate-50/60 rounded-xl p-5 text-center transition-all cursor-pointer ${
             isUploading ? 'opacity-50 pointer-events-none' : ''
           }`}
         >
           <div className="max-w-xs mx-auto space-y-2">
-            <div className="w-10 h-10 rounded-full bg-slate-100 text-brand-plum flex items-center justify-center mx-auto">
-              <UploadCloud className="w-5 h-5 text-brand-plum" />
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center mx-auto">
+              <UploadCloud className="w-5 h-5 text-slate-800" />
             </div>
             <div>
-              <h4 className="font-semibold text-xs text-brand-charcoal">
+              <h4 className="font-semibold text-xs text-slate-800">
                 {isUploading ? 'Uploading Biodata...' : 'Click to Upload Biodata'}
               </h4>
-              <p className="text-[11px] text-brand-gray mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 PDF or Image format (JPG, PNG, WEBP) up to 10MB
               </p>
             </div>
             <div className="pt-1">
-              <span className="inline-block px-3.5 py-1.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-sm hover:bg-brand-plumDark transition-all">
+              <span className="inline-block px-3.5 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-slate-800 transition-all">
                 Select File (PDF / Image)
               </span>
             </div>

@@ -1107,20 +1107,20 @@ export const MyProfilePage = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* SECTION 6: BIODATA PDF */}
+              {/* SECTION 6: BIODATA */}
               <div className="pt-2 border-t border-gray-100 space-y-1.5">
-                <label className="block font-bold text-brand-plum flex items-center space-x-1.5">
-                  <FileText className="w-4 h-4 text-brand-kesari" />
-                  <span>Biodata PDF (बायोडेटा PDF)</span>
+                <label className="block font-semibold text-slate-800 flex items-center space-x-1.5 text-xs">
+                  <FileText className="w-4 h-4 text-amber-600" />
+                  <span>Biodata Document / Photo (बायोडेटा PDF / फोटो)</span>
                 </label>
                 <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 mt-4"
+                className="w-full py-3.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md hover:bg-slate-800 transition-all flex items-center justify-center space-x-2 border border-slate-700 mt-4"
               >
-                <Save className="w-4 h-4 text-brand-gold" />
+                <Save className="w-4 h-4 text-amber-400" />
                 <span>Save Profile Changes</span>
               </button>
 
