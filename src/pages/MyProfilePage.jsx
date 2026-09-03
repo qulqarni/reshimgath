@@ -57,9 +57,42 @@ export const MyProfilePage = ({ onNavigate }) => {
     return true;
   });
 
-  const receivedCount = interests?.received?.length || 0;
-  const sentCount = interests?.sent?.length || 0;
-  const acceptedCount = interests?.accepted?.length || 0;
+  const myReceivedInterests = (interests?.received || []).filter((r) => {
+    if (!user) return false;
+    if (r.targetUserId) {
+      return String(r.targetUserId) === String(user.id) || r.targetUserId === user.email;
+    }
+    return String(r.profileId) !== String(user.id);
+  });
+
+  const mySentInterests = (interests?.sent || []).filter((s) => {
+    if (!user) return false;
+    if (typeof s === 'object' && s !== null && s.senderId) {
+      return String(s.senderId) === String(user.id) || s.senderId === user.email;
+    }
+    return false;
+  });
+
+  const myAcceptedInterests = (interests?.accepted || []).filter((a) => {
+    if (!user) return false;
+    if (typeof a === 'object' && a !== null) {
+      const u1 = String(a.user1);
+      const u2 = String(a.user2);
+      const pid = String(a.profileId);
+      const me = String(user.id);
+
+      return (
+        (u1 === me) ||
+        (u2 === me) ||
+        (pid === me && a.targetUserId === me)
+      );
+    }
+    return false;
+  });
+
+  const receivedCount = myReceivedInterests.length;
+  const sentCount = mySentInterests.length;
+  const acceptedCount = myAcceptedInterests.length;
   const visitsCount = myProfileViews.length;
 
   const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
