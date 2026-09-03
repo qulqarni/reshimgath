@@ -119,6 +119,7 @@ export const MessagesPage = ({ onNavigate }) => {
 
   const [mobileView, setMobileView] = useState('list'); // 'list' or 'chat'
   const chatContainerRef = useRef(null);
+  const messageInputRef = useRef(null);
 
   const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || acceptedProfiles[0];
   const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
@@ -142,6 +143,11 @@ export const MessagesPage = ({ onNavigate }) => {
     if (!messageInput.trim() || !currentPartner) return;
     sendMessage(currentPartner.id, messageInput.trim());
     setMessageInput('');
+
+    // Keep mobile keyboard open
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 0);
   };
 
   return (
@@ -285,6 +291,7 @@ export const MessagesPage = ({ onNavigate }) => {
           {/* Input Box */}
           <form onSubmit={handleSend} className="p-3.5 sm:p-4 border-t border-gray-100 flex items-center gap-2 bg-white shrink-0 z-10">
             <input
+              ref={messageInputRef}
               type="text"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
@@ -293,6 +300,8 @@ export const MessagesPage = ({ onNavigate }) => {
             />
             <button
               type="submit"
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
               className="p-3.5 bg-brand-plum text-white rounded-2xl shadow-md hover:bg-brand-plumDark hover:scale-105 transition-all flex items-center justify-center shrink-0"
               title="Send message"
             >
