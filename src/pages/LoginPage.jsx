@@ -14,11 +14,16 @@ export const LoginPage = ({ onNavigate }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Please provide valid login details');
+      setError('Please enter your registered email/phone and password.');
       return;
     }
-    login(email, password);
-    onNavigate('/discover');
+    const result = login(email, password);
+    if (result && result.success) {
+      setError('');
+      onNavigate('/discover');
+    } else {
+      setError(result?.message || 'Account not found. Please check your login credentials.');
+    }
   };
 
   return (

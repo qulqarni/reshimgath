@@ -40,15 +40,41 @@ export const AuthProvider = ({ children }) => {
   const login = (emailOrPhone, password) => {
     const input = (emailOrPhone || '').trim().toLowerCase();
 
-    // Admin credentials check
+    if (!input) {
+      return { success: false, message: 'Please enter your registered email or phone number.' };
+    }
+
+    // 1. Admin credentials check
     if (input === ADMIN_USER.email || input === 'admin@reshimgath.com' || input === 'admin') {
       setUser(ADMIN_USER);
       return { success: true, user: ADMIN_USER };
     }
 
-    // Demo Profiles credentials check
-    const matchedProfile = DEMO_PROFILES.find(
-      (p) => p.email.toLowerCase() === input || p.phone === input
+    // 2. Demo Profiles credentials check
+    const matchedDemo = DEMO_PROFILES.find(
+      (p) => (p.email && p.email.toLowerCase() === input) || (p.phone && p.phone === input)
+    );
+
+    if (matchedDemo) {
+      setUser(matchedDemo);
+      return { success: true, user: matchedDemo };
+    }
+
+    // 3. Search in saved registered profiles from local storage
+    const savedProfiles = (() => {
+      try {
+        const stored = localStorage.getItem('reshimgath_profiles');
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        return [];
+      }
+    })();
+
+    const matchedProfile = savedProfiles.find(
+      (p) =>
+        (p.email && p.email.toLowerCase() === input) ||
+        (p.phone && String(p.phone).trim() === input) ||
+        (p.id && String(p.id).toLowerCase() === input)
     );
 
     if (matchedProfile) {
@@ -56,22 +82,11 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: matchedProfile };
     }
 
-    const customUser = {
-      id: "u_" + Date.now(),
-      name: input.split('@')[0].replace('.', ' '),
-      email: input,
-      gender: "male",
-      age: 27,
-      district: "Ichalkaranji",
-      education: "Graduate",
-      occupation: "Professional",
-      verified: true,
-      avatar: null,
-      photos: []
+    // 4. If account does not exist, reject login
+    return {
+      success: false,
+      message: 'Account not found. Please enter valid registered credentials or click "Register New Account".'
     };
-    setUser(customUser);
-    saveProfileToFirestore(customUser.id, customUser);
-    return { success: true, user: customUser };
   };
 
   const loginAsDemo = () => {
