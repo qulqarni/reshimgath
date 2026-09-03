@@ -23,31 +23,54 @@ export const MessagesPage = ({ onNavigate }) => {
     if (!user) return false;
 
     // 1. Exclude self
-    if (String(p.id) === String(user.id) || (user.email && p.email === user.email)) return false;
+    if (
+      String(p.id).toLowerCase() === String(user.id).toLowerCase() ||
+      (user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()) ||
+      (user.name && p.name && p.name.toLowerCase() === user.name.toLowerCase())
+    ) {
+      return false;
+    }
 
     // 2. Exclude Admin accounts
     if (p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'))) return false;
 
-    // 3. Exclude same-gender matches
-    if (user.gender && p.gender && p.gender === user.gender) return false;
-
-    // 4. Must be explicitly accepted for this user
+    // 3. Must be explicitly accepted for this user
     return (interests.accepted || []).some((a) => {
       if (typeof a === 'string') {
-        return String(a) === String(p.id);
+        return String(a).toLowerCase() === String(p.id).toLowerCase();
       }
       if (typeof a === 'object' && a !== null) {
-        const u1 = String(a.user1);
-        const u2 = String(a.user2);
-        const pid = String(a.profileId);
-        const me = String(user.id);
-        const other = String(p.id);
+        const u1 = String(a.user1 || '').toLowerCase();
+        const u2 = String(a.user2 || '').toLowerCase();
+        const pid = String(a.profileId || '').toLowerCase();
+        const targetId = String(a.targetUserId || '').toLowerCase();
+        const senderId = String(a.senderId || '').toLowerCase();
 
-        return (
-          (u1 === me && u2 === other) ||
-          (u2 === me && u1 === other) ||
-          (pid === other && (a.targetUserId === me || a.senderId === me))
+        const me = String(user.id || '').toLowerCase();
+        const meEmail = String(user.email || '').toLowerCase();
+        const meName = String(user.name || '').toLowerCase();
+
+        const other = String(p.id || '').toLowerCase();
+        const otherEmail = String(p.email || '').toLowerCase();
+        const otherName = String(p.name || '').toLowerCase();
+
+        const isMeInEntry = (
+          u1 === me || (meEmail && u1 === meEmail) || (meName && u1 === meName) ||
+          u2 === me || (meEmail && u2 === meEmail) || (meName && u2 === meName) ||
+          pid === me || (meEmail && pid === meEmail) || (meName && pid === meName) ||
+          targetId === me || (meEmail && targetId === meEmail) || (meName && targetId === meName) ||
+          senderId === me || (meEmail && senderId === meEmail) || (meName && senderId === meName)
         );
+
+        const isOtherInEntry = (
+          u1 === other || (otherEmail && u1 === otherEmail) || (otherName && u1 === otherName) ||
+          u2 === other || (otherEmail && u2 === otherEmail) || (otherName && u2 === otherName) ||
+          pid === other || (otherEmail && pid === otherEmail) || (otherName && pid === otherName) ||
+          targetId === other || (otherEmail && targetId === otherEmail) || (otherName && targetId === otherName) ||
+          senderId === other || (otherEmail && senderId === otherEmail) || (otherName && senderId === otherName)
+        );
+
+        return isMeInEntry && isOtherInEntry;
       }
       return false;
     });
