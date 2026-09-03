@@ -6,6 +6,7 @@ import {
   MessageSquare, 
   Send, 
   Lock, 
+  Check,
   CheckCheck, 
   User, 
   Heart, 
@@ -17,7 +18,7 @@ import {
 export const MessagesPage = ({ onNavigate }) => {
   const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { profiles, interests, chats, sendMessage } = useProfiles();
+  const { profiles, interests, chats, sendMessage, markChatAsRead } = useProfiles();
 
   // Get all accepted connection profiles for current logged-in user
   const acceptedProfiles = profiles.filter((p) => {
@@ -77,8 +78,26 @@ export const MessagesPage = ({ onNavigate }) => {
     });
   });
 
+  // Sort conversation list by most recently active message timestamp
+  const sortedProfiles = [...acceptedProfiles].sort((a, b) => {
+    if (!user) return 0;
+    const keyA = [String(user.id), String(a.id)].sort().join('_');
+    const keyB = [String(user.id), String(b.id)].sort().join('_');
+
+    const threadA = chats[keyA] || [];
+    const threadB = chats[keyB] || [];
+
+    const lastA = threadA[threadA.length - 1];
+    const lastB = threadB[threadB.length - 1];
+
+    const timeA = lastA?.createdAt ? new Date(lastA.createdAt).getTime() : (lastA?.id || 0);
+    const timeB = lastB?.createdAt ? new Date(lastB.createdAt).getTime() : (lastB?.id || 0);
+
+    return timeB - timeA;
+  });
+
   const [activePartnerId, setActivePartnerId] = useState(() => {
-    return acceptedProfiles.length > 0 ? acceptedProfiles[0].id : null;
+    return sortedProfiles.length > 0 ? sortedProfiles[0].id : null;
   });
 
   const [messageInput, setMessageInput] = useState('');
@@ -122,9 +141,16 @@ export const MessagesPage = ({ onNavigate }) => {
   const chatContainerRef = useRef(null);
   const messageInputRef = useRef(null);
 
-  const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || acceptedProfiles[0];
+  const currentPartner = profiles.find((p) => String(p.id) === String(activePartnerId)) || sortedProfiles[0];
   const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
   const activeThread = (convoKey && chats[convoKey]) ? chats[convoKey] : [];
+
+  // Mark active chat as read in real-time Firestore when opened
+  useEffect(() => {
+    if (currentPartner && currentPartner.id) {
+      markChatAsRead(currentPartner.id);
+    }
+  }, [currentPartner?.id, activeThread.length]);
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -180,45 +206,54 @@ export const MessagesPage = ({ onNavigate }) => {
         
         {/* Left Conversation List Sidebar */}
         <aside className={`${mobileView === 'chat' ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-4 border-r border-gray-100 flex-col bg-brand-lightBg/30`}>
-          <div className="p-4 border-b border-gray-100 font-serif font-bold text-sm text-brand-plum">
-            Accepted Connections ({acceptedProfiles.length})
+          <div className="p-4 border-b border-gray-100 font-serif font-bold text-sm text-brand-plum flex items-center justify-between">
+            <span>Accepted Connections ({sortedProfiles.length})</span>
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
-            {acceptedProfiles.map((p) => {
+            {sortedProfiles.map((p) => {
               const pConvoKey = (user && p) ? [String(user.id), String(p.id)].sort().join('_') : null;
               const thread = (pConvoKey && chats[pConvoKey]) ? chats[pConvoKey] : [];
               const lastMsg = thread[thread.length - 1];
               const isSelected = currentPartner && String(p.id) === String(currentPartner.id);
+              const unreadInThread = thread.filter((m) => String(m.senderId) !== String(user?.id) && m.status !== 'read').length;
 
               return (
                 <div
                   key={p.id}
                   onClick={() => {
                     setActivePartnerId(p.id);
+                    markChatAsRead(p.id);
                     setMobileView('chat');
                   }}
-                  className={`p-4 cursor-pointer transition-colors flex items-center space-x-3 ${
+                  className={`p-3.5 sm:p-4 cursor-pointer transition-colors flex items-center space-x-3 ${
                     isSelected ? 'bg-white shadow-sm border-l-4 border-brand-plum' : 'hover:bg-white/60'
                   }`}
                 >
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <img
                       src={p.avatar || p.photos?.[0]}
                       alt={p.name}
-                      className="w-12 h-12 rounded-full object-cover border border-brand-gold/60"
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-brand-gold/60"
                     />
                     <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-serif font-bold text-xs text-brand-plum truncate">{p.name}</h4>
-                      {lastMsg && <span className="text-[10px] text-gray-400">{lastMsg.timestamp}</span>}
+                      <h4 className="font-serif font-bold text-xs sm:text-sm text-brand-plum truncate">{p.name}</h4>
+                      {lastMsg && <span className="text-[10px] text-gray-400 shrink-0 ml-1">{lastMsg.timestamp}</span>}
                     </div>
-                    <p className="text-xs text-brand-gray truncate mt-0.5">
-                      {lastMsg ? lastMsg.text : 'Start conversation...'}
-                    </p>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <p className="text-xs text-brand-gray truncate">
+                        {lastMsg ? lastMsg.text : 'Start conversation...'}
+                      </p>
+                      {unreadInThread > 0 && (
+                        <span className="ml-1.5 px-2 py-0.5 bg-rose-600 text-white font-extrabold text-[10px] rounded-full shrink-0 shadow-sm animate-pulse">
+                          {unreadInThread}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -266,7 +301,7 @@ export const MessagesPage = ({ onNavigate }) => {
             <div className="text-center my-4">
               <span className="bg-emerald-50 text-emerald-800 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
                 <Heart className="w-3.5 h-3.5 text-brand-rose fill-brand-rose" />
-                <span>Sambodhi Sarang Connection Accepted on {new Date().toLocaleDateString()}</span>
+                <span>Sambodhi Sarang Connection Accepted</span>
               </span>
             </div>
 
@@ -286,9 +321,22 @@ export const MessagesPage = ({ onNavigate }) => {
                   >
                     <p>{msg.text}</p>
                   </div>
-                  <span className="text-[10px] text-gray-400 mt-1 px-1">
-                    {msg.timestamp}
-                  </span>
+                  <div className="flex items-center space-x-1 mt-1 px-1">
+                    <span className="text-[10px] text-gray-400">
+                      {msg.timestamp}
+                    </span>
+                    {isUser && (
+                      <span className="inline-flex items-center">
+                        {msg.status === 'read' ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-sky-400 stroke-[2.5]" title="Read (✓✓)" />
+                        ) : msg.status === 'delivered' ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-gray-400 stroke-[2.2]" title="Delivered (✓✓)" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5 text-gray-400 stroke-[2]" title="Sent (✓)" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}

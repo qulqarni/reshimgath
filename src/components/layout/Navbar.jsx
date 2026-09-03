@@ -21,7 +21,7 @@ import {
 export const Navbar = ({ currentPath, onNavigate }) => {
   const { user, isAuthenticated, logout, loginAsDemo, isAdmin } = useAuth();
   const { lang, toggleLanguage, t } = useLanguage();
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useProfiles();
+  const { notifications, markNotificationRead, markAllNotificationsRead, totalUnreadMessagesCount } = useProfiles();
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -123,7 +123,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
 
                     <button
                       onClick={() => handleNav('/messages')}
-                      className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
+                      className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 relative ${
                         currentPath === '/messages' 
                           ? 'bg-brand-plum text-white shadow-sm' 
                           : 'text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum'
@@ -131,6 +131,12 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                     >
                       <MessageSquare className="w-4 h-4" />
                       <span>{t('messages')}</span>
+                      {totalUnreadMessagesCount > 0 && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping absolute top-1.5 right-1.5" />
+                      )}
+                      {totalUnreadMessagesCount > 0 && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 absolute top-1.5 right-1.5 border border-white" />
+                      )}
                     </button>
                   </>
                 )}

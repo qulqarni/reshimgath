@@ -529,13 +529,16 @@ export const ProfileProvider = ({ children }) => {
     const senderId = String(user.id);
     const targetId = String(partnerProfileId);
     const combinedKey = [senderId, targetId].sort().join('_');
+    const now = new Date();
 
     const newMsg = {
       id: Date.now(),
       senderId: senderId,
       sender: 'user',
       text: text.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      createdAt: now.toISOString(),
+      status: 'delivered'
     };
 
     setChats((prev) => {
@@ -553,6 +556,55 @@ export const ProfileProvider = ({ children }) => {
 
     return true;
   };
+
+  const markChatAsRead = (partnerProfileId) => {
+    if (!user || !partnerProfileId) return;
+
+    const meId = String(user.id);
+    const targetId = String(partnerProfileId);
+    const combinedKey = [meId, targetId].sort().join('_');
+
+    setChats((prev) => {
+      const existingThread = prev[combinedKey] || [];
+      let hasUnread = false;
+
+      const updatedThread = existingThread.map((msg) => {
+        if (String(msg.senderId) !== meId && msg.status !== 'read') {
+          hasUnread = true;
+          return { ...msg, status: 'read' };
+        }
+        return msg;
+      });
+
+      if (hasUnread) {
+        saveChatToFirestore(combinedKey, updatedThread);
+        return {
+          ...prev,
+          [combinedKey]: updatedThread
+        };
+      }
+
+      return prev;
+    });
+  };
+
+  // Calculate total unread messages count across all conversations for current user
+  const totalUnreadMessagesCount = (() => {
+    if (!user) return 0;
+    const meId = String(user.id);
+    let total = 0;
+    Object.keys(chats).forEach((convoKey) => {
+      if (convoKey.includes(meId)) {
+        const thread = chats[convoKey] || [];
+        thread.forEach((msg) => {
+          if (String(msg.senderId) !== meId && msg.status !== 'read') {
+            total++;
+          }
+        });
+      }
+    });
+    return total;
+  })();
 
   const markNotificationRead = (id) => {
     try {
@@ -725,6 +777,8 @@ export const ProfileProvider = ({ children }) => {
         declineInterest,
         toggleShortlist,
         sendMessage,
+        markChatAsRead,
+        totalUnreadMessagesCount,
         markNotificationRead,
         markAllNotificationsRead,
         recordProfileView,

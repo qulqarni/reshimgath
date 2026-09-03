@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useProfiles } from '../../context/ProfileContext';
 import { Home, Search, Heart, MessageSquare, User, LogIn, ShieldCheck, LogOut } from 'lucide-react';
 
 export const MobileBottomNav = ({ currentPath, onNavigate }) => {
   const { isAuthenticated, isAdmin, logout } = useAuth();
   const { lang, t } = useLanguage();
+  const { totalUnreadMessagesCount } = useProfiles();
 
   if (isAdmin) {
     return (
@@ -72,10 +74,20 @@ export const MobileBottomNav = ({ currentPath, onNavigate }) => {
                 onClick={() => onNavigate(item.path)}
                 className="flex flex-col items-center justify-end group focus:outline-none -mt-3.5"
               >
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-rose-600 to-pink-600 text-white flex items-center justify-center shadow-md border-2 border-white transition-all group-hover:scale-105 active:scale-95 mb-0.5 ${
-                  isActive ? 'ring-2 ring-rose-400 scale-105' : ''
-                }`}>
-                  <Icon className="w-4.5 h-4.5 text-white fill-white/20 stroke-[2.2]" />
+                <div className="relative">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-rose-600 to-pink-600 text-white flex items-center justify-center shadow-md border-2 border-white transition-all group-hover:scale-105 active:scale-95 mb-0.5 ${
+                    isActive ? 'ring-2 ring-rose-400 scale-105' : ''
+                  }`}>
+                    <Icon className="w-4.5 h-4.5 text-white fill-white/20 stroke-[2.2]" />
+                  </div>
+                  {totalUnreadMessagesCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-600 border-2 border-white rounded-full animate-ping" />
+                  )}
+                  {totalUnreadMessagesCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-600 border-2 border-white rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shadow-sm">
+                      {totalUnreadMessagesCount}
+                    </span>
+                  )}
                 </div>
                 <span className={`text-[10px] leading-tight font-bold truncate max-w-full px-0.5 ${
                   isActive ? 'text-brand-plum font-extrabold' : 'text-brand-charcoal'
