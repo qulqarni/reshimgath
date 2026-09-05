@@ -10,6 +10,8 @@ import {
   FileText, 
   UploadCloud, 
   Eye, 
+  EyeOff,
+  Lock,
   Trash2, 
   Download, 
   X
@@ -21,18 +23,25 @@ export const EditProfilePage = ({ onNavigate }) => {
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
-    district: user?.district || 'Pune',
-    city: user?.city || 'Pune',
-    nativePlace: user?.nativePlace || 'Satara',
+    gender: user?.gender || 'female',
+    district: user?.district || '',
+    city: user?.city || '',
+    nativePlace: user?.nativePlace || '',
     education: user?.education || '',
     occupation: user?.occupation || '',
     company: user?.company || '',
     income: user?.income || '',
-    caste: user?.caste || 'Maratha',
+    caste: user?.caste || '',
     aboutMe: user?.aboutMe || '',
     fatherOccupation: user?.fatherOccupation || '',
     motherOccupation: user?.motherOccupation || ''
   });
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passError, setPassError] = useState('');
 
   const [saved, setSaved] = useState(false);
   const [showViewerModal, setShowViewerModal] = useState(false);
@@ -79,7 +88,29 @@ export const EditProfilePage = ({ onNavigate }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateProfile(formData);
+    setPassError('');
+
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        setPassError('Password must be at least 6 characters long.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPassError('Passwords do not match.');
+        return;
+      }
+    }
+
+    const payload = {
+      ...formData,
+      ...(newPassword ? { password: newPassword } : {})
+    };
+
+    updateProfile(payload);
+    if (newPassword) {
+      setNewPassword('');
+      setConfirmPassword('');
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -107,11 +138,17 @@ export const EditProfilePage = ({ onNavigate }) => {
           )}
         </div>
 
+        {passError && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-bold">
+            {passError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <label className="block font-semibold mb-1">Full Name</label>
+              <label className="block font-semibold mb-1">Full Name (संपूर्ण नाव)</label>
               <input
                 type="text"
                 value={formData.name}
@@ -121,12 +158,25 @@ export const EditProfilePage = ({ onNavigate }) => {
             </div>
 
             <div>
+              <label className="block font-semibold mb-1">Gender (लिंग)</label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-gray-200"
+              >
+                <option value="female">Female (स्त्री)</option>
+                <option value="male">Male (पुरुष)</option>
+              </select>
+            </div>
+
+            <div>
               <label className="block font-semibold mb-1">Maharashtra District</label>
               <select
                 value={formData.district}
                 onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                 className="w-full p-2.5 rounded-xl border border-gray-200"
               >
+                <option value="">Select District</option>
                 {MAHARASHTRA_DISTRICTS.map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -150,6 +200,7 @@ export const EditProfilePage = ({ onNavigate }) => {
                 onChange={(e) => setFormData({ ...formData, caste: e.target.value })}
                 className="w-full p-2.5 rounded-xl border border-gray-200"
               >
+                <option value="">Select Caste / Community</option>
                 {MAHARASHTRA_COMMUNITIES.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -174,6 +225,58 @@ export const EditProfilePage = ({ onNavigate }) => {
                 onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
                 className="w-full p-2.5 rounded-xl border border-gray-200"
               />
+            </div>
+          </div>
+
+          {/* Change Password Section */}
+          <div className="pt-4 border-t border-gray-100 space-y-3">
+            <h4 className="font-serif text-sm font-bold text-brand-plum flex items-center space-x-1.5">
+              <Lock className="w-4 h-4 text-brand-kesari" />
+              <span>Change Password (पासवर्ड बदला) - Optional</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block font-semibold mb-1 text-brand-charcoal">New Password</label>
+                <div className="relative">
+                  <Lock className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-3" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Leave blank to keep current"
+                    className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-brand-plum"
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-brand-charcoal">Confirm New Password</label>
+                <div className="relative">
+                  <Lock className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-3" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-brand-plum"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth, normalizeGender } from './AuthContext';
 import { MOCK_PROFILES } from '../data/mockProfiles';
 import { 
   fetchProfilesFromFirestore, 
@@ -101,14 +101,16 @@ export const ProfileProvider = ({ children }) => {
       const cleaned = parsed.filter(p => !allExcluded.includes(String(p.id)));
       const map = new Map();
       MOCK_PROFILES.forEach(p => {
-        if (!allExcluded.includes(String(p.id))) map.set(String(p.id), p);
+        const norm = normalizeGender(p);
+        if (!allExcluded.includes(String(norm.id))) map.set(String(norm.id), norm);
       });
       cleaned.forEach(p => {
-        if (!allExcluded.includes(String(p.id))) map.set(String(p.id), p);
+        const norm = normalizeGender(p);
+        if (!allExcluded.includes(String(norm.id))) map.set(String(norm.id), norm);
       });
       return Array.from(map.values());
     }
-    return MOCK_PROFILES.filter(p => !allExcluded.includes(String(p.id)));
+    return MOCK_PROFILES.map(normalizeGender).filter(p => !allExcluded.includes(String(p.id)));
   });
 
   const [homeContent, setHomeContent] = useState(() => {
@@ -128,14 +130,15 @@ export const ProfileProvider = ({ children }) => {
   // Sync logged-in candidate user profile changes into profiles array in real-time (Excludes Admin)
   useEffect(() => {
     if (user && user.id && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1') {
+      const normUser = normalizeGender(user);
       setProfiles((prev) => {
-        const index = prev.findIndex((p) => String(p.id) === String(user.id));
+        const index = prev.findIndex((p) => String(p.id) === String(normUser.id));
         if (index !== -1) {
           const updated = [...prev];
-          updated[index] = { ...updated[index], ...user };
+          updated[index] = { ...updated[index], ...normUser };
           return updated;
         } else {
-          return [user, ...prev];
+          return [normUser, ...prev];
         }
       });
     }
@@ -160,10 +163,12 @@ export const ProfileProvider = ({ children }) => {
       setProfiles(() => {
         const map = new Map();
         MOCK_PROFILES.forEach((p) => {
-          if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
+          const norm = normalizeGender(p);
+          if (!allExcluded.includes(String(norm.id)) && !isAdminCheck(norm)) map.set(String(norm.id), norm);
         });
         if (firestoreProfiles && firestoreProfiles.length > 0) {
-          firestoreProfiles.forEach((p) => {
+          firestoreProfiles.forEach((rawP) => {
+            const p = normalizeGender(rawP);
             if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
           });
         }

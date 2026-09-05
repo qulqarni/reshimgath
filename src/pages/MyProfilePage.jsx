@@ -727,16 +727,16 @@ export const MyProfilePage = ({ onNavigate }) => {
                     />
                   </div>
 
-                  {/* Looking for Match for */}
+                  {/* Gender */}
                   <div>
-                    <label className="block font-semibold mb-1 text-brand-charcoal">Looking for Match for</label>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Gender (लिंग)</label>
                     <select
                       value={editFormData.gender}
                       onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                     >
-                      <option value="female">Bride (वधू) - Female</option>
-                      <option value="male">Groom (वर) - Male</option>
+                      <option value="female">Female (स्त्री)</option>
+                      <option value="male">Male (पुरुष)</option>
                     </select>
                   </div>
 

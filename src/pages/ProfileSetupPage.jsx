@@ -11,48 +11,48 @@ export const ProfileSetupPage = ({ onNavigate }) => {
 
   const [step, setStep] = useState(1);
 
-  const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
-  const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
+  const initReligion = user?.religion ? (RELIGIONS.includes(user.religion) ? user.religion : 'Other') : '';
+  const initCustomReligion = user?.religion && !RELIGIONS.includes(user.religion) ? user.religion : '';
 
-  const initCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Maratha') : 'Other';
-  const initCustomCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+  const initCaste = user?.caste ? (MAHARASHTRA_COMMUNITIES.includes(user.caste) ? user.caste : 'Other') : '';
+  const initCustomCaste = user?.caste && !MAHARASHTRA_COMMUNITIES.includes(user.caste) ? user.caste : '';
 
-  const initEdu = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
-  const initCustomEdu = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
+  const initEdu = user?.education ? (EDUCATION_LEVELS.includes(user.education) ? user.education : 'Other') : '';
+  const initCustomEdu = user?.education && !EDUCATION_LEVELS.includes(user.education) ? user.education : '';
 
-  const initOcc = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
-  const initCustomOcc = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
+  const initOcc = user?.occupation ? (OCCUPATIONS.includes(user.occupation) ? user.occupation : 'Other') : '';
+  const initCustomOcc = user?.occupation && !OCCUPATIONS.includes(user.occupation) ? user.occupation : '';
 
   const [formData, setFormData] = useState({
-    dob: user?.dob || '1998-06-15',
-    height: user?.height || '5\' 6" (168 cm)',
-    maritalStatus: 'Never Married',
+    dob: user?.dob || '',
+    height: user?.height || '',
+    maritalStatus: user?.maritalStatus || '',
     religion: initReligion,
     customReligion: initCustomReligion,
     caste: initCaste,
     customCaste: initCustomCaste,
-    motherTongue: 'Marathi',
-    bloodGroup: 'O+',
-    state: 'Maharashtra',
-    district: user?.district || 'Pune',
-    city: 'Kothrud, Pune',
-    nativePlace: 'Satara / Sangli',
+    motherTongue: user?.motherTongue || '',
+    bloodGroup: user?.bloodGroup || '',
+    state: user?.state || 'Maharashtra',
+    district: user?.district || '',
+    city: user?.city || '',
+    nativePlace: user?.nativePlace || '',
     education: initEdu,
     customEducation: initCustomEdu,
-    college: 'COEP Pune',
+    college: user?.college || '',
     occupation: initOcc,
     customOccupation: initCustomOcc,
-    company: 'Leading Tech Company',
-    income: '₹ 12 - 18 Lakhs per annum',
-    fatherOccupation: 'Government Servant / Business Owner',
-    motherOccupation: 'Homemaker',
-    siblings: '1 Brother',
-    familyType: 'Nuclear Family',
-    diet: 'Vegetarian',
-    smoking: 'No',
-    drinking: 'No',
-    hobbies: 'Music, Trekking, Classical Art',
-    aboutMe: 'I am a family-oriented Maharashtrian professional. I balance modern tech aspirations with cultural warmth.'
+    company: user?.company || '',
+    income: user?.income || '',
+    fatherOccupation: user?.fatherOccupation || '',
+    motherOccupation: user?.motherOccupation || '',
+    siblings: user?.siblings || '',
+    familyType: user?.familyType || '',
+    diet: user?.diet || '',
+    smoking: user?.smoking || '',
+    drinking: user?.drinking || '',
+    hobbies: user?.hobbies || '',
+    aboutMe: user?.aboutMe || ''
   });
 
   const handleNext = () => {
@@ -117,6 +117,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Religion (धर्म निवडा)</option>
                   {RELIGIONS.map(r => (
                     <option key={r} value={r}>{r}</option>
                   ))}
@@ -141,6 +142,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, caste: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Caste / Community (जात निवडा)</option>
                   {MAHARASHTRA_COMMUNITIES.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -175,6 +177,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, height: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Height (उंची निवडा)</option>
                   {HEIGHT_OPTIONS.map((h) => (
                     <option key={h} value={h}>{h}</option>
                   ))}
@@ -188,6 +191,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Marital Status</option>
                   <option value="Never Married">Never Married</option>
                   <option value="Divorced">Divorced</option>
                   <option value="Widowed">Widowed</option>
@@ -215,6 +219,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select District (जिल्हा निवडा)</option>
                   {MAHARASHTRA_DISTRICTS.map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
@@ -253,6 +258,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, education: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Education (शिक्षण निवडा)</option>
                   {EDUCATION_LEVELS.map(ed => (
                     <option key={ed} value={ed}>{ed}</option>
                   ))}
@@ -287,6 +293,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Occupation (नोकरी निवडा)</option>
                   {OCCUPATIONS.map(occ => (
                     <option key={occ} value={occ}>{occ}</option>
                   ))}
@@ -311,6 +318,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, income: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Income Range</option>
                   {INCOME_RANGES.map(inc => (
                     <option key={inc} value={inc}>{inc}</option>
                   ))}
@@ -358,6 +366,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                   onChange={(e) => setFormData({ ...formData, familyType: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
+                  <option value="">Select Family Type</option>
                   <option value="Nuclear Family">Nuclear Family</option>
                   <option value="Joint Family">Joint Family</option>
                 </select>
@@ -375,6 +384,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     onChange={(e) => setFormData({ ...formData, diet: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                   >
+                    <option value="">Select Diet</option>
                     <option value="Vegetarian">Vegetarian</option>
                     <option value="Non-Vegetarian">Non-Vegetarian</option>
                     <option value="Eggetarian">Eggetarian</option>
@@ -388,6 +398,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     onChange={(e) => setFormData({ ...formData, smoking: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                   >
+                    <option value="">Select Smoking</option>
                     <option value="No">No</option>
                     <option value="Occasionally">Occasionally</option>
                   </select>
@@ -400,6 +411,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     onChange={(e) => setFormData({ ...formData, drinking: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                   >
+                    <option value="">Select Drinking</option>
                     <option value="No">No</option>
                     <option value="Socially">Socially</option>
                   </select>

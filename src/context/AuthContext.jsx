@@ -17,10 +17,32 @@ export const ADMIN_USER = {
   photos: []
 };
 
+export const normalizeGender = (p) => {
+  if (!p) return p;
+  let raw = p.gender || p.lookingFor || p.looking_for || p.seeking || p.matchFor;
+  let genderVal = 'female';
+  if (typeof raw === 'string') {
+    const lower = raw.toLowerCase().trim();
+    if (lower === 'male' || lower === 'groom' || lower === 'man' || lower === 'boy' || lower.includes('groom') || lower.includes('male')) {
+      genderVal = 'male';
+    } else if (lower === 'female' || lower === 'bride' || lower === 'woman' || lower === 'girl' || lower.includes('bride') || lower.includes('female')) {
+      genderVal = 'female';
+    }
+  }
+  return {
+    ...p,
+    gender: genderVal
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('reshimgath_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('reshimgath_user');
+      return saved ? normalizeGender(JSON.parse(saved)) : null;
+    } catch (e) {
+      return null;
+    }
   });
 
   const [privacyAlert, setPrivacyAlert] = useState(false);
@@ -46,8 +68,9 @@ export const AuthProvider = ({ children }) => {
 
     // 1. Admin credentials check
     if (input === ADMIN_USER.email || input === 'admin@reshimgath.com' || input === 'admin') {
-      setUser(ADMIN_USER);
-      return { success: true, user: ADMIN_USER };
+      const normAdmin = normalizeGender(ADMIN_USER);
+      setUser(normAdmin);
+      return { success: true, user: normAdmin };
     }
 
     // 2. Demo Profiles credentials check
@@ -56,8 +79,9 @@ export const AuthProvider = ({ children }) => {
     );
 
     if (matchedDemo) {
-      setUser(matchedDemo);
-      return { success: true, user: matchedDemo };
+      const normDemo = normalizeGender(matchedDemo);
+      setUser(normDemo);
+      return { success: true, user: normDemo };
     }
 
     // 3. Search in saved registered profiles from local storage
@@ -78,8 +102,9 @@ export const AuthProvider = ({ children }) => {
     );
 
     if (matchedProfile) {
-      setUser(matchedProfile);
-      return { success: true, user: matchedProfile };
+      const normMatched = normalizeGender(matchedProfile);
+      setUser(normMatched);
+      return { success: true, user: normMatched };
     }
 
     // 4. If account does not exist, reject login
@@ -91,38 +116,25 @@ export const AuthProvider = ({ children }) => {
 
   const loginAsDemo = () => {
     if (DEMO_USER) {
-      setUser(DEMO_USER);
+      setUser(normalizeGender(DEMO_USER));
     }
     setPrivacyAlert(false);
   };
 
   const loginAsAdmin = () => {
-    setUser(ADMIN_USER);
+    setUser(normalizeGender(ADMIN_USER));
     setPrivacyAlert(false);
   };
 
   const signup = (signupData) => {
     const newUser = {
       id: "u_" + Date.now(),
-      name: signupData.name || "Member",
-      email: signupData.email,
-      phone: signupData.phone || "",
+      name: (signupData.name || "").trim(),
+      email: (signupData.email || "").trim(),
+      phone: (signupData.phone || "").trim(),
       gender: signupData.gender || "female",
-      age: signupData.age || 25,
-      district: signupData.district || "Ichalkaranji",
-      maritalStatus: "Never Married",
-      religion: signupData.religion || "Hindu",
-      caste: signupData.caste || "Maratha",
-      motherTongue: "Marathi",
+      password: signupData.password || "",
       verified: false,
-      aboutMe: "Newly registered member looking for a life partner.",
-      avatar: null,
-      photos: [],
-      biodataPdf: signupData.biodataPdf || null,
-      partnerPref: {
-        ageRange: "24 - 30",
-        districts: ["Ichalkaranji", "Kolhapur", "Sangli", "Pune"]
-      },
       createdAt: new Date().toISOString()
     };
 

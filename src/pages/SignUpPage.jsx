@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Heart, User, Mail, Lock, Phone, Sparkles } from 'lucide-react';
+import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 export const SignUpPage = ({ onNavigate }) => {
   const { signup } = useAuth();
@@ -12,16 +12,54 @@ export const SignUpPage = ({ onNavigate }) => {
     email: '',
     phone: '',
     password: '',
-    gender: 'female',
-    age: '24',
-    religion: 'Hindu',
-    caste: 'Maratha'
+    confirmPassword: '',
+    gender: ''
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    signup(formData);
-    onNavigate('/profile-setup');
+    setError('');
+
+    if (!formData.name.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    if (!formData.gender) {
+      setError('Please select your gender.');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    if (!formData.phone.trim()) {
+      setError('Please enter your mobile number.');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match. Please verify your password.');
+      return;
+    }
+
+    const res = signup(formData);
+    if (res && res.success) {
+      onNavigate('/profile-setup');
+    } else {
+      setError(res?.message || 'Failed to create profile. Please try again.');
+    }
   };
 
   return (
@@ -42,6 +80,12 @@ export const SignUpPage = ({ onNavigate }) => {
             {t('signupSubheading')}
           </p>
         </div>
+
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-bold">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -67,15 +111,17 @@ export const SignUpPage = ({ onNavigate }) => {
             {/* Gender */}
             <div>
               <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-                Looking for Match for *
+                Gender (लिंग) *
               </label>
               <select
+                required
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
               >
-                <option value="female">Bride (वधू) - Female</option>
-                <option value="male">Groom (वर) - Male</option>
+                <option value="">Select Gender (लिंग निवडा)</option>
+                <option value="female">Female (स्त्री)</option>
+                <option value="male">Male (पुरुष)</option>
               </select>
             </div>
 
@@ -117,21 +163,61 @@ export const SignUpPage = ({ onNavigate }) => {
 
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-              Create Password *
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-              <input
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Minimum 6 characters"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
-              />
+          {/* Password Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            {/* Create Password */}
+            <div>
+              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
+                Create Password *
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Minimum 6 characters"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-brand-plum"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-xs font-semibold text-brand-charcoal mb-1">
+                Confirm Password *
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  placeholder="Re-enter password"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-brand-plum"
+                  title={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
           </div>
 
           <button
