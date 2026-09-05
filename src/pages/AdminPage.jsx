@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
 import { 
   ShieldCheck, 
@@ -163,6 +163,52 @@ export const AdminPage = ({ onNavigate }) => {
     updateAdminProfile(editingProfile.id, editingProfile);
     setShowEditModal(false);
     setEditingProfile(null);
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      const base64Image = await compressImage(file, 800, 800, 0.8);
+      setEditingProfile((prev) => ({ ...prev, avatar: base64Image }));
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      alert('Failed to process image.');
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setEditingProfile((prev) => ({ ...prev, avatar: null }));
+  };
+
+  const handleAddGalleryPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      const base64Image = await compressImage(file, 800, 800, 0.8);
+      setEditingProfile((prev) => ({
+        ...prev,
+        photos: [...(prev.photos || []), base64Image]
+      }));
+    } catch (err) {
+      console.error('Gallery photo upload failed:', err);
+      alert('Failed to process image.');
+    }
+  };
+
+  const handleRemoveGalleryPhoto = (index) => {
+    setEditingProfile((prev) => ({
+      ...prev,
+      photos: (prev.photos || []).filter((_, i) => i !== index)
+    }));
   };
 
   const handleSaveHomeContent = (e) => {
@@ -1102,75 +1148,453 @@ export const AdminPage = ({ onNavigate }) => {
       {/* MODAL: EDIT PROFILE */}
       {showEditModal && editingProfile && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <h3 className="font-serif text-xl font-bold text-brand-plum">Edit Member Profile (Admin)</h3>
+              <div>
+                <h3 className="font-serif text-xl font-bold text-brand-plum">Edit Member Profile (Admin)</h3>
+                <p className="text-xs text-gray-500">Registration ID: #{editingProfile.regId || editingProfile.id}</p>
+              </div>
               <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditedProfile} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProfile.name}
-                    onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
+            <form onSubmit={handleSaveEditedProfile} className="space-y-6 text-xs">
+              
+              {/* SECTION 1: PROFILE PICTURE & VERIFICATION */}
+              <div className="bg-brand-lightBg/50 p-4 sm:p-6 rounded-2xl border border-brand-rose/20 space-y-4">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-brand-rose/20 pb-2 flex items-center justify-between">
+                  <span>1. Profile Picture & Verification</span>
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-semibold text-emerald-700">
+                    <input
+                      type="checkbox"
+                      checked={!!editingProfile.verified}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, verified: e.target.checked })}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>Verified Profile</span>
+                  </label>
+                </h4>
+
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="relative">
+                    <img
+                      src={editingProfile.avatar || (Array.isArray(editingProfile.photos) && editingProfile.photos[0]) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
+                      alt={editingProfile.name || 'Profile'}
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-brand-rose/30 shadow-md"
+                    />
+                    {editingProfile.verified && (
+                      <span className="absolute -top-2 -right-2 bg-emerald-500 text-white p-1 rounded-full shadow">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 text-center sm:text-left">
+                    <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                      <label className="px-4 py-2 bg-brand-plum text-white rounded-xl font-bold cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shadow-sm">
+                        <Camera className="w-4 h-4" />
+                        <span>Upload / Change Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      {editingProfile.avatar && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveAvatar}
+                          className="px-3 py-2 bg-rose-50 text-rose-600 rounded-xl font-semibold hover:bg-rose-100 transition-all flex items-center space-x-1 border border-rose-200"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove Photo</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500">Supports JPG, PNG, WEBP. Compressed automatically before saving.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: PERSONAL & DEMOGRAPHICS */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  2. Personal & Basic Information
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingProfile.name || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Gender *</label>
+                    <select
+                      value={editingProfile.gender || 'female'}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, gender: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-medium"
+                    >
+                      <option value="female">Bride (Female / वधू)</option>
+                      <option value="male">Groom (Male / वर)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Age *</label>
+                    <input
+                      type="number"
+                      required
+                      min="18"
+                      max="80"
+                      value={editingProfile.age || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, age: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Date of Birth (DOB)</label>
+                    <input
+                      type="date"
+                      value={editingProfile.dob || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, dob: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Height</label>
+                    <select
+                      value={editingProfile.height || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, height: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      <option value="">Select Height</option>
+                      {HEIGHT_OPTIONS.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Marital Status</label>
+                    <select
+                      value={editingProfile.maritalStatus || 'Never Married'}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, maritalStatus: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      <option value="Never Married">Never Married</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Widowed">Widowed</option>
+                      <option value="Awaiting Divorce">Awaiting Divorce</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: RELIGION, CASTE & LOCATION */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  3. Religion, Caste & Location
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Religion</label>
+                    <select
+                      value={RELIGIONS.includes(editingProfile.religion) ? editingProfile.religion : (editingProfile.religion ? 'Other' : 'Hindu')}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, religion: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      {RELIGIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Caste / Community *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingProfile.caste || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, caste: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                      placeholder="e.g. Maratha, Brahmin, Lingayat..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Mother Tongue</label>
+                    <input
+                      type="text"
+                      value={editingProfile.motherTongue || 'Marathi'}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, motherTongue: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">District *</label>
+                    <select
+                      value={editingProfile.district || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, district: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      <option value="">Select District</option>
+                      {MAHARASHTRA_DISTRICTS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">City / Area</label>
+                    <input
+                      type="text"
+                      value={editingProfile.city || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, city: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                      placeholder="e.g. Ichalkaranji, Kothrud"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Native Place (मूळ गाव)</label>
+                    <input
+                      type="text"
+                      value={editingProfile.nativePlace || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, nativePlace: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                      placeholder="e.g. Shirol, Hatkanangale"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: EDUCATION & CAREER */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  4. Education & Profession
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Education Degree</label>
+                    <input
+                      type="text"
+                      value={editingProfile.education || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, education: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                      placeholder="e.g. B.E. Computer Science, MBA"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">College / Institute</label>
+                    <input
+                      type="text"
+                      value={editingProfile.college || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, college: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Occupation / Job</label>
+                    <input
+                      type="text"
+                      value={editingProfile.occupation || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, occupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                      placeholder="e.g. Software Engineer, Doctor"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Company / Organization</label>
+                    <input
+                      type="text"
+                      value={editingProfile.company || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, company: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Annual Income</label>
+                    <select
+                      value={editingProfile.income || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, income: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      <option value="">Select Income Range</option>
+                      {INCOME_RANGES.map((inc) => (
+                        <option key={inc} value={inc}>{inc}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: FAMILY & LIFESTYLE */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  5. Family Background & Lifestyle
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Father's Occupation</label>
+                    <input
+                      type="text"
+                      value={editingProfile.fatherOccupation || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, fatherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Mother's Occupation</label>
+                    <input
+                      type="text"
+                      value={editingProfile.motherOccupation || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, motherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Family Type</label>
+                    <select
+                      value={editingProfile.familyType || 'Nuclear Family'}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, familyType: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      <option value="Nuclear Family">Nuclear Family</option>
+                      <option value="Joint Family">Joint Family</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Siblings Details</label>
+                    <input
+                      type="text"
+                      value={editingProfile.siblings || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, siblings: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                      placeholder="e.g. 1 Brother, 1 Sister"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Dietary Habit</label>
+                    <select
+                      value={editingProfile.diet || 'Vegetarian'}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, diet: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    >
+                      <option value="Vegetarian">Vegetarian</option>
+                      <option value="Non-Vegetarian">Non-Vegetarian</option>
+                      <option value="Eggetarian">Eggetarian</option>
+                      <option value="Jain">Jain</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Smoking / Drinking</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={editingProfile.smoking || 'No'}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, smoking: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="No">Smoke: No</option>
+                        <option value="Yes">Smoke: Yes</option>
+                        <option value="Occasionally">Smoke: Occasion</option>
+                      </select>
+                      <select
+                        value={editingProfile.drinking || 'No'}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, drinking: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="No">Drink: No</option>
+                        <option value="Yes">Drink: Yes</option>
+                        <option value="Occasionally">Drink: Occasion</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-1">Age *</label>
-                  <input
-                    type="number"
-                    required
-                    value={editingProfile.age}
-                    onChange={(e) => setEditingProfile({ ...editingProfile, age: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">District / City *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProfile.district}
-                    onChange={(e) => setEditingProfile({ ...editingProfile, district: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1">Caste *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProfile.caste}
-                    onChange={(e) => setEditingProfile({ ...editingProfile, caste: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  <label className="block font-semibold mb-1 text-gray-700">About Profile / Bio (स्वपरिचय)</label>
+                  <textarea
+                    rows={3}
+                    value={editingProfile.aboutMe || ''}
+                    onChange={(e) => setEditingProfile({ ...editingProfile, aboutMe: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum text-xs"
+                    placeholder="Brief bio, family background, aspirations..."
                   />
                 </div>
               </div>
 
-              <div className="pt-4 flex items-center justify-end space-x-3">
+              {/* SECTION 6: PHOTO GALLERY */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1 flex items-center justify-between">
+                  <span>6. Photo Gallery</span>
+                  <label className="px-3 py-1 bg-brand-lightBg hover:bg-brand-rose/20 text-brand-plum rounded-lg text-xs font-bold cursor-pointer flex items-center space-x-1 border border-brand-rose/30 transition-all">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Gallery Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAddGalleryPhoto}
+                      className="hidden"
+                    />
+                  </label>
+                </h4>
+                {(!editingProfile.photos || editingProfile.photos.length === 0) ? (
+                  <p className="text-gray-400 italic text-[11px]">No gallery photos uploaded yet.</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                    {editingProfile.photos.map((img, idx) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 shadow-sm aspect-square bg-gray-50">
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGalleryPhoto(idx)}
+                          className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* FOOTER ACTIONS */}
+              <div className="pt-4 flex items-center justify-end space-x-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold"
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                  className="px-6 py-2.5 rounded-xl bg-brand-plum text-white font-bold shadow-md hover:bg-brand-plumDark transition-all flex items-center space-x-1.5"
                 >
-                  Save Changes
+                  <Save className="w-4 h-4" />
+                  <span>Save All Changes</span>
                 </button>
               </div>
             </form>
