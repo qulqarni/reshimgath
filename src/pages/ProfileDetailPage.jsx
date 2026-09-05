@@ -103,7 +103,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         
         {/* Left Column: Photo Gallery */}
         <div className="lg:col-span-5">
-          <PhotoGallery photos={profile.photos} name={profile.name} />
+          <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
         </div>
 
         {/* Right Column: Profile Summary & Action Box */}

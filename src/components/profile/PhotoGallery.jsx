@@ -1,11 +1,29 @@
 import React, { useState } from 'react';
 import { Maximize2, X, ChevronLeft, ChevronRight, Image as ImageIcon, User, Camera } from 'lucide-react';
 
-export const PhotoGallery = ({ photos = [], name = "" }) => {
+export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  if (!photos || photos.length === 0) {
+  // Extract all valid image URLs from avatar & photos props
+  const validPhotos = [];
+
+  if (avatar && typeof avatar === 'string' && avatar.trim()) {
+    validPhotos.push(avatar.trim());
+  }
+
+  const rawList = Array.isArray(photos) ? photos : (photos ? [photos] : []);
+  rawList.forEach((p) => {
+    if (typeof p === 'string' && p.trim() && !validPhotos.includes(p.trim())) {
+      validPhotos.push(p.trim());
+    } else if (p && typeof p === 'object' && p.url && typeof p.url === 'string' && p.url.trim()) {
+      if (!validPhotos.includes(p.url.trim())) {
+        validPhotos.push(p.url.trim());
+      }
+    }
+  });
+
+  if (validPhotos.length === 0) {
     return (
       <div className="w-full h-96 sm:h-[480px] rounded-3xl bg-white border-2 border-dashed border-brand-rose/30 p-8 flex flex-col items-center justify-center text-center space-y-4 shadow-luxury">
         <div className="w-20 h-20 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center border-2 border-brand-plum/20">
@@ -21,7 +39,7 @@ export const PhotoGallery = ({ photos = [], name = "" }) => {
     );
   }
 
-  const currentPhoto = photos[activeIndex] || photos[0];
+  const currentPhoto = validPhotos[activeIndex] || validPhotos[0];
 
   return (
     <div className="space-y-4">
@@ -44,14 +62,14 @@ export const PhotoGallery = ({ photos = [], name = "" }) => {
 
         {/* Counter Tag */}
         <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1 rounded-full">
-          {activeIndex + 1} / {photos.length}
+          {activeIndex + 1} / {validPhotos.length}
         </div>
       </div>
 
       {/* Thumbnails Row */}
-      {photos.length > 1 && (
+      {validPhotos.length > 1 && (
         <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-none">
-          {photos.map((img, idx) => (
+          {validPhotos.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setActiveIndex(idx)}
@@ -78,9 +96,9 @@ export const PhotoGallery = ({ photos = [], name = "" }) => {
           </button>
 
           {/* Previous Arrow */}
-          {photos.length > 1 && (
+          {validPhotos.length > 1 && (
             <button
-              onClick={() => setActiveIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1))}
+              onClick={() => setActiveIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1))}
               className="absolute left-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -96,9 +114,9 @@ export const PhotoGallery = ({ photos = [], name = "" }) => {
           </div>
 
           {/* Next Arrow */}
-          {photos.length > 1 && (
+          {validPhotos.length > 1 && (
             <button
-              onClick={() => setActiveIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1))}
+              onClick={() => setActiveIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1))}
               className="absolute right-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
             >
               <ChevronRight className="w-6 h-6" />
