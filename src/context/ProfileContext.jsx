@@ -84,17 +84,29 @@ export const DEFAULT_STORIES = [
 
 export const ProfileProvider = ({ children }) => {
   const [profiles, setProfiles] = useState(() => {
+    const deletedIds = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
+      } catch (e) {
+        return [];
+      }
+    })();
+
     const saved = localStorage.getItem('reshimgath_profiles');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Clean old demo profiles starting with 'p1', 'p2', etc.
-      const cleaned = parsed.filter(p => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(p.id));
+      // Clean old demo profiles starting with 'p1', 'p2', etc. and any deleted profiles
+      const cleaned = parsed.filter(p => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(String(p.id)) && !deletedIds.includes(String(p.id)));
       const map = new Map();
-      MOCK_PROFILES.forEach(p => map.set(p.id, p));
-      cleaned.forEach(p => map.set(p.id, p));
+      MOCK_PROFILES.forEach(p => {
+        if (!deletedIds.includes(String(p.id))) map.set(String(p.id), p);
+      });
+      cleaned.forEach(p => {
+        if (!deletedIds.includes(String(p.id))) map.set(String(p.id), p);
+      });
       return Array.from(map.values());
     }
-    return MOCK_PROFILES;
+    return MOCK_PROFILES.filter(p => !deletedIds.includes(String(p.id)));
   });
 
   const [homeContent, setHomeContent] = useState(() => {
@@ -115,7 +127,7 @@ export const ProfileProvider = ({ children }) => {
   useEffect(() => {
     if (user && user.id && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1') {
       setProfiles((prev) => {
-        const index = prev.findIndex((p) => p.id === user.id);
+        const index = prev.findIndex((p) => String(p.id) === String(user.id));
         if (index !== -1) {
           const updated = [...prev];
           updated[index] = { ...updated[index], ...user };
@@ -140,20 +152,17 @@ export const ProfileProvider = ({ children }) => {
 
       const isAdminCheck = (p) => p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'));
 
-      setProfiles((prev) => {
+      setProfiles(() => {
         const map = new Map();
         MOCK_PROFILES.forEach((p) => {
-          if (!deletedIds.includes(p.id) && !isAdminCheck(p)) map.set(p.id, p);
+          if (!deletedIds.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
         });
         if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((p) => {
-            if (!deletedIds.includes(p.id) && !isAdminCheck(p)) map.set(p.id, p);
+            if (!deletedIds.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
           });
         }
-        prev.forEach((p) => {
-          if (!deletedIds.includes(p.id) && !isAdminCheck(p)) map.set(p.id, p);
-        });
-        return Array.from(map.values()).filter((p) => !isAdminCheck(p));
+        return Array.from(map.values()).filter((p) => !deletedIds.includes(String(p.id)) && !isAdminCheck(p));
       });
     });
 
@@ -702,18 +711,26 @@ export const ProfileProvider = ({ children }) => {
     addToast('Profile updated successfully by Admin!', 'success');
   };
 
-  const deleteProfile = (profileId) => {
-    setProfiles((prev) => prev.filter((p) => String(p.id) !== String(profileId)));
-    deleteProfileFromFirestore(profileId);
+  const deleteProfile = async (profileId) => {
+    const idStr = String(profileId);
 
     try {
       const deletedSaved = JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
-      if (!deletedSaved.includes(profileId)) {
-        const updated = [...deletedSaved, profileId];
+      if (!deletedSaved.includes(idStr)) {
+        const updated = [...deletedSaved, idStr];
         localStorage.setItem('reshimgath_deleted_profiles', JSON.stringify(updated));
       }
     } catch (e) {}
 
+    setProfiles((prev) => {
+      const updated = prev.filter((p) => String(p.id) !== idStr);
+      try {
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    await deleteProfileFromFirestore(idStr);
     addToast('Profile deleted successfully.', 'info');
   };
 
