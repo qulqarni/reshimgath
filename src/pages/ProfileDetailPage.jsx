@@ -216,7 +216,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                 className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
               >
                 <MessageSquare className="w-4 h-4 text-emerald-200" />
-                <span>{t('sendMessage')} (Chat Active)</span>
+                <span>Message</span>
               </button>
             ) : isReceived ? (
               <div className="flex gap-2">
@@ -248,21 +248,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               </button>
             )}
 
-            {/* Secondary Action Button: Message */}
-            <button
-              onClick={() => {
-                if (isAccepted) onNavigate('/messages');
-              }}
-              disabled={!isAccepted}
-              className={`w-full py-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center space-x-2 ${
-                isAccepted
-                  ? 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                  : 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Message</span>
-            </button>
             {!isAccepted && (
               <p className="text-[10px] text-center text-brand-gray italic">
                 You can message once interest is accepted
