@@ -35,7 +35,7 @@ import {
 export const MyProfilePage = ({ onNavigate }) => {
   const { user, updateProfile, logout } = useAuth();
   const { t } = useLanguage();
-  const { interests, profileViews } = useProfiles();
+  const { profiles, interests, profileViews } = useProfiles();
 
   useEffect(() => {
     if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
@@ -512,29 +512,51 @@ export const MyProfilePage = ({ onNavigate }) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            {myProfileViews.map((visitor) => (
-              <div
-                key={visitor.id}
-                onClick={() => onNavigate(`/profile/${visitor.visitorId}`)}
-                className="bg-brand-lightBg/60 p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
-              >
-                <img
-                  src={visitor.avatar}
-                  alt={visitor.visitorName}
-                  className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform"
-                />
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-serif font-bold text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
-                    {visitor.visitorName}
-                  </h4>
-                  <p className="text-xs text-brand-gray truncate">{visitor.occupation} • {visitor.location}</p>
-                  <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-1">
-                    <Clock className="w-3 h-3" />
-                    <span>Viewed {visitor.timestamp}</span>
+            {myProfileViews.map((visitor) => {
+              const visitorProfile = (profiles || []).find(
+                (p) =>
+                  String(p.id) === String(visitor.visitorId) ||
+                  String(p.regId) === String(visitor.visitorId) ||
+                  (p.registrationId && `SS-${p.registrationId}` === String(visitor.visitorId)) ||
+                  (p.email && visitor.visitorId === p.email)
+              );
+
+              const displayAvatar = visitorProfile?.avatar || (Array.isArray(visitorProfile?.photos) && visitorProfile.photos[0]) || visitor.avatar;
+              const displayName = visitorProfile?.name || visitor.visitorName;
+              const displayOccupation = visitorProfile?.occupation || visitor.occupation || 'Professional';
+              const displayLocation = visitorProfile?.district || visitor.location || 'Maharashtra';
+              const targetProfileId = visitorProfile?.regId || visitorProfile?.id || visitor.visitorId;
+
+              return (
+                <div
+                  key={visitor.id}
+                  onClick={() => onNavigate(`/profile/${targetProfileId}`)}
+                  className="bg-brand-lightBg/60 p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
+                >
+                  {displayAvatar ? (
+                    <img
+                      src={displayAvatar}
+                      alt={displayName}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform bg-white"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-brand-plum/10 border-2 border-white shadow shrink-0 flex items-center justify-center text-brand-plum group-hover:scale-105 transition-transform">
+                      <User className="w-7 h-7 text-brand-plum/60" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-serif font-bold text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
+                      {displayName}
+                    </h4>
+                    <p className="text-xs text-brand-gray truncate">{displayOccupation} • {displayLocation}</p>
+                    <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-1">
+                      <Clock className="w-3 h-3" />
+                      <span>Viewed {visitor.timestamp}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
