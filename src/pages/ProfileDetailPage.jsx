@@ -25,7 +25,8 @@ import {
   Users,
   Eye,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  Ban
 } from 'lucide-react';
 
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
@@ -54,6 +55,24 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
         <h2 className="font-serif text-2xl font-bold text-brand-plum">Profile Not Found</h2>
         <p className="text-xs text-brand-gray">The requested matrimonial profile is not available.</p>
+        <button
+          onClick={() => onNavigate('/discover')}
+          className="px-6 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"
+        >
+          Back to Discover
+        </button>
+      </div>
+    );
+  }
+
+  if (profile.blocked && (!user || !(user.isAdmin || user.role === 'admin' || user.id === 'admin_1'))) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+          <Ban className="w-8 h-8 text-rose-600" />
+        </div>
+        <h2 className="font-serif text-2xl font-bold text-brand-plum">Profile Account Blocked</h2>
+        <p className="text-xs text-brand-gray">This matrimonial profile has been suspended or blocked by bureau administration.</p>
         <button
           onClick={() => onNavigate('/discover')}
           className="px-6 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"

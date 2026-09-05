@@ -143,6 +143,12 @@ export const AuthProvider = ({ children }) => {
     );
 
     if (matchedProfile) {
+      if (matchedProfile.blocked) {
+        return {
+          success: false,
+          message: 'Your account has been suspended/blocked by bureau administration. Please contact bureau support.'
+        };
+      }
       const normMatched = normalizeProfile(matchedProfile);
       setUser(normMatched);
       return { success: true, user: normMatched };

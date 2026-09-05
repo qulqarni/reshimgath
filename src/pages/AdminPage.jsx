@@ -30,6 +30,9 @@ import {
   Camera,
   Upload,
   User,
+  Ban,
+  UserX,
+  ShieldOff,
   Image as ImageIcon
 } from 'lucide-react';
 
@@ -39,6 +42,7 @@ export const AdminPage = ({ onNavigate }) => {
   const { 
     profiles, 
     toggleVerifyProfile, 
+    toggleBlockProfile,
     updateAdminProfile, 
     deleteProfile,
     homeContent,
@@ -56,6 +60,7 @@ export const AdminPage = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
   const [verificationFilter, setVerificationFilter] = useState('all');
+  const [blockStatusFilter, setBlockStatusFilter] = useState('all'); // 'all', 'active', 'blocked'
   const [districtFilter, setDistrictFilter] = useState('all');
 
   // Modals state
@@ -146,12 +151,17 @@ export const AdminPage = ({ onNavigate }) => {
       (verificationFilter === 'unverified' && !p.verified);
 
     const matchesDistrict = districtFilter === 'all' || p.district === districtFilter;
+    const matchesBlockStatus = 
+      blockStatusFilter === 'all' || 
+      (blockStatusFilter === 'active' && !p.blocked) || 
+      (blockStatusFilter === 'blocked' && !!p.blocked);
 
-    return matchesSearch && matchesGender && matchesVerification && matchesDistrict;
+    return matchesSearch && matchesGender && matchesVerification && matchesBlockStatus && matchesDistrict;
   });
 
   const verifiedCount = profiles.filter((p) => p.verified).length;
   const unverifiedCount = profiles.filter((p) => !p.verified).length;
+  const blockedCount = profiles.filter((p) => p.blocked).length;
 
   const handleOpenEdit = (p) => {
     setEditingProfile({ ...p });
@@ -497,6 +507,16 @@ export const AdminPage = ({ onNavigate }) => {
                 </select>
 
                 <select
+                  value={blockStatusFilter}
+                  onChange={(e) => setBlockStatusFilter(e.target.value)}
+                  className="p-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-brand-charcoal"
+                >
+                  <option value="all">All Statuses (Active & Blocked)</option>
+                  <option value="active">Active Members Only</option>
+                  <option value="blocked">Blocked Members Only 🚫</option>
+                </select>
+
+                <select
                   value={districtFilter}
                   onChange={(e) => setDistrictFilter(e.target.value)}
                   className="p-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-brand-charcoal"
@@ -523,12 +543,13 @@ export const AdminPage = ({ onNavigate }) => {
                     <th className="p-4 font-bold">Location & Caste</th>
                     <th className="p-4 font-bold">Occupation & Income</th>
                     <th className="p-4 font-bold">Verification Badge</th>
+                    <th className="p-4 font-bold">Account Status</th>
                     <th className="p-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-medium">
                   {filteredProfiles.map((p) => (
-                    <tr key={p.id} className="hover:bg-brand-ivory/50 transition-colors">
+                    <tr key={p.id} className={`transition-colors ${p.blocked ? 'bg-rose-50/50 hover:bg-rose-50' : 'hover:bg-brand-ivory/50'}`}>
                       
                       <td className="p-4">
                         <div className="flex items-center space-x-3">
@@ -544,7 +565,14 @@ export const AdminPage = ({ onNavigate }) => {
                             </div>
                           )}
                           <div>
-                            <p className="font-bold text-brand-plum">{p.name}</p>
+                            <div className="flex items-center space-x-1.5">
+                              <p className="font-bold text-brand-plum">{p.name}</p>
+                              {p.blocked && (
+                                <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[9px] font-bold rounded">
+                                  BLOCKED
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[10px] font-bold text-brand-kesari">Reg ID: {p.regId || `SS-${p.registrationId || 1001}`}</p>
                           </div>
                         </div>
@@ -579,8 +607,43 @@ export const AdminPage = ({ onNavigate }) => {
                         </button>
                       </td>
 
+                      <td className="p-4">
+                        <button
+                          onClick={() => toggleBlockProfile(p.id)}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1.5 transition-all ${
+                            p.blocked
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                          }`}
+                          title="Click to toggle block/active status"
+                        >
+                          {p.blocked ? (
+                            <>
+                              <Ban className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Blocked (Unblock)</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Active Profile</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => toggleBlockProfile(p.id)}
+                            className={`p-2 rounded-xl transition-all ${
+                              p.blocked
+                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                            }`}
+                            title={p.blocked ? 'Unblock Member' : 'Block Member'}
+                          >
+                            {p.blocked ? <UserCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5 text-rose-600" />}
+                          </button>
                           <button
                             onClick={() => handleOpenEdit(p)}
                             className="p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-all"
@@ -1171,17 +1234,29 @@ export const AdminPage = ({ onNavigate }) => {
               
               {/* SECTION 1: PROFILE PICTURE & VERIFICATION */}
               <div className="bg-brand-lightBg/50 p-4 sm:p-6 rounded-2xl border border-brand-rose/20 space-y-4">
-                <h4 className="font-bold text-sm text-brand-plum border-b border-brand-rose/20 pb-2 flex items-center justify-between">
-                  <span>1. Profile Picture & Verification</span>
-                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-semibold text-emerald-700">
-                    <input
-                      type="checkbox"
-                      checked={!!editingProfile.verified}
-                      onChange={(e) => setEditingProfile({ ...editingProfile, verified: e.target.checked })}
-                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span>Verified Profile</span>
-                  </label>
+                <h4 className="font-bold text-sm text-brand-plum border-b border-brand-rose/20 pb-2 flex flex-wrap items-center justify-between gap-3">
+                  <span>1. Profile Picture, Verification & Block Status</span>
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-1.5 cursor-pointer text-xs font-semibold text-emerald-700">
+                      <input
+                        type="checkbox"
+                        checked={!!editingProfile.verified}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, verified: e.target.checked })}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span>Verified Profile</span>
+                    </label>
+
+                    <label className="flex items-center space-x-1.5 cursor-pointer text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 hover:bg-rose-100 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={!!editingProfile.blocked}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, blocked: e.target.checked })}
+                        className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500"
+                      />
+                      <span>Block Profile (🚫 सस्पेंड करा)</span>
+                    </label>
+                  </div>
                 </h4>
 
                 <div className="flex flex-col sm:flex-row items-center gap-6">

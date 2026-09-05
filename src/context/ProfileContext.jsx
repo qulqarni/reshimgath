@@ -681,6 +681,21 @@ export const ProfileProvider = ({ children }) => {
     addToast('Profile verification status updated successfully!', 'success');
   };
 
+  const toggleBlockProfile = (profileId) => {
+    setProfiles((prev) =>
+      prev.map((p) => {
+        if (p.id === profileId) {
+          const isCurrentlyBlocked = !!p.blocked;
+          const updated = { ...p, blocked: !isCurrentlyBlocked };
+          saveProfileToFirestore(profileId, updated);
+          return updated;
+        }
+        return p;
+      })
+    );
+    addToast('Profile block status updated successfully!', 'info');
+  };
+
   const addProfile = (newProfileData) => {
     const id = 'p_' + Date.now();
     const createdProfile = {
@@ -811,6 +826,7 @@ export const ProfileProvider = ({ children }) => {
         recordProfileView,
         addToast,
         toggleVerifyProfile,
+        toggleBlockProfile,
         addProfile,
         updateAdminProfile,
         deleteProfile,

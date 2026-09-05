@@ -36,6 +36,11 @@ export const DiscoverPage = ({ onNavigate }) => {
         return false;
       }
 
+      // 3. Exclude Blocked profiles
+      if (p.blocked) {
+        return false;
+      }
+
       if (genderFilter !== 'all' && p.gender !== genderFilter) return false;
       if (selectedDistrict !== 'All' && p.district !== selectedDistrict) return false;
       if (selectedCaste !== 'All' && !p.caste.includes(selectedCaste)) return false;
