@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth, normalizeGender } from './AuthContext';
+import { useAuth, normalizeProfile } from './AuthContext';
 import { MOCK_PROFILES } from '../data/mockProfiles';
 import { 
   fetchProfilesFromFirestore, 
@@ -104,13 +104,13 @@ export const ProfileProvider = ({ children }) => {
         const norm = normalizeGender(p);
         if (!allExcluded.includes(String(norm.id))) map.set(String(norm.id), norm);
       });
-      cleaned.forEach(p => {
-        const norm = normalizeGender(p);
+      cleaned.forEach((p, idx) => {
+        const norm = normalizeProfile(p, idx);
         if (!allExcluded.includes(String(norm.id))) map.set(String(norm.id), norm);
       });
       return Array.from(map.values());
     }
-    return MOCK_PROFILES.map(normalizeGender).filter(p => !allExcluded.includes(String(p.id)));
+    return MOCK_PROFILES.map((p, idx) => normalizeProfile(p, idx)).filter(p => !allExcluded.includes(String(p.id)));
   });
 
   const [homeContent, setHomeContent] = useState(() => {
@@ -130,7 +130,7 @@ export const ProfileProvider = ({ children }) => {
   // Sync logged-in candidate user profile changes into profiles array in real-time (Excludes Admin)
   useEffect(() => {
     if (user && user.id && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1') {
-      const normUser = normalizeGender(user);
+      const normUser = normalizeProfile(user);
       setProfiles((prev) => {
         const index = prev.findIndex((p) => String(p.id) === String(normUser.id));
         if (index !== -1) {
@@ -162,13 +162,13 @@ export const ProfileProvider = ({ children }) => {
 
       setProfiles(() => {
         const map = new Map();
-        MOCK_PROFILES.forEach((p) => {
-          const norm = normalizeGender(p);
+        MOCK_PROFILES.forEach((p, idx) => {
+          const norm = normalizeProfile(p, idx);
           if (!allExcluded.includes(String(norm.id)) && !isAdminCheck(norm)) map.set(String(norm.id), norm);
         });
         if (firestoreProfiles && firestoreProfiles.length > 0) {
-          firestoreProfiles.forEach((rawP) => {
-            const p = normalizeGender(rawP);
+          firestoreProfiles.forEach((rawP, idx) => {
+            const p = normalizeProfile(rawP, idx);
             if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
           });
         }

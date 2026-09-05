@@ -69,9 +69,11 @@ export const ProfileCard = ({ profile, onSelect }) => {
     toggleShortlist(profile.id);
   };
 
+  const profileSlug = profile.regId || (profile.registrationId ? `SS-${profile.registrationId}` : profile.id);
+
   return (
     <div
-      onClick={() => onSelect(profile.id)}
+      onClick={() => onSelect(profileSlug)}
       className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
     >
       {/* Top Image Container */}
@@ -86,12 +88,13 @@ export const ProfileCard = ({ profile, onSelect }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/80 via-transparent to-black/20" />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-          {profile.verified ? (
-            <VerificationBadge size="small" />
-          ) : (
-            <div />
-          )}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+          <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+            {profile.verified && <VerificationBadge size="small" />}
+            <span className="px-2.5 py-0.5 bg-brand-plum/90 text-brand-gold font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
+              Reg ID: {profileSlug}
+            </span>
+          </div>
 
           {/* Shortlist Bookmark Button */}
           <button

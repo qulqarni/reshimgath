@@ -27,31 +27,27 @@ import { ContactPage } from './pages/ContactPage';
 import { AdminPage } from './pages/AdminPage';
 
 function AppContent() {
-  // Helper to determine initial path from browser address bar URL slug
-  const getPathFromLocation = () => {
+  // Helper to determine initial path & profile id from browser address bar URL slug
+  const getInitialRoute = () => {
     const pathname = window.location.pathname;
-    return pathname === '' ? '/' : pathname;
+    if (pathname.startsWith('/profile/')) {
+      const idStr = pathname.replace('/profile/', '');
+      return { path: '/profile', selectedId: idStr || null };
+    }
+    return { path: pathname === '' ? '/' : pathname, selectedId: null };
   };
 
-  const [currentPath, setCurrentPath] = useState(getPathFromLocation);
-  const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [currentPath, setCurrentPath] = useState(() => getInitialRoute().path);
+  const [selectedProfileId, setSelectedProfileId] = useState(() => getInitialRoute().selectedId);
 
   // Sync browser back / forward buttons (popstate)
   useEffect(() => {
     const handlePopState = () => {
-      const path = getPathFromLocation();
-      
-      // Handle dynamic profile path like /profile/demo_f1
-      if (path.startsWith('/profile/')) {
-        const idStr = path.replace('/profile/', '');
-        if (idStr) {
-          setSelectedProfileId(idStr);
-          setCurrentPath('/profile');
-          return;
-        }
+      const route = getInitialRoute();
+      if (route.selectedId) {
+        setSelectedProfileId(route.selectedId);
       }
-
-      setCurrentPath(path);
+      setCurrentPath(route.path);
     };
 
     window.addEventListener('popstate', handlePopState);

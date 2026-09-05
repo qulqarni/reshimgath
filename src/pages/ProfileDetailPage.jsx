@@ -33,7 +33,15 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const { t } = useLanguage();
   const { profiles, interests, sendInterest, acceptInterest, declineInterest, toggleShortlist, recordProfileView } = useProfiles();
 
-  const profile = profiles.find((p) => String(p.id) === String(profileId)) || profiles[0];
+  const profile = profiles.find((p) => {
+    if (!profileId) return true;
+    const target = String(profileId).toLowerCase().trim();
+    if (String(p.id).toLowerCase() === target) return true;
+    if (p.regId && String(p.regId).toLowerCase() === target) return true;
+    if (p.registrationId && String(p.registrationId).toLowerCase() === target) return true;
+    if (p.registrationId && String(`SS-${p.registrationId}`).toLowerCase() === target) return true;
+    return false;
+  }) || profiles[0];
 
   React.useEffect(() => {
     if (profile && user && String(profile.id) !== String(user.id) && (user.email ? profile.email !== user.email : true)) {
@@ -303,11 +311,14 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             
             {/* Candidate Name & Tagline */}
             <div className="space-y-1">
-              <div className="flex items-center space-x-2.5">
+              <div className="flex items-center space-x-2.5 flex-wrap gap-2">
                 <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-plum leading-tight">
                   {profile.name}
                 </h1>
                 {profile.verified && <VerificationBadge size="small" />}
+                <span className="px-3 py-1 bg-brand-plum text-brand-gold font-bold text-xs rounded-full shadow-sm border border-brand-gold/40">
+                  Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`}
+                </span>
               </div>
 
               <p className="text-xs sm:text-sm font-semibold text-brand-gray">

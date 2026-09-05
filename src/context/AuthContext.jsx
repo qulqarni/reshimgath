@@ -17,7 +17,28 @@ export const ADMIN_USER = {
   photos: []
 };
 
-export const normalizeGender = (p) => {
+export const getNextRegistrationId = () => {
+  try {
+    const stored = localStorage.getItem('reshimgath_profiles');
+    const profiles = stored ? JSON.parse(stored) : [];
+    let maxId = 1000;
+    profiles.forEach(p => {
+      let num = Number(p.registrationId);
+      if ((!num || isNaN(num)) && p.regId) {
+        const match = String(p.regId).match(/\d+/);
+        if (match) num = Number(match[0]);
+      }
+      if (num && !isNaN(num) && num > maxId) {
+        maxId = num;
+      }
+    });
+    return maxId + 1;
+  } catch (e) {
+    return 1001;
+  }
+};
+
+export const normalizeProfile = (p, defaultIndex = 0) => {
   if (!p) return p;
   let raw = p.gender || p.lookingFor || p.looking_for || p.seeking || p.matchFor;
   let genderVal = 'female';
@@ -29,17 +50,35 @@ export const normalizeGender = (p) => {
       genderVal = 'female';
     }
   }
+
+  let numId = Number(p.registrationId);
+  if (!numId || isNaN(numId) || numId < 1001) {
+    if (p.regId) {
+      const match = String(p.regId).match(/\d+/);
+      if (match && Number(match[0]) >= 1001) {
+        numId = Number(match[0]);
+      }
+    }
+  }
+  if (!numId || isNaN(numId) || numId < 1001) {
+    numId = 1001 + defaultIndex;
+  }
+
   return {
     ...p,
-    gender: genderVal
+    gender: genderVal,
+    registrationId: numId,
+    regId: `SS-${numId}`
   };
 };
+
+export const normalizeGender = normalizeProfile;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('reshimgath_user');
-      return saved ? normalizeGender(JSON.parse(saved)) : null;
+      return saved ? normalizeProfile(JSON.parse(saved)) : null;
     } catch (e) {
       return null;
     }
@@ -68,7 +107,7 @@ export const AuthProvider = ({ children }) => {
 
     // 1. Admin credentials check
     if (input === ADMIN_USER.email || input === 'admin@reshimgath.com' || input === 'admin') {
-      const normAdmin = normalizeGender(ADMIN_USER);
+      const normAdmin = normalizeProfile(ADMIN_USER);
       setUser(normAdmin);
       return { success: true, user: normAdmin };
     }
@@ -79,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     );
 
     if (matchedDemo) {
-      const normDemo = normalizeGender(matchedDemo);
+      const normDemo = normalizeProfile(matchedDemo);
       setUser(normDemo);
       return { success: true, user: normDemo };
     }
@@ -98,11 +137,13 @@ export const AuthProvider = ({ children }) => {
       (p) =>
         (p.email && p.email.toLowerCase() === input) ||
         (p.phone && String(p.phone).trim() === input) ||
-        (p.id && String(p.id).toLowerCase() === input)
+        (p.id && String(p.id).toLowerCase() === input) ||
+        (p.regId && String(p.regId).toLowerCase() === input) ||
+        (p.registrationId && String(p.registrationId) === input)
     );
 
     if (matchedProfile) {
-      const normMatched = normalizeGender(matchedProfile);
+      const normMatched = normalizeProfile(matchedProfile);
       setUser(normMatched);
       return { success: true, user: normMatched };
     }
@@ -116,19 +157,22 @@ export const AuthProvider = ({ children }) => {
 
   const loginAsDemo = () => {
     if (DEMO_USER) {
-      setUser(normalizeGender(DEMO_USER));
+      setUser(normalizeProfile(DEMO_USER));
     }
     setPrivacyAlert(false);
   };
 
   const loginAsAdmin = () => {
-    setUser(normalizeGender(ADMIN_USER));
+    setUser(normalizeProfile(ADMIN_USER));
     setPrivacyAlert(false);
   };
 
   const signup = (signupData) => {
+    const regNum = getNextRegistrationId();
     const newUser = {
       id: "u_" + Date.now(),
+      registrationId: regNum,
+      regId: `SS-${regNum}`,
       name: (signupData.name || "").trim(),
       email: (signupData.email || "").trim(),
       phone: (signupData.phone || "").trim(),

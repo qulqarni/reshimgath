@@ -134,7 +134,9 @@ export const AdminPage = ({ onNavigate }) => {
       p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.caste?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.district?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.occupation?.toLowerCase().includes(searchQuery.toLowerCase());
+      p.occupation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.regId && p.regId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.registrationId && String(p.registrationId).includes(searchQuery.trim()));
 
     const matchesGender = genderFilter === 'all' || p.gender === genderFilter;
     const matchesVerification = 
@@ -490,7 +492,7 @@ export const AdminPage = ({ onNavigate }) => {
                           />
                           <div>
                             <p className="font-bold text-brand-plum">{p.name}</p>
-                            <p className="text-[10px] text-brand-gray">ID: {p.id}</p>
+                            <p className="text-[10px] font-bold text-brand-kesari">Reg ID: {p.regId || `SS-${p.registrationId || 1001}`}</p>
                           </div>
                         </div>
                       </td>

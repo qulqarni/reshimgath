@@ -41,12 +41,14 @@ export const DiscoverPage = ({ onNavigate }) => {
       if (selectedCaste !== 'All' && !p.caste.includes(selectedCaste)) return false;
       if (verifiedOnly && !p.verified) return false;
       if (searchQuery) {
-        const q = searchQuery.toLowerCase();
+        const q = searchQuery.toLowerCase().trim();
         return (
-          p.name.toLowerCase().includes(q) ||
-          p.district.toLowerCase().includes(q) ||
-          p.education.toLowerCase().includes(q) ||
-          p.occupation.toLowerCase().includes(q)
+          p.name?.toLowerCase().includes(q) ||
+          p.district?.toLowerCase().includes(q) ||
+          p.education?.toLowerCase().includes(q) ||
+          p.occupation?.toLowerCase().includes(q) ||
+          (p.regId && p.regId.toLowerCase().includes(q)) ||
+          (p.registrationId && String(p.registrationId).includes(q))
         );
       }
       return true;
