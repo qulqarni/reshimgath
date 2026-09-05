@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -17,7 +17,15 @@ import {
   User,
   Home,
   Utensils,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Share2,
+  Calendar,
+  Ruler,
+  Users,
+  Eye,
+  Building2,
+  CheckCircle2
 } from 'lucide-react';
 
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
@@ -95,6 +103,19 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
   };
 
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `${profile.name} - Sambodhi Sarang Matrimony`,
+        text: `View matrimonial profile of ${profile.name} on Sambodhi Sarang`,
+        url: window.location.href
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Profile link copied to clipboard!');
+    }
+  };
+
   const hasValue = (val) => {
     if (val === null || val === undefined) return false;
     if (typeof val === 'string') return val.trim().length > 0;
@@ -102,355 +123,568 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     return true;
   };
 
-  const hasBasicInfo = hasValue(profile.age) || hasValue(profile.gender) || hasValue(profile.height) || hasValue(profile.maritalStatus) || hasValue(profile.motherTongue) || hasValue(profile.religion) || hasValue(profile.caste) || hasValue(profile.district) || hasValue(profile.nativePlace);
-  const hasCareer = hasValue(profile.education) || hasValue(profile.college) || hasValue(profile.occupation) || hasValue(profile.company) || hasValue(profile.income);
-  const hasFamily = hasValue(profile.fatherOccupation) || hasValue(profile.motherOccupation) || hasValue(profile.siblings) || hasValue(profile.familyType);
+  const firstName = profile.name ? profile.name.split(' ')[0] : 'Candidate';
+
+  const hasPersonalInfo = hasValue(profile.maritalStatus) || hasValue(profile.dob) || hasValue(profile.motherTongue) || hasValue(profile.religion) || hasValue(profile.caste) || hasValue(profile.nativePlace);
+  const hasCareer = hasValue(profile.education) || hasValue(profile.college) || hasValue(profile.occupation) || hasValue(profile.company) || hasValue(profile.income) || hasValue(profile.district);
+  const hasFamily = hasValue(profile.fatherOccupation) || hasValue(profile.motherOccupation) || hasValue(profile.familyType) || hasValue(profile.siblings);
   const hasLifestyle = hasValue(profile.diet) || hasValue(profile.smoking) || hasValue(profile.drinking) || hasValue(profile.hobbies);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 pb-24 md:pb-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28 md:pb-12">
       
-      {/* Back Button */}
-      <button
-        onClick={() => onNavigate('/discover')}
-        className="inline-flex items-center space-x-2 text-xs font-bold text-brand-plum hover:text-brand-kesari transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to Discover Matches</span>
-      </button>
+      {/* Top Header Navigation Row */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => onNavigate('/discover')}
+          className="inline-flex items-center space-x-1.5 text-xs font-bold text-brand-plum hover:text-brand-kesari transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Discover</span>
+        </button>
 
-      {/* Main Profile Header Card */}
-      <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <div className="flex items-center space-x-3 text-xs font-semibold text-brand-gray">
+          <button
+            onClick={() => toggleShortlist(profile.id)}
+            className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-full border transition-all ${
+              isShortlisted
+                ? 'bg-brand-plum text-brand-gold border-brand-gold font-bold shadow-sm'
+                : 'bg-white text-brand-charcoal border-gray-200 hover:bg-brand-lightBg'
+            }`}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${isShortlisted ? 'fill-brand-gold' : ''}`} />
+            <span>{isShortlisted ? 'Saved' : 'Save'}</span>
+          </button>
+
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-brand-charcoal hover:bg-brand-lightBg transition-all"
+          >
+            <Share2 className="w-3.5 h-3.5 text-brand-plum" />
+            <span>Share</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Structural Grid (Left Sidebar + Right Content Column) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Photo Gallery Column */}
-        <div className="lg:col-span-5 p-6 sm:p-8 bg-brand-lightBg/30 flex items-center justify-center">
-          <div className="w-full">
+        {/* LEFT SIDEBAR COLUMN */}
+        <aside className="lg:col-span-5 space-y-6">
+          
+          {/* Photo Gallery Card */}
+          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury">
             <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
           </div>
-        </div>
 
-        {/* Profile Header Details Column */}
-        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-          <div className="space-y-5">
-            
-            {/* Name, Verified & Bookmark */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center space-x-2.5">
-                  <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-plum leading-tight">
-                    {profile.name}
-                  </h1>
-                  {profile.verified && <VerificationBadge size="small" />}
-                </div>
-                
-                {/* Age, Height, Location Tagline */}
-                <div className="flex flex-wrap items-center gap-2 mt-2 text-xs sm:text-sm font-semibold text-brand-gray">
-                  {hasValue(profile.age) && <span className="text-brand-plum font-bold">{profile.age} Years</span>}
-                  {hasValue(profile.age) && hasValue(profile.height) && <span>•</span>}
-                  {hasValue(profile.height) && <span>{profile.height}</span>}
-                  {(hasValue(profile.age) || hasValue(profile.height)) && hasValue(profile.district) && <span>•</span>}
-                  {hasValue(profile.district) && (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
-                      {profile.district}{hasValue(profile.nativePlace) ? `, ${profile.nativePlace}` : ''}
-                    </span>
-                  )}
-                </div>
+          {/* Interest Status Card */}
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
+            <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
+              Interest Status
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
               </div>
-
-              {/* Bookmark (Shortlist) Button */}
-              <button
-                onClick={() => toggleShortlist(profile.id)}
-                className={`p-3 rounded-2xl border transition-all shrink-0 ${
-                  isShortlisted
-                    ? 'bg-brand-plum text-brand-gold border-brand-gold shadow'
-                    : 'bg-white text-brand-charcoal border-gray-200 hover:bg-brand-lightBg'
-                }`}
-                title={t('shortlist')}
-              >
-                <Bookmark className={`w-5 h-5 ${isShortlisted ? 'fill-brand-gold' : ''}`} />
-              </button>
+              <div>
+                <h4 className="font-bold text-xs text-brand-plum">
+                  {isAccepted 
+                    ? "Connection Unlocked!" 
+                    : isReceived 
+                    ? `${firstName} sent you an interest!` 
+                    : isSent 
+                    ? "Interest Request Sent" 
+                    : "No interest sent yet"}
+                </h4>
+                <p className="text-[11px] text-brand-gray mt-0.5 leading-relaxed">
+                  {isAccepted 
+                    ? "You are connected! You can now send direct private messages." 
+                    : isReceived 
+                    ? `Accept ${firstName}'s interest to unlock private messaging.` 
+                    : isSent 
+                    ? `Waiting for ${firstName} to accept your interest request.` 
+                    : `Send interest to connect with ${firstName}.`}
+                </p>
+              </div>
             </div>
 
-            {/* Spec Pills (Only fields that exist!) */}
-            <div className="flex flex-wrap gap-2.5 pt-1">
-              {hasValue(profile.caste) && (
-                <span className="px-3.5 py-1.5 rounded-xl bg-brand-rose/10 border border-brand-rose/20 text-brand-plum text-xs font-bold">
-                  {profile.caste}
-                </span>
-              )}
-              {hasValue(profile.education) && (
-                <span className="px-3.5 py-1.5 rounded-xl bg-brand-plum/10 border border-brand-plum/20 text-brand-plum text-xs font-bold">
-                  {profile.education}
-                </span>
-              )}
-              {hasValue(profile.occupation) && (
-                <span className="px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold">
-                  {profile.occupation}
-                </span>
-              )}
-              {hasValue(profile.maritalStatus) && (
-                <span className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium">
-                  {profile.maritalStatus}
-                </span>
-              )}
-            </div>
-
-          </div>
-
-          {/* Action Button Bar */}
-          <div className="pt-4 border-t border-gray-100">
+            {/* Primary Action Button */}
             {isAccepted ? (
               <button
                 onClick={handleAction}
-                className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-sm rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
               >
                 <MessageSquare className="w-4 h-4 text-emerald-200" />
                 <span>{t('sendMessage')} (Chat Active)</span>
               </button>
             ) : isReceived ? (
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button
                   onClick={() => acceptInterest(profile.id)}
-                  className="flex-1 py-3.5 px-6 bg-brand-plum text-white font-bold text-sm rounded-2xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+                  className="flex-1 py-3.5 bg-brand-plum text-white font-bold text-xs rounded-2xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/40"
                 >
                   <Check className="w-4 h-4 text-brand-gold" />
                   <span>{t('acceptInterest')}</span>
                 </button>
                 <button
                   onClick={() => declineInterest(profile.id)}
-                  className="py-3.5 px-5 bg-gray-100 text-gray-700 font-bold text-sm rounded-2xl hover:bg-rose-50 hover:text-rose-700 transition-all"
+                  className="py-3.5 px-4 bg-gray-100 text-gray-700 font-bold text-xs rounded-2xl hover:bg-rose-50 hover:text-rose-700 transition-all"
                 >
                   {t('declineInterest')}
                 </button>
               </div>
             ) : isSent ? (
-              <div className="w-full py-3 px-6 bg-amber-50 text-amber-900 border border-amber-300 rounded-2xl font-bold text-xs text-center">
+              <div className="w-full py-3 bg-amber-50 text-amber-900 border border-amber-300 rounded-2xl font-bold text-xs text-center">
                 {t('interestSent')}
               </div>
             ) : (
               <button
                 onClick={handleAction}
-                className="w-full py-3.5 px-6 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+                className="w-full py-3.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
               >
                 <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
                 <span>{t('sendInterest')}</span>
               </button>
             )}
+
+            {/* Secondary Action Button: Message */}
+            <button
+              onClick={() => {
+                if (isAccepted) onNavigate('/messages');
+              }}
+              disabled={!isAccepted}
+              className={`w-full py-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center space-x-2 ${
+                isAccepted
+                  ? 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                  : 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Message</span>
+            </button>
+            {!isAccepted && (
+              <p className="text-[10px] text-center text-brand-gray italic">
+                You can message once interest is accepted
+              </p>
+            )}
           </div>
 
-        </div>
+          {/* About Candidate Profile Overview Card */}
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5">
+            <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
+              About {firstName}'s Profile
+            </div>
 
-      </div>
-
-      {/* About Me Section */}
-      {hasValue(profile.aboutMe) && (
-        <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury p-6 sm:p-8 space-y-3">
-          <h3 className="font-serif text-lg font-bold text-brand-plum flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-brand-kesari" />
-            <span>{t('aboutMe')}</span>
-          </h3>
-          <div className="p-4 sm:p-5 rounded-2xl bg-brand-ivory/60 border-l-4 border-brand-plum text-sm text-brand-charcoal leading-relaxed">
-            {profile.aboutMe}
-          </div>
-        </div>
-      )}
-
-      {/* Basic & Personal Information */}
-      {hasBasicInfo && (
-        <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury p-6 sm:p-8 space-y-5">
-          <h3 className="font-serif text-lg font-bold text-brand-plum flex items-center gap-2 border-b border-gray-100 pb-3">
-            <User className="w-4 h-4 text-brand-plum" />
-            <span>Basic & Personal Information</span>
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 text-xs">
-            {hasValue(profile.age) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Age</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.age} Years</p>
+            <div className="space-y-2.5 text-xs text-brand-charcoal font-medium">
+              <div className="flex items-center space-x-2.5">
+                <Eye className="w-4 h-4 text-brand-plum shrink-0" />
+                <span>Profile viewed recently</span>
               </div>
-            )}
-            {hasValue(profile.gender) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Gender</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5 capitalize">{profile.gender}</p>
-              </div>
-            )}
-            {hasValue(profile.height) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Height</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.height}</p>
-              </div>
-            )}
-            {hasValue(profile.maritalStatus) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Marital Status</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.maritalStatus}</p>
-              </div>
-            )}
-            {hasValue(profile.motherTongue) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Mother Tongue</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.motherTongue}</p>
-              </div>
-            )}
-            {hasValue(profile.religion) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Religion</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.religion}</p>
-              </div>
-            )}
-            {hasValue(profile.caste) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Caste / Community</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.caste}</p>
-              </div>
-            )}
-            {hasValue(profile.district) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Current Location</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.district}</p>
-              </div>
-            )}
-            {hasValue(profile.nativePlace) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Native Place (मूळ गाव)</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.nativePlace}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Education & Career */}
-      {hasCareer && (
-        <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury p-6 sm:p-8 space-y-5">
-          <h3 className="font-serif text-lg font-bold text-brand-plum flex items-center gap-2 border-b border-gray-100 pb-3">
-            <GraduationCap className="w-4 h-4 text-brand-plum" />
-            <span>Education & Career</span>
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 text-xs">
-            {hasValue(profile.education) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Education Level</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.education}</p>
-              </div>
-            )}
-            {hasValue(profile.college) && (
-              <div>
-                <span className="text-brand-gray font-medium block">College / University</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.college}</p>
-              </div>
-            )}
-            {hasValue(profile.occupation) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Occupation</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.occupation}</p>
-              </div>
-            )}
-            {hasValue(profile.company) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Organization / Company</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.company}</p>
-              </div>
-            )}
-            {hasValue(profile.income) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Annual Income</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.income}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Family Background */}
-      {hasFamily && (
-        <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury p-6 sm:p-8 space-y-5">
-          <h3 className="font-serif text-lg font-bold text-brand-plum flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Home className="w-4 h-4 text-brand-plum" />
-            <span>Family Background</span>
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 text-xs">
-            {hasValue(profile.fatherOccupation) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Father's Occupation</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.fatherOccupation}</p>
-              </div>
-            )}
-            {hasValue(profile.motherOccupation) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Mother's Occupation</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.motherOccupation}</p>
-              </div>
-            )}
-            {hasValue(profile.familyType) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Family Type</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.familyType}</p>
-              </div>
-            )}
-            {hasValue(profile.siblings) && (
-              <div>
-                <span className="text-brand-gray font-medium block">Siblings</span>
-                <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.siblings}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Lifestyle & Interests */}
-      {hasLifestyle && (
-        <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury p-6 sm:p-8 space-y-5">
-          <h3 className="font-serif text-lg font-bold text-brand-plum flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Utensils className="w-4 h-4 text-brand-plum" />
-            <span>Lifestyle & Interests</span>
-          </h3>
-
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {hasValue(profile.diet) && (
-                <div className="p-3.5 rounded-2xl bg-brand-lightBg/50">
-                  <span className="text-brand-gray font-medium block">Diet</span>
-                  <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.diet}</p>
+              {profile.verified && (
+                <div className="flex items-center space-x-2.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-bold text-emerald-800">Profile Verified ✓</span>
                 </div>
               )}
-              {hasValue(profile.smoking) && (
-                <div className="p-3.5 rounded-2xl bg-brand-lightBg/50">
-                  <span className="text-brand-gray font-medium block">Smoking</span>
-                  <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.smoking}</p>
+              {hasValue(profile.district) && (
+                <div className="flex items-center space-x-2.5">
+                  <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
+                  <span>Based in {profile.district}, Maharashtra</span>
                 </div>
               )}
-              {hasValue(profile.drinking) && (
-                <div className="p-3.5 rounded-2xl bg-brand-lightBg/50">
-                  <span className="text-brand-gray font-medium block">Drinking</span>
-                  <p className="font-bold text-brand-plum text-sm mt-0.5">{profile.drinking}</p>
+              {hasValue(profile.education) && (
+                <div className="flex items-center space-x-2.5">
+                  <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
+                  <span className="truncate">{profile.education}</span>
+                </div>
+              )}
+              {hasValue(profile.occupation) && (
+                <div className="flex items-center space-x-2.5">
+                  <Briefcase className="w-4 h-4 text-brand-plum shrink-0" />
+                  <span className="truncate">{profile.occupation}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </aside>
+
+        {/* RIGHT MAIN CONTENT COLUMN */}
+        <main className="lg:col-span-7 space-y-6">
+          
+          {/* Hero Header Card */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+            
+            {/* Candidate Name & Tagline */}
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2.5">
+                <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-plum leading-tight">
+                  {profile.name}
+                </h1>
+                {profile.verified && <VerificationBadge size="small" />}
+              </div>
+
+              <p className="text-xs sm:text-sm font-semibold text-brand-gray">
+                {hasValue(profile.age) && <span className="text-brand-plum font-bold">{profile.age} Years</span>}
+                {hasValue(profile.age) && hasValue(profile.height) && <span> • </span>}
+                {hasValue(profile.height) && <span>{profile.height}</span>}
+                {(hasValue(profile.age) || hasValue(profile.height)) && hasValue(profile.district) && <span> • </span>}
+                {hasValue(profile.district) && <span>{profile.district}, Maharashtra</span>}
+              </p>
+            </div>
+
+            {/* About Me Box (If present) */}
+            {hasValue(profile.aboutMe) && (
+              <div className="bg-rose-50/50 border border-rose-100/80 p-5 rounded-2xl space-y-1.5">
+                <h4 className="font-serif font-bold text-xs text-brand-plum uppercase tracking-wider">
+                  About Me
+                </h4>
+                <p className="text-xs text-brand-charcoal leading-relaxed">
+                  {profile.aboutMe}
+                </p>
+              </div>
+            )}
+
+            {/* Key Spec Bar (Age, Height, Location) */}
+            <div className="grid grid-cols-3 gap-3 bg-amber-50/50 border border-amber-100 p-3.5 rounded-2xl text-center">
+              {hasValue(profile.age) && (
+                <div className="space-y-0.5">
+                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase">Age</span>
+                  <p className="font-bold text-xs text-brand-plum">{profile.age} Years</p>
+                </div>
+              )}
+              {hasValue(profile.height) && (
+                <div className="space-y-0.5 border-x border-amber-200/60 px-2">
+                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase">Height</span>
+                  <p className="font-bold text-xs text-brand-plum">{profile.height}</p>
+                </div>
+              )}
+              {hasValue(profile.district) && (
+                <div className="space-y-0.5">
+                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase">Location</span>
+                  <p className="font-bold text-xs text-brand-plum truncate">{profile.district}, MH</p>
                 </div>
               )}
             </div>
 
-            {hasValue(profile.hobbies) && (
-              <div className="pt-2">
-                <span className="text-brand-gray font-medium block mb-2">Hobbies & Interests</span>
-                <div className="flex flex-wrap gap-2">
-                  {(Array.isArray(profile.hobbies) ? profile.hobbies : String(profile.hobbies).split(',')).map((h, i) => (
-                    <span key={i} className="bg-brand-rose/15 text-brand-plum font-bold px-3.5 py-1.5 rounded-full text-xs">
-                      {typeof h === 'string' ? h.trim() : h}
-                    </span>
-                  ))}
+          </div>
+
+          {/* Personal Information Section Card */}
+          {hasPersonalInfo && (
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+              <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4" />
                 </div>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
+                  Personal Information
+                </h3>
               </div>
-            )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {hasValue(profile.maritalStatus) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Heart className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Marital Status</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.maritalStatus}</p>
+                    </div>
+                  </div>
+                )}
+
+                {(hasValue(profile.dob) || hasValue(profile.age)) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Date of Birth / Age</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">
+                        {profile.dob ? profile.dob : `${profile.age} Years`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.motherTongue) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Mother Tongue</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.motherTongue}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.religion) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-brand-kesari" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Religion</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.religion}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.caste) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Community / Caste</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.caste}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.nativePlace) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <MapPin className="w-4 h-4 text-brand-kesari" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Native Place (मूळ गाव)</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.nativePlace}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Education & Career Section Card */}
+          {hasCareer && (
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+              <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
+                  Education & Career
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {hasValue(profile.education) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Education Degree</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.education}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.college) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">College / University</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.college}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.occupation) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Briefcase className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Occupation</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.occupation}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.company) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Company / Workplace</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.company}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.income) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-brand-kesari" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Annual Income</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.income}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.district) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <MapPin className="w-4 h-4 text-brand-kesari" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Work Location</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district}, Maharashtra</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Family Background Section Card */}
+          {hasFamily && (
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+              <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <Home className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
+                  Family Background
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {hasValue(profile.fatherOccupation) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Father's Occupation</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.fatherOccupation}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.motherOccupation) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Mother's Occupation</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.motherOccupation}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.familyType) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Home className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Family Type</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.familyType}</p>
+                    </div>
+                  </div>
+                )}
+
+                {hasValue(profile.siblings) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Siblings</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.siblings}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Lifestyle Section Card */}
+          {hasLifestyle && (
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+              <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <Utensils className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
+                  Lifestyle & Habits
+                </h3>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {hasValue(profile.diet) && (
+                    <div className="p-3 rounded-2xl bg-brand-lightBg/50">
+                      <span className="text-[10px] text-brand-gray font-medium block">Diet</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.diet}</p>
+                    </div>
+                  )}
+                  {hasValue(profile.smoking) && (
+                    <div className="p-3 rounded-2xl bg-brand-lightBg/50">
+                      <span className="text-[10px] text-brand-gray font-medium block">Smoking</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.smoking}</p>
+                    </div>
+                  )}
+                  {hasValue(profile.drinking) && (
+                    <div className="p-3 rounded-2xl bg-brand-lightBg/50">
+                      <span className="text-[10px] text-brand-gray font-medium block">Drinking</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.drinking}</p>
+                    </div>
+                  )}
+                </div>
+
+                {hasValue(profile.hobbies) && (
+                  <div className="pt-1">
+                    <span className="text-[10px] text-brand-gray font-semibold uppercase block mb-2">
+                      Hobbies & Interests
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {(Array.isArray(profile.hobbies) ? profile.hobbies : String(profile.hobbies).split(',')).map((h, i) => (
+                        <span key={i} className="bg-rose-50 text-brand-plum border border-rose-200/60 font-bold px-3.5 py-1.5 rounded-full text-xs">
+                          {typeof h === 'string' ? h.trim() : h}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Candidate Maharashtrian Biodata Document Section */}
+          <BiodataPdfSection user={profile} isEditable={false} />
+
+        </main>
+
+      </div>
+
+      {/* Safety Banner Footer (matching reference bottom banner) */}
+      <div className="bg-gradient-to-r from-rose-50/80 via-brand-ivory to-rose-50/80 border border-rose-100 p-4 sm:p-5 rounded-3xl flex items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-rose-100 text-brand-plum flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-brand-plum" />
+          </div>
+          <div>
+            <h4 className="font-bold text-xs text-brand-plum">We care about your safety</h4>
+            <p className="text-[11px] text-brand-gray mt-0.5">
+              All profiles on Sambodhi Sarang are manually verified to ensure genuine Maharashtrian matrimonial connections.
+            </p>
           </div>
         </div>
-      )}
-
-      {/* Candidate Maharashtrian Biodata PDF / Image Document Section */}
-      <BiodataPdfSection user={profile} isEditable={false} />
+      </div>
 
       {/* Mobile Floating Sticky Action Bar */}
       <div className="md:hidden fixed bottom-14 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-brand-rose/20 shadow-2xl z-40">
@@ -496,3 +730,5 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     </div>
   );
 };
+
+export default ProfileDetailPage;
