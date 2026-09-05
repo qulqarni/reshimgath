@@ -90,7 +90,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginAsDemo = () => {
-    setUser(DEMO_USER);
+    if (DEMO_USER) {
+      setUser(DEMO_USER);
+    }
     setPrivacyAlert(false);
   };
 

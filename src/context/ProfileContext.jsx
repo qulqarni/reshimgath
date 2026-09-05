@@ -92,21 +92,23 @@ export const ProfileProvider = ({ children }) => {
       }
     })();
 
+    const dummyIds = ['demo_m1', 'demo_m2', 'demo_f1', 'demo_f2', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+    const allExcluded = [...deletedIds, ...dummyIds];
+
     const saved = localStorage.getItem('reshimgath_profiles');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Clean old demo profiles starting with 'p1', 'p2', etc. and any deleted profiles
-      const cleaned = parsed.filter(p => !['p1','p2','p3','p4','p5','p6','p7','p8'].includes(String(p.id)) && !deletedIds.includes(String(p.id)));
+      const cleaned = parsed.filter(p => !allExcluded.includes(String(p.id)));
       const map = new Map();
       MOCK_PROFILES.forEach(p => {
-        if (!deletedIds.includes(String(p.id))) map.set(String(p.id), p);
+        if (!allExcluded.includes(String(p.id))) map.set(String(p.id), p);
       });
       cleaned.forEach(p => {
-        if (!deletedIds.includes(String(p.id))) map.set(String(p.id), p);
+        if (!allExcluded.includes(String(p.id))) map.set(String(p.id), p);
       });
       return Array.from(map.values());
     }
-    return MOCK_PROFILES.filter(p => !deletedIds.includes(String(p.id)));
+    return MOCK_PROFILES.filter(p => !allExcluded.includes(String(p.id)));
   });
 
   const [homeContent, setHomeContent] = useState(() => {
@@ -150,19 +152,22 @@ export const ProfileProvider = ({ children }) => {
         }
       })();
 
+      const dummyIds = ['demo_m1', 'demo_m2', 'demo_f1', 'demo_f2', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+      const allExcluded = [...deletedIds, ...dummyIds];
+
       const isAdminCheck = (p) => p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'));
 
       setProfiles(() => {
         const map = new Map();
         MOCK_PROFILES.forEach((p) => {
-          if (!deletedIds.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
+          if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
         });
         if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((p) => {
-            if (!deletedIds.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
+            if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
           });
         }
-        return Array.from(map.values()).filter((p) => !deletedIds.includes(String(p.id)) && !isAdminCheck(p));
+        return Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
       });
     });
 
