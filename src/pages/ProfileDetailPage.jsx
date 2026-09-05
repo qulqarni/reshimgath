@@ -316,7 +316,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   {profile.name}
                 </h1>
                 {profile.verified && <VerificationBadge size="small" />}
-                <span className="px-3 py-1 bg-brand-plum text-brand-gold font-bold text-xs rounded-full shadow-sm border border-brand-gold/40">
+                <span className="px-3 py-1 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/40">
                   Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`}
                 </span>
               </div>
