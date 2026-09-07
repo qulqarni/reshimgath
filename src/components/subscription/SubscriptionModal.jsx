@@ -18,6 +18,17 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
   const { user, subscribeUserToPlan } = useAuth();
   const [processingPlanId, setProcessingPlanId] = useState(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSelectPlan = (plan) => {
@@ -43,7 +54,7 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
       <div className="bg-white max-w-5xl w-full max-h-[85vh] sm:max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-200 my-auto animate-in zoom-in-95 duration-200">
         
         {/* Modal Top Banner */}
-        <div className="bg-slate-900 text-white p-5 sm:p-6 flex items-center justify-between relative border-b border-amber-500/30 shrink-0">
+        <div className="bg-gradient-to-r from-brand-plum via-brand-plumDark to-brand-plum text-white p-5 sm:p-6 flex items-center justify-between relative border-b border-brand-gold/30 shrink-0">
           <div className="space-y-1 min-w-0 pr-6">
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold shadow-sm border border-amber-300">
               <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
@@ -54,14 +65,14 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
                 ? `Unlock Full Profile Access for ${targetProfileName}` 
                 : 'CHOOSE A MATRIMONIAL MEMBERSHIP PLAN'}
             </h2>
-            <p className="text-xs text-slate-300 font-medium">
+            <p className="text-xs text-white/90 font-medium">
               Select a plan to start opening candidate profiles and viewing direct contact details.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
+            className="absolute top-5 right-5 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
           >
             <X className="w-6 h-6" />
           </button>

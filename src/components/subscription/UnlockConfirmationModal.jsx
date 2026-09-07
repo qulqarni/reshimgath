@@ -17,6 +17,17 @@ export const UnlockConfirmationModal = ({
   remainingVisits = 0,
   totalVisits = 25
 }) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !profile) return null;
 
   const firstName = profile.name ? profile.name.split(' ')[0] : 'Candidate';
