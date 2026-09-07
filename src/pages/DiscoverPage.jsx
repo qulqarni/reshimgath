@@ -3,15 +3,22 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { ProfileCard } from '../components/discovery/ProfileCard';
+import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
+import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS } from '../data/maharashtraData';
 import { Search, Filter, ShieldCheck, X, Lock, RotateCcw, SlidersHorizontal } from 'lucide-react';
 
 const AGE_OPTIONS = Array.from({ length: 53 }, (_, i) => 18 + i);
 
 export const DiscoverPage = ({ onNavigate }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, canViewProfile, unlockProfileForUser } = useAuth();
   const { t } = useLanguage();
   const { profiles } = useProfiles();
+
+  const [selectedProfileForUnlock, setSelectedProfileForUnlock] = useState(null);
+  const [selectedProfileForSubscription, setSelectedProfileForSubscription] = useState(null);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,6 +141,38 @@ export const DiscoverPage = ({ onNavigate }) => {
     setGenderFilter(defaultGender);
     setVerifiedOnly(false);
     setSearchQuery('');
+  };
+
+  const handleProfileClick = (targetProfile) => {
+    const { canView, remainingVisits, hasActivePlan } = canViewProfile(targetProfile.id);
+
+    if (canView) {
+      onNavigate(`/profile/${targetProfile.id}`);
+      return;
+    }
+
+    if (!hasActivePlan || remainingVisits <= 0) {
+      setSelectedProfileForSubscription(targetProfile);
+      setShowSubModal(true);
+      return;
+    }
+
+    setSelectedProfileForUnlock(targetProfile);
+    setShowUnlockModal(true);
+  };
+
+  const handleConfirmUnlock = () => {
+    if (!selectedProfileForUnlock) return;
+    const success = unlockProfileForUser(selectedProfileForUnlock.id);
+    const targetId = selectedProfileForUnlock.id;
+    setShowUnlockModal(false);
+    setSelectedProfileForUnlock(null);
+
+    if (success) {
+      onNavigate(`/profile/${targetId}`);
+    } else {
+      setShowSubModal(true);
+    }
   };
 
   const activeFiltersCount = useMemo(() => {
@@ -385,7 +424,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                   if (action === 'chat') {
                     onNavigate('/messages');
                   } else {
-                    onNavigate(`/profile/${id}`);
+                    handleProfileClick(profile);
                   }
                 }}
               />
@@ -526,6 +565,23 @@ export const DiscoverPage = ({ onNavigate }) => {
           </div>
         </div>
       )}
+
+      {/* Subscription Modal Popup */}
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        targetProfileName={selectedProfileForSubscription?.name}
+      />
+
+      {/* Profile Unlock Confirmation Modal */}
+      <UnlockConfirmationModal
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
+        onConfirm={handleConfirmUnlock}
+        profile={selectedProfileForUnlock}
+        remainingVisits={user?.subscription?.creditsRemaining || 0}
+        totalVisits={user?.subscription?.creditsTotal || 25}
+      />
 
     </div>
   );

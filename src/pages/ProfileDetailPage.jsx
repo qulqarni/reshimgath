@@ -5,6 +5,8 @@ import { useProfiles } from '../context/ProfileContext';
 import { PhotoGallery } from '../components/profile/PhotoGallery';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
+import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
+import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
 import { 
   Heart, 
   MapPin, 
@@ -26,7 +28,10 @@ import {
   Eye,
   Building2,
   CheckCircle2,
-  Ban
+  Ban,
+  Lock,
+  Crown,
+  UserCheck
 } from 'lucide-react';
 
 const HeroHeaderCard = ({ profile, hasValue }) => (
@@ -89,9 +94,12 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
 );
 
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
-  const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, sendInterest, acceptInterest, declineInterest, toggleShortlist, recordProfileView } = useProfiles();
+
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   const profile = profiles.find((p) => {
     if (!profileId) return true;
@@ -102,6 +110,8 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     if (p.registrationId && String(`SS-${p.registrationId}`).toLowerCase() === target) return true;
     return false;
   }) || profiles[0];
+
+  const accessStatus = canViewProfile(profile?.id);
 
   React.useEffect(() => {
     if (profile && user && String(profile.id) !== String(user.id) && (user.email ? profile.email !== user.email : true)) {
@@ -138,6 +148,78 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         >
           Back to Discover
         </button>
+      </div>
+    );
+  }
+
+  // Access Control Enforcement for Candidate Profile Detail Viewing
+  if (!accessStatus.canView) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 space-y-6 text-center">
+        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-brand-rose/30 shadow-2xl space-y-6">
+          <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto border-2 border-amber-300 shadow">
+            <Lock className="w-8 h-8 text-amber-700" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="font-serif text-2xl font-bold text-brand-plum">
+              {profile.name} — Profile Access Locked
+            </h2>
+            <p className="text-xs text-brand-gray leading-relaxed">
+              Reg ID: {profile.regId || `SS-${profile.registrationId}`} • {profile.district || 'Maharashtra'}
+            </p>
+            <p className="text-xs sm:text-sm text-brand-charcoal pt-2 font-medium leading-relaxed">
+              {accessStatus.hasActivePlan && accessStatus.remainingVisits > 0
+                ? `You have ${accessStatus.remainingVisits} profile unlock credits remaining out of ${accessStatus.totalVisits}. Unlock to view complete contact details, family background, and biodata.`
+                : 'A matrimonial membership plan is required to view complete candidate profile details and contact numbers.'}
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-3 max-w-xs mx-auto">
+            {accessStatus.hasActivePlan && accessStatus.remainingVisits > 0 ? (
+              <button
+                onClick={() => setShowUnlockModal(true)}
+                className="w-full py-3.5 px-6 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+              >
+                <UserCheck className="w-4 h-4 text-brand-gold" />
+                <span>Unlock Profile (1 Credit Count)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowSubModal(true)}
+                className="w-full py-3.5 px-6 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+              >
+                <Crown className="w-4 h-4 text-brand-gold fill-brand-gold" />
+                <span>Activate Membership Plan</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onNavigate('/discover')}
+              className="w-full py-2.5 px-4 bg-gray-100 text-brand-charcoal font-bold text-xs rounded-2xl hover:bg-gray-200"
+            >
+              Back to Discover
+            </button>
+          </div>
+        </div>
+
+        <SubscriptionModal
+          isOpen={showSubModal}
+          onClose={() => setShowSubModal(false)}
+          targetProfileName={profile.name}
+        />
+
+        <UnlockConfirmationModal
+          isOpen={showUnlockModal}
+          onClose={() => setShowUnlockModal(false)}
+          onConfirm={() => {
+            unlockProfileForUser(profile.id);
+            setShowUnlockModal(false);
+          }}
+          profile={profile}
+          remainingVisits={accessStatus.remainingVisits}
+          totalVisits={accessStatus.totalVisits}
+        />
       </div>
     );
   }

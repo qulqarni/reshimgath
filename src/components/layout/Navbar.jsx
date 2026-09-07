@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useProfiles } from '../../context/ProfileContext';
+import { SubscriptionModal } from '../subscription/SubscriptionModal';
 import { 
   Heart, 
   Search, 
@@ -15,7 +16,8 @@ import {
   Sparkles,
   ShieldCheck,
   CheckCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  Crown
 } from 'lucide-react';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
@@ -26,6 +28,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   const userNotifications = notifications.filter((n) => {
     if (!user) return true;
@@ -147,6 +150,22 @@ export const Navbar = ({ currentPath, onNavigate }) => {
           {/* Right Action Icons & Controls */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
+            {/* Membership Plan Badge Button (Visible for logged-in candidates) */}
+            {isAuthenticated && !isAdmin && (
+              <button
+                onClick={() => setShowSubscriptionModal(true)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-900 hover:from-amber-100 hover:to-amber-200 transition-all text-xs font-bold shadow-sm shrink-0"
+                title="Membership Plans & Remaining Visits"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-600 fill-amber-500 shrink-0" />
+                <span className="truncate max-w-[130px]">
+                  {user?.subscription?.planName 
+                    ? `${user.subscription.planName} • ${user.subscription.creditsRemaining || 0} Left`
+                    : 'Plans (बायोडेा)'}
+                </span>
+              </button>
+            )}
+
             {/* Language Switcher Button (Visible on both Mobile & Desktop) */}
             <button
               onClick={() => toggleLanguage()}
@@ -419,6 +438,12 @@ export const Navbar = ({ currentPath, onNavigate }) => {
           </div>
         </div>
       )}
+
+      {/* Global Subscription Modal */}
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+      />
     </header>
   );
 };

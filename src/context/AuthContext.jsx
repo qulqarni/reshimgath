@@ -232,6 +232,119 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const subscribeUserToPlan = (plan, paymentId = null) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const currentSub = prev.subscription || {};
+      const currentUnlocked = currentSub.unlockedProfiles || [];
+      const currentRemaining = currentSub.creditsRemaining || 0;
+
+      const updatedSub = {
+        planId: plan.id,
+        planName: plan.name,
+        creditsTotal: plan.visits,
+        creditsRemaining: currentRemaining + plan.visits,
+        unlockedProfiles: currentUnlocked,
+        paymentId: paymentId || `pay_${Date.now()}`,
+        activatedAt: new Date().toISOString()
+      };
+
+      const updated = {
+        ...prev,
+        subscription: updatedSub
+      };
+
+      localStorage.setItem('reshimgath_user', JSON.stringify(updated));
+      if (updated.id) {
+        saveProfileToFirestore(updated.id, updated);
+      }
+      return updated;
+    });
+  };
+
+  const unlockProfileForUser = (profileId) => {
+    if (!user || !profileId) return false;
+
+    const targetIdStr = String(profileId).toLowerCase();
+    const currentSub = user.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
+    const unlockedList = (currentSub.unlockedProfiles || []).map(id => String(id).toLowerCase());
+
+    if (unlockedList.includes(targetIdStr)) {
+      return true;
+    }
+
+    const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
+    if (!isAdminUser && (currentSub.creditsRemaining || 0) <= 0) {
+      return false;
+    }
+
+    setUser((prev) => {
+      if (!prev) return prev;
+      const prevSub = prev.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
+      const prevUnlocked = prevSub.unlockedProfiles || [];
+      const prevRemaining = prevSub.creditsRemaining || 0;
+
+      const newUnlocked = prevUnlocked.includes(String(profileId))
+        ? prevUnlocked
+        : [...prevUnlocked, String(profileId)];
+
+      const newRemaining = isAdminUser ? prevRemaining : Math.max(0, prevRemaining - 1);
+
+      const updatedSub = {
+        ...prevSub,
+        creditsRemaining: newRemaining,
+        unlockedProfiles: newUnlocked
+      };
+
+      const updated = {
+        ...prev,
+        subscription: updatedSub
+      };
+
+      localStorage.setItem('reshimgath_user', JSON.stringify(updated));
+      if (updated.id) {
+        saveProfileToFirestore(updated.id, updated);
+      }
+      return updated;
+    });
+
+    return true;
+  };
+
+  const canViewProfile = (profileId) => {
+    if (!user) {
+      return { canView: false, alreadyUnlocked: false, remainingVisits: 0, totalVisits: 0, hasActivePlan: false };
+    }
+
+    const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
+    const isOwnProfile = String(user.id) === String(profileId);
+
+    if (isAdminUser || isOwnProfile) {
+      return { canView: true, alreadyUnlocked: true, remainingVisits: 999, totalVisits: 999, hasActivePlan: true };
+    }
+
+    const sub = user.subscription || {};
+    const unlockedList = (sub.unlockedProfiles || []).map(id => String(id).toLowerCase());
+    const targetIdStr = String(profileId).toLowerCase();
+
+    const isAlreadyUnlocked = unlockedList.includes(targetIdStr);
+    const remaining = sub.creditsRemaining || 0;
+    const total = sub.creditsTotal || 0;
+    const hasPlan = (sub.planId && total > 0) || remaining > 0;
+
+    if (isAlreadyUnlocked) {
+      return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
+    }
+
+    return {
+      canView: false,
+      alreadyUnlocked: false,
+      remainingVisits: remaining,
+      totalVisits: total,
+      hasActivePlan: hasPlan
+    };
+  };
+
   const triggerPrivacyAlert = () => {
     setPrivacyAlert(true);
     setTimeout(() => setPrivacyAlert(false), 5000);
@@ -249,6 +362,9 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         updateProfile,
+        subscribeUserToPlan,
+        unlockProfileForUser,
+        canViewProfile,
         privacyAlert,
         triggerPrivacyAlert
       }}
