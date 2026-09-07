@@ -456,29 +456,24 @@ export const MyProfilePage = ({ onNavigate }) => {
       </div>
 
       {/* 2. MEMBERSHIP & SUBSCRIPTION STATUS CARD */}
-      <div className="bg-gradient-to-br from-brand-plum via-brand-plumDark to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-luxury space-y-6 relative overflow-hidden border border-brand-gold/30">
+      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
         
-        {/* Background Decorative Accent */}
-        <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none">
-          <Crown className="w-64 h-64 text-brand-gold" />
-        </div>
-
         {/* Card Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5 relative z-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-2xl bg-brand-gold/20 text-brand-gold flex items-center justify-center border border-brand-gold/40 shadow-sm shrink-0">
-              <Crown className="w-6 h-6 fill-brand-gold" />
+            <div className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold border border-amber-200 shrink-0">
+              <Crown className="w-5 h-5 text-amber-700" />
             </div>
             <div>
               <div className="flex items-center space-x-2 flex-wrap gap-1.5">
-                <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-plum">
                   Membership & Subscription Status
                 </h2>
-                <span className="px-3 py-0.5 bg-brand-gold/20 text-brand-gold text-xs font-bold rounded-full border border-brand-gold/40">
-                  {sub.planName ? 'Active Member' : 'Free Member'}
+                <span className="px-3 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
+                  {sub.planName ? `${sub.planName} Active` : 'Free Member'}
                 </span>
               </div>
-              <p className="text-xs text-brand-rose/80 mt-0.5 font-medium">
+              <p className="text-xs text-brand-gray mt-0.5 font-medium">
                 सदस्यत्व योजना व प्रोफाईल पाहण्याची उर्वरित संख्या
               </p>
             </div>
@@ -487,25 +482,25 @@ export const MyProfilePage = ({ onNavigate }) => {
           <button
             type="button"
             onClick={() => setShowSubModal(true)}
-            className="px-5 py-2.5 bg-gradient-to-r from-brand-gold to-amber-400 text-slate-950 font-bold text-xs rounded-2xl shadow-lg hover:from-amber-400 hover:to-amber-300 transition-all flex items-center space-x-2 shrink-0 border border-brand-gold/50"
+            className="px-5 py-2.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center space-x-2 shrink-0 border border-brand-gold/40"
           >
-            <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" />
+            <Sparkles className="w-4 h-4 text-brand-gold" />
             <span>{sub.planName ? 'Upgrade Membership Plan' : 'Purchase Membership Plan'}</span>
           </button>
         </div>
 
         {/* 3 Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           
           {/* Metric 1: Active Subscription Plan */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 space-y-1.5">
-            <span className="text-[11px] font-bold text-brand-rose/80 uppercase tracking-wider block">
+          <div className="bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 p-5 rounded-2xl border border-amber-200 space-y-2 shadow-sm">
+            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider block">
               Active Subscription Plan
             </span>
-            <div className="font-serif font-bold text-xl sm:text-2xl text-brand-gold">
-              {activePlanName}
+            <div className="font-serif font-extrabold text-xl sm:text-2xl text-brand-plum">
+              {sub.planName ? `${sub.planName} Plan` : 'Free Tier / No Active Plan'}
             </div>
-            <p className="text-[11px] text-gray-300">
+            <p className="text-xs text-brand-gray leading-relaxed font-medium">
               {sub.activatedAt 
                 ? `Activated on ${sub.activatedAt.split('T')[0]}` 
                 : 'Activate a plan to start viewing candidate contact details'}
@@ -513,39 +508,39 @@ export const MyProfilePage = ({ onNavigate }) => {
           </div>
 
           {/* Metric 2: Visited / Unlocked Candidate Profiles */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 space-y-1.5">
-            <span className="text-[11px] font-bold text-brand-rose/80 uppercase tracking-wider block">
+          <div className="bg-gradient-to-br from-rose-50/80 via-white to-rose-50/40 p-5 rounded-2xl border border-rose-200 space-y-2 shadow-sm">
+            <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider block">
               Visited / Unlocked Profiles
             </span>
-            <div className="font-serif font-bold text-xl sm:text-2xl text-white flex items-center space-x-2">
+            <div className="font-serif font-extrabold text-xl sm:text-2xl text-brand-plum flex items-baseline space-x-2">
               <span>{unlockedCount}</span>
-              <span className="text-xs font-normal text-gray-300">Candidates</span>
+              <span className="text-xs font-normal text-brand-gray">Candidates</span>
             </div>
-            <p className="text-[11px] text-gray-300">
+            <p className="text-xs text-brand-gray leading-relaxed font-medium">
               Full candidate profile contact details opened
             </p>
           </div>
 
           {/* Metric 3: Remaining Profile Visits */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 space-y-2">
+          <div className="bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/40 p-5 rounded-2xl border border-emerald-200 space-y-2 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-brand-rose/80 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider block">
                 Remaining Profile Visits
               </span>
-              <span className="text-xs font-bold text-brand-gold">
+              <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
                 {remainingVisits} / {totalVisits} Left
               </span>
             </div>
 
             {/* Visual Credit Progress Bar */}
-            <div className="w-full bg-white/20 h-2.5 rounded-full overflow-hidden">
+            <div className="w-full bg-emerald-200/80 h-2.5 rounded-full overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-brand-gold to-amber-400 h-full transition-all duration-300"
+                className="bg-emerald-600 h-full transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
 
-            <p className="text-[11px] text-gray-300 pt-0.5">
+            <p className="text-xs text-emerald-800 leading-relaxed font-semibold pt-0.5">
               {remainingVisits > 0 
                 ? `${remainingVisits} profile openings available` 
                 : '0 visits remaining — Upgrade plan to unlock more profiles'}
