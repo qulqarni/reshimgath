@@ -29,6 +29,65 @@ import {
   Ban
 } from 'lucide-react';
 
+const HeroHeaderCard = ({ profile, hasValue }) => (
+  <div className="bg-white p-5 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5 w-full max-w-full overflow-hidden">
+    {/* Candidate Name & Tagline */}
+    <div className="space-y-1 min-w-0">
+      <div className="flex items-center space-x-2.5 flex-wrap gap-2 min-w-0">
+        <h1 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum leading-tight break-words min-w-0">
+          {profile.name}
+        </h1>
+        {profile.verified && <VerificationBadge size="small" />}
+        <span className="px-3 py-1 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/40 shrink-0 whitespace-nowrap">
+          Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`}
+        </span>
+      </div>
+
+      <p className="text-xs sm:text-sm font-semibold text-brand-gray leading-relaxed">
+        {hasValue(profile.age) && <span className="text-brand-plum font-bold">{profile.age} Years</span>}
+        {hasValue(profile.age) && hasValue(profile.height) && <span> • </span>}
+        {hasValue(profile.height) && <span>{profile.height}</span>}
+        {(hasValue(profile.age) || hasValue(profile.height)) && hasValue(profile.district) && <span> • </span>}
+        {hasValue(profile.district) && <span>{profile.district}, Maharashtra</span>}
+      </p>
+    </div>
+
+    {/* About Me Box (If present) */}
+    {hasValue(profile.aboutMe) && (
+      <div className="bg-rose-50/50 border border-rose-100/80 p-4 sm:p-5 rounded-2xl space-y-1.5 min-w-0">
+        <h4 className="font-serif font-bold text-xs text-brand-plum uppercase tracking-wider">
+          About Me
+        </h4>
+        <p className="text-xs text-brand-charcoal leading-relaxed break-words">
+          {profile.aboutMe}
+        </p>
+      </div>
+    )}
+
+    {/* Key Spec Bar (Age, Height, Location) */}
+    <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-amber-50/50 border border-amber-100 p-3 sm:p-3.5 rounded-2xl text-center min-w-0">
+      {hasValue(profile.age) && (
+        <div className="space-y-0.5 min-w-0">
+          <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Age</span>
+          <p className="font-bold text-xs text-brand-plum truncate">{profile.age} Yrs</p>
+        </div>
+      )}
+      {hasValue(profile.height) && (
+        <div className="space-y-0.5 border-x border-amber-200/60 px-1 sm:px-2 min-w-0">
+          <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Height</span>
+          <p className="font-bold text-xs text-brand-plum truncate">{profile.height}</p>
+        </div>
+      )}
+      {hasValue(profile.district) && (
+        <div className="space-y-0.5 min-w-0">
+          <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Location</span>
+          <p className="font-bold text-xs text-brand-plum truncate">{profile.district}, MH</p>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
@@ -194,18 +253,23 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       </div>
 
       {/* Main Structural Grid (Left Sidebar + Right Content Column) */}
-      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-start w-full max-w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full max-w-full">
         
         {/* LEFT SIDEBAR COLUMN */}
-        <aside className="contents lg:block lg:col-span-5 lg:space-y-6">
+        <aside className="w-full lg:col-span-5 space-y-6">
           
           {/* Photo Gallery Card */}
-          <div className="order-1 bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury w-full max-w-full overflow-hidden">
+          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury w-full max-w-full overflow-hidden">
             <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
           </div>
 
+          {/* Hero Header Card (Mobile Only: Rendered right after Photo Gallery) */}
+          <div className="block lg:hidden w-full max-w-full overflow-hidden">
+            <HeroHeaderCard profile={profile} hasValue={hasValue} />
+          </div>
+
           {/* Interest Status Card */}
-          <div className="order-3 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4 w-full max-w-full overflow-hidden">
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4 w-full max-w-full overflow-hidden">
             <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
               Interest Status
             </div>
@@ -283,7 +347,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           </div>
 
           {/* About Candidate Profile Overview Card */}
-          <div className="order-4 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5 w-full max-w-full overflow-hidden">
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5 w-full max-w-full overflow-hidden">
             <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
               About {firstName}'s Profile
             </div>
@@ -323,66 +387,11 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         </aside>
 
         {/* RIGHT MAIN CONTENT COLUMN */}
-        <main className="contents lg:block lg:col-span-7 lg:space-y-6">
+        <main className="w-full lg:col-span-7 space-y-6">
           
-          {/* Hero Header Card */}
-          <div className="order-2 bg-white p-5 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5 w-full max-w-full overflow-hidden">
-            
-            {/* Candidate Name & Tagline */}
-            <div className="space-y-1 min-w-0">
-              <div className="flex items-center space-x-2.5 flex-wrap gap-2 min-w-0">
-                <h1 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum leading-tight break-words min-w-0">
-                  {profile.name}
-                </h1>
-                {profile.verified && <VerificationBadge size="small" />}
-                <span className="px-3 py-1 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/40 shrink-0 whitespace-nowrap">
-                  Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`}
-                </span>
-              </div>
-
-              <p className="text-xs sm:text-sm font-semibold text-brand-gray leading-relaxed">
-                {hasValue(profile.age) && <span className="text-brand-plum font-bold">{profile.age} Years</span>}
-                {hasValue(profile.age) && hasValue(profile.height) && <span> • </span>}
-                {hasValue(profile.height) && <span>{profile.height}</span>}
-                {(hasValue(profile.age) || hasValue(profile.height)) && hasValue(profile.district) && <span> • </span>}
-                {hasValue(profile.district) && <span>{profile.district}, Maharashtra</span>}
-              </p>
-            </div>
-
-            {/* About Me Box (If present) */}
-            {hasValue(profile.aboutMe) && (
-              <div className="bg-rose-50/50 border border-rose-100/80 p-4 sm:p-5 rounded-2xl space-y-1.5 min-w-0">
-                <h4 className="font-serif font-bold text-xs text-brand-plum uppercase tracking-wider">
-                  About Me
-                </h4>
-                <p className="text-xs text-brand-charcoal leading-relaxed break-words">
-                  {profile.aboutMe}
-                </p>
-              </div>
-            )}
-
-            {/* Key Spec Bar (Age, Height, Location) */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-amber-50/50 border border-amber-100 p-3 sm:p-3.5 rounded-2xl text-center min-w-0">
-              {hasValue(profile.age) && (
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Age</span>
-                  <p className="font-bold text-xs text-brand-plum truncate">{profile.age} Yrs</p>
-                </div>
-              )}
-              {hasValue(profile.height) && (
-                <div className="space-y-0.5 border-x border-amber-200/60 px-1 sm:px-2 min-w-0">
-                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Height</span>
-                  <p className="font-bold text-xs text-brand-plum truncate">{profile.height}</p>
-                </div>
-              )}
-              {hasValue(profile.district) && (
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Location</span>
-                  <p className="font-bold text-xs text-brand-plum truncate">{profile.district}, MH</p>
-                </div>
-              )}
-            </div>
-
+          {/* Hero Header Card (Desktop Only: Rendered at top of main column) */}
+          <div className="hidden lg:block w-full max-w-full overflow-hidden">
+            <HeroHeaderCard profile={profile} hasValue={hasValue} />
           </div>
 
           {/* Personal Information Section Card */}
