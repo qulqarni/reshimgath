@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
+import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
 import { 
@@ -33,8 +34,39 @@ import {
   Ban,
   UserX,
   ShieldOff,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Crown,
+  CreditCard,
+  Eye,
+  Award
 } from 'lucide-react';
+
+export const getSubscriptionDetails = (p) => {
+  if (!p) return { planName: 'Free / Inactive', planId: 'none', creditsRemaining: 0, creditsTotal: 0, unlockedCount: 0, paymentId: null, isActive: false };
+
+  const sub = p.subscription || {};
+  const planId = sub.planId || p.planId || 'none';
+  const planName = sub.planName || p.subscriptionPlan || (planId !== 'none' ? `${planId.toUpperCase()} Plan` : null) || 'Free / Inactive';
+  const creditsRemaining = typeof sub.creditsRemaining === 'number' ? sub.creditsRemaining : (typeof p.creditsRemaining === 'number' ? p.creditsRemaining : 0);
+  const creditsTotal = typeof sub.creditsTotal === 'number' ? sub.creditsTotal : (typeof p.creditsTotal === 'number' ? p.creditsTotal : 0);
+  const unlockedProfiles = sub.unlockedProfiles || p.unlockedProfiles || [];
+  const unlockedCount = Array.isArray(unlockedProfiles) ? unlockedProfiles.length : 0;
+  const paymentId = sub.paymentId || p.paymentId || null;
+  const activatedAt = sub.activatedAt || p.activatedAt || null;
+
+  const isActive = (planId !== 'none' && planName !== 'Free / Inactive') || creditsRemaining > 0;
+
+  return {
+    planId,
+    planName,
+    creditsRemaining,
+    creditsTotal,
+    unlockedCount,
+    paymentId,
+    activatedAt,
+    isActive
+  };
+};
 
 export const AdminPage = ({ onNavigate }) => {
   const { isAuthenticated, isAdmin, loginAsAdmin } = useAuth();
@@ -62,6 +94,7 @@ export const AdminPage = ({ onNavigate }) => {
   const [verificationFilter, setVerificationFilter] = useState('all');
   const [blockStatusFilter, setBlockStatusFilter] = useState('all'); // 'all', 'active', 'blocked'
   const [districtFilter, setDistrictFilter] = useState('all');
+  const [subscriptionFilter, setSubscriptionFilter] = useState('all'); // 'all', 'active', 'basic', 'standard', 'premium', 'free'
 
   // Modals state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -157,22 +190,68 @@ export const AdminPage = ({ onNavigate }) => {
       (blockStatusFilter === 'active' && !p.blocked) || 
       (blockStatusFilter === 'blocked' && !!p.blocked);
 
-    return matchesSearch && matchesGender && matchesVerification && matchesBlockStatus && matchesDistrict;
+    const subDetails = getSubscriptionDetails(p);
+    const matchesSubscription = 
+      subscriptionFilter === 'all' || 
+      (subscriptionFilter === 'active' && subDetails.isActive) || 
+      (subscriptionFilter === 'free' && !subDetails.isActive) ||
+      (subscriptionFilter.toLowerCase() === subDetails.planId.toLowerCase());
+
+    return matchesSearch && matchesGender && matchesVerification && matchesBlockStatus && matchesDistrict && matchesSubscription;
   });
 
   const verifiedCount = profiles.filter((p) => p.verified).length;
   const unverifiedCount = profiles.filter((p) => !p.verified).length;
   const blockedCount = profiles.filter((p) => p.blocked).length;
+  const activeSubscriptionsCount = profiles.filter((p) => getSubscriptionDetails(p).isActive).length;
 
   const handleOpenEdit = (p) => {
-    setEditingProfile({ ...p });
+    const sub = p.subscription || {};
+    setEditingProfile({
+      ...p,
+      subPlanId: sub.planId || 'none',
+      subCreditsRemaining: typeof sub.creditsRemaining === 'number' ? sub.creditsRemaining : (p.creditsRemaining || 0),
+      subCreditsTotal: typeof sub.creditsTotal === 'number' ? sub.creditsTotal : (p.creditsTotal || 0),
+      subPaymentId: sub.paymentId || p.paymentId || ''
+    });
     setShowEditModal(true);
   };
 
   const handleSaveEditedProfile = (e) => {
     e.preventDefault();
     if (!editingProfile) return;
-    updateAdminProfile(editingProfile.id, editingProfile);
+
+    const planObj = SUBSCRIPTION_PLANS.find(sp => sp.id === editingProfile.subPlanId);
+    
+    let updatedSub = null;
+    if (editingProfile.subPlanId === 'none') {
+      updatedSub = {
+        planId: 'none',
+        planName: 'Free / Inactive',
+        creditsTotal: 0,
+        creditsRemaining: 0,
+        unlockedProfiles: editingProfile.subscription?.unlockedProfiles || [],
+        paymentId: null,
+        activatedAt: null
+      };
+    } else {
+      updatedSub = {
+        planId: editingProfile.subPlanId,
+        planName: planObj ? `${planObj.name} Plan` : (editingProfile.subPlanId.toUpperCase() + ' Plan'),
+        creditsTotal: Number(editingProfile.subCreditsTotal || (planObj ? planObj.visits : 25)),
+        creditsRemaining: Number(editingProfile.subCreditsRemaining || 0),
+        unlockedProfiles: editingProfile.subscription?.unlockedProfiles || [],
+        paymentId: editingProfile.subPaymentId || editingProfile.subscription?.paymentId || `admin_grant_${Date.now()}`,
+        activatedAt: editingProfile.subscription?.activatedAt || new Date().toISOString()
+      };
+    }
+
+    const finalProfileToSave = {
+      ...editingProfile,
+      subscription: updatedSub
+    };
+
+    updateAdminProfile(editingProfile.id, finalProfileToSave);
     setShowEditModal(false);
     setEditingProfile(null);
   };
@@ -402,7 +481,7 @@ export const AdminPage = ({ onNavigate }) => {
       {/* TAB 1: OVERVIEW ANALYTICS */}
       {activeTab === 'overview' && (
         <div className="space-y-8 animate-fade-in">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             
             <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-2">
               <div className="flex items-center justify-between">
@@ -411,6 +490,15 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
               <p className="font-serif text-3xl font-bold text-brand-plum">{profiles.length}</p>
               <p className="text-[11px] text-gray-500">Active registered members</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-brand-gray uppercase">Active Subscriptions</span>
+                <Crown className="w-6 h-6 text-amber-500" />
+              </div>
+              <p className="font-serif text-3xl font-bold text-amber-600">{activeSubscriptionsCount}</p>
+              <p className="text-[11px] text-gray-500 font-medium">Paid plan members</p>
             </div>
 
             <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-2">
@@ -450,7 +538,7 @@ export const AdminPage = ({ onNavigate }) => {
                 className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Verify / Manage Profiles (1-Click)</span>
+                <span>Verify / Manage Profiles & Subscriptions (1-Click)</span>
               </button>
 
               <button
@@ -487,6 +575,19 @@ export const AdminPage = ({ onNavigate }) => {
 
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <select
+                  value={subscriptionFilter}
+                  onChange={(e) => setSubscriptionFilter(e.target.value)}
+                  className="p-2.5 rounded-xl border border-amber-300 bg-amber-50/50 text-xs font-bold text-amber-950"
+                >
+                  <option value="all">All Plans (Paid & Free)</option>
+                  <option value="active">👑 Active Paid Subscriptions Only</option>
+                  <option value="basic">Basic Plan (₹1,100)</option>
+                  <option value="standard">Standard Plan (₹2,100)</option>
+                  <option value="premium">Premium Plan (₹3,100)</option>
+                  <option value="free">Free / No Active Plan</option>
+                </select>
+
                 <select
                   value={genderFilter}
                   onChange={(e) => setGenderFilter(e.target.value)}
@@ -543,13 +644,17 @@ export const AdminPage = ({ onNavigate }) => {
                     <th className="p-4 font-bold">Gender & Age</th>
                     <th className="p-4 font-bold">Location & Caste</th>
                     <th className="p-4 font-bold">Occupation & Income</th>
+                    <th className="p-4 font-bold">Subscription & Visits</th>
                     <th className="p-4 font-bold">Verification Badge</th>
                     <th className="p-4 font-bold">Account Status</th>
                     <th className="p-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-medium">
-                  {filteredProfiles.map((p) => (
+                  {filteredProfiles.map((p) => {
+                    const subDetails = getSubscriptionDetails(p);
+
+                    return (
                     <tr key={p.id} className={`transition-colors ${p.blocked ? 'bg-rose-50/50 hover:bg-rose-50' : 'hover:bg-brand-ivory/50'}`}>
                       
                       <td className="p-4">
@@ -591,6 +696,40 @@ export const AdminPage = ({ onNavigate }) => {
                       <td className="p-4">
                         <p className="font-semibold text-brand-charcoal">{p.occupation || 'Professional'}</p>
                         <p className="text-[10px] text-brand-gray">{p.income || 'Confidential'}</p>
+                      </td>
+
+                      <td className="p-4">
+                        {subDetails.isActive ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-1">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 border ${
+                                subDetails.planId === 'premium'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : subDetails.planId === 'standard'
+                                  ? 'bg-blue-100 text-blue-900 border-blue-300'
+                                  : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                              }`}>
+                                <Crown className="w-3 h-3 fill-current shrink-0 text-amber-600" />
+                                <span>{subDetails.planName}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1 text-xs font-bold text-slate-800">
+                              <Eye className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                              <span>{subDetails.creditsRemaining} / {subDetails.creditsTotal} Left</span>
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-medium">
+                              Unlocked: {subDetails.unlockedCount} profiles
+                              {subDetails.paymentId && ` • Txn: ${String(subDetails.paymentId).substring(0, 12)}...`}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <span className="px-2.5 py-0.5 bg-gray-100 text-gray-600 rounded-full font-semibold text-[10px] inline-block border border-gray-200">
+                              Free / No Active Plan
+                            </span>
+                            <p className="text-[10px] text-gray-400">0 Visits Left</p>
+                          </div>
+                        )}
                       </td>
 
                       <td className="p-4">
@@ -667,7 +806,8 @@ export const AdminPage = ({ onNavigate }) => {
                       </td>
 
                     </tr>
-                  ))}
+                  );
+                })}
                 </tbody>
               </table>
             </div>
@@ -1668,6 +1808,84 @@ export const AdminPage = ({ onNavigate }) => {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* SECTION 7: SUBSCRIPTION PLAN & PROFILE VISIT CREDITS */}
+              <div className="bg-amber-50/80 p-4 sm:p-6 rounded-2xl border border-amber-300/80 space-y-4 shadow-sm">
+                <h4 className="font-bold text-sm text-amber-950 border-b border-amber-200 pb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>7. Subscription Plan & Profile Visit Credits (Admin Management)</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full border border-amber-300">
+                    Grant / Modify Subscriptions
+                  </span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Active Membership Plan</label>
+                    <select
+                      value={editingProfile.subPlanId || 'none'}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const found = SUBSCRIPTION_PLANS.find(p => p.id === selectedId);
+                        setEditingProfile(prev => ({
+                          ...prev,
+                          subPlanId: selectedId,
+                          subCreditsTotal: found ? found.visits : (selectedId === 'none' ? 0 : 25),
+                          subCreditsRemaining: found ? found.visits : (selectedId === 'none' ? 0 : 25)
+                        }));
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-amber-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500/20"
+                    >
+                      <option value="none">Free / No Active Plan</option>
+                      {SUBSCRIPTION_PLANS.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} Plan (₹{plan.price} — {plan.visits} Visits)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Remaining Visit Credits</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="999"
+                      value={editingProfile.subCreditsRemaining ?? 0}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, subCreditsRemaining: parseInt(e.target.value) || 0 })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500/20 font-extrabold text-emerald-700 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Total Plan Credits</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="999"
+                      value={editingProfile.subCreditsTotal ?? 0}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, subCreditsTotal: parseInt(e.target.value) || 0 })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500/20 font-semibold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Payment ID / Reference</label>
+                    <input
+                      type="text"
+                      value={editingProfile.subPaymentId || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, subPaymentId: e.target.value })}
+                      placeholder="e.g. pay_12345 or Cash"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500/20 font-mono text-xs bg-white"
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-amber-800 font-medium italic">
+                  * Bureau Admin can instantly upgrade plans, grant credits for offline cash registrations, or adjust visit limits for candidates.
+                </p>
               </div>
 
               {/* FOOTER ACTIONS */}
