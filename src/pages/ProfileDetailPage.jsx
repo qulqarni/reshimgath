@@ -194,18 +194,18 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       </div>
 
       {/* Main Structural Grid (Left Sidebar + Right Content Column) */}
-      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-start">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-start w-full max-w-full">
         
         {/* LEFT SIDEBAR COLUMN */}
         <aside className="contents lg:block lg:col-span-5 lg:space-y-6">
           
           {/* Photo Gallery Card */}
-          <div className="order-1 bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury">
+          <div className="order-1 bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury w-full max-w-full overflow-hidden">
             <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
           </div>
 
           {/* Interest Status Card */}
-          <div className="order-3 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
+          <div className="order-3 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4 w-full max-w-full overflow-hidden">
             <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
               Interest Status
             </div>
@@ -214,7 +214,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                 <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h4 className="font-bold text-xs text-brand-plum">
                   {isAccepted 
                     ? "Connection Unlocked!" 
@@ -283,38 +283,38 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           </div>
 
           {/* About Candidate Profile Overview Card */}
-          <div className="order-4 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5">
+          <div className="order-4 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5 w-full max-w-full overflow-hidden">
             <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
               About {firstName}'s Profile
             </div>
 
             <div className="space-y-2.5 text-xs text-brand-charcoal font-medium">
-              <div className="flex items-center space-x-2.5">
+              <div className="flex items-center space-x-2.5 min-w-0">
                 <Eye className="w-4 h-4 text-brand-plum shrink-0" />
-                <span>Profile viewed recently</span>
+                <span className="truncate">Profile viewed recently</span>
               </div>
               {profile.verified && (
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-2.5 min-w-0">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-bold text-emerald-800">Profile Verified ✓</span>
+                  <span className="font-bold text-emerald-800 truncate">Profile Verified ✓</span>
                 </div>
               )}
               {hasValue(profile.district) && (
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-2.5 min-w-0">
                   <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
-                  <span>Based in {profile.district}, Maharashtra</span>
+                  <span className="truncate">Based in {profile.district}, Maharashtra</span>
                 </div>
               )}
               {hasValue(profile.education) && (
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-2.5 min-w-0">
                   <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
-                  <span className="truncate">{profile.education}</span>
+                  <span className="truncate min-w-0">{profile.education}</span>
                 </div>
               )}
               {hasValue(profile.occupation) && (
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-2.5 min-w-0">
                   <Briefcase className="w-4 h-4 text-brand-plum shrink-0" />
-                  <span className="truncate">{profile.occupation}</span>
+                  <span className="truncate min-w-0">{profile.occupation}</span>
                 </div>
               )}
             </div>
@@ -326,21 +326,21 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         <main className="contents lg:block lg:col-span-7 lg:space-y-6">
           
           {/* Hero Header Card */}
-          <div className="order-2 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+          <div className="order-2 bg-white p-5 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5 w-full max-w-full overflow-hidden">
             
             {/* Candidate Name & Tagline */}
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2.5 flex-wrap gap-2">
-                <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-plum leading-tight">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center space-x-2.5 flex-wrap gap-2 min-w-0">
+                <h1 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum leading-tight break-words min-w-0">
                   {profile.name}
                 </h1>
                 {profile.verified && <VerificationBadge size="small" />}
-                <span className="px-3 py-1 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/40">
+                <span className="px-3 py-1 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/40 shrink-0 whitespace-nowrap">
                   Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm font-semibold text-brand-gray">
+              <p className="text-xs sm:text-sm font-semibold text-brand-gray leading-relaxed">
                 {hasValue(profile.age) && <span className="text-brand-plum font-bold">{profile.age} Years</span>}
                 {hasValue(profile.age) && hasValue(profile.height) && <span> • </span>}
                 {hasValue(profile.height) && <span>{profile.height}</span>}
@@ -351,33 +351,33 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
             {/* About Me Box (If present) */}
             {hasValue(profile.aboutMe) && (
-              <div className="bg-rose-50/50 border border-rose-100/80 p-5 rounded-2xl space-y-1.5">
+              <div className="bg-rose-50/50 border border-rose-100/80 p-4 sm:p-5 rounded-2xl space-y-1.5 min-w-0">
                 <h4 className="font-serif font-bold text-xs text-brand-plum uppercase tracking-wider">
                   About Me
                 </h4>
-                <p className="text-xs text-brand-charcoal leading-relaxed">
+                <p className="text-xs text-brand-charcoal leading-relaxed break-words">
                   {profile.aboutMe}
                 </p>
               </div>
             )}
 
             {/* Key Spec Bar (Age, Height, Location) */}
-            <div className="grid grid-cols-3 gap-3 bg-amber-50/50 border border-amber-100 p-3.5 rounded-2xl text-center">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-amber-50/50 border border-amber-100 p-3 sm:p-3.5 rounded-2xl text-center min-w-0">
               {hasValue(profile.age) && (
-                <div className="space-y-0.5">
-                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase">Age</span>
-                  <p className="font-bold text-xs text-brand-plum">{profile.age} Years</p>
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Age</span>
+                  <p className="font-bold text-xs text-brand-plum truncate">{profile.age} Yrs</p>
                 </div>
               )}
               {hasValue(profile.height) && (
-                <div className="space-y-0.5 border-x border-amber-200/60 px-2">
-                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase">Height</span>
-                  <p className="font-bold text-xs text-brand-plum">{profile.height}</p>
+                <div className="space-y-0.5 border-x border-amber-200/60 px-1 sm:px-2 min-w-0">
+                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Height</span>
+                  <p className="font-bold text-xs text-brand-plum truncate">{profile.height}</p>
                 </div>
               )}
               {hasValue(profile.district) && (
-                <div className="space-y-0.5">
-                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase">Location</span>
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Location</span>
                   <p className="font-bold text-xs text-brand-plum truncate">{profile.district}, MH</p>
                 </div>
               )}
