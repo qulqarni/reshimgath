@@ -346,44 +346,8 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             )}
           </div>
 
-          {/* About Candidate Profile Overview Card */}
-          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5 w-full max-w-full overflow-hidden">
-            <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
-              About {firstName}'s Profile
-            </div>
-
-            <div className="space-y-2.5 text-xs text-brand-charcoal font-medium">
-              <div className="flex items-center space-x-2.5 min-w-0">
-                <Eye className="w-4 h-4 text-brand-plum shrink-0" />
-                <span className="truncate">Profile viewed recently</span>
-              </div>
-              {profile.verified && (
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-bold text-emerald-800 truncate">Profile Verified ✓</span>
-                </div>
-              )}
-              {hasValue(profile.district) && (
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
-                  <span className="truncate">Based in {profile.district}, Maharashtra</span>
-                </div>
-              )}
-              {hasValue(profile.education) && (
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
-                  <span className="truncate min-w-0">{profile.education}</span>
-                </div>
-              )}
-              {hasValue(profile.occupation) && (
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <Briefcase className="w-4 h-4 text-brand-plum shrink-0" />
-                  <span className="truncate min-w-0">{profile.occupation}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
+          {/* Candidate Maharashtrian Biodata Document Section */}
+          <BiodataPdfSection user={profile} isEditable={false} />
         </aside>
 
         {/* RIGHT MAIN CONTENT COLUMN */}
@@ -687,11 +651,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               </div>
             </div>
           )}
-
-          {/* Candidate Maharashtrian Biodata Document Section */}
-          <div className="order-9">
-            <BiodataPdfSection user={profile} isEditable={false} />
-          </div>
 
         </main>
 
