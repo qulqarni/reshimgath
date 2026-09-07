@@ -166,13 +166,32 @@ export const ProfileProvider = ({ children }) => {
           const norm = normalizeProfile(p, idx);
           if (!allExcluded.includes(String(norm.id)) && !isAdminCheck(norm)) map.set(String(norm.id), norm);
         });
+
+        const saved = localStorage.getItem('reshimgath_profiles');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            parsed.forEach((p, idx) => {
+              const norm = normalizeProfile(p, idx);
+              if (!allExcluded.includes(String(norm.id)) && !isAdminCheck(norm)) map.set(String(norm.id), norm);
+            });
+          } catch (e) {}
+        }
+
         if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((rawP, idx) => {
             const p = normalizeProfile(rawP, idx);
-            if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) map.set(String(p.id), p);
+            if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) {
+              const existing = map.get(String(p.id)) || {};
+              map.set(String(p.id), { ...existing, ...p });
+            }
           });
         }
-        return Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
+        const updatedList = Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
+        try {
+          localStorage.setItem('reshimgath_profiles', JSON.stringify(updatedList));
+        } catch (e) {}
+        return updatedList;
       });
     });
 
@@ -668,37 +687,47 @@ export const ProfileProvider = ({ children }) => {
 
   // ADMIN & MEMBER PROFILE FIRESTORE INTEGRATION
   const toggleVerifyProfile = (profileId) => {
-    setProfiles((prev) =>
-      prev.map((p) => {
-        if (p.id === profileId) {
+    const idStr = String(profileId);
+    setProfiles((prev) => {
+      const next = prev.map((p) => {
+        if (String(p.id) === idStr) {
           const updated = { ...p, verified: !p.verified };
-          saveProfileToFirestore(profileId, updated);
+          saveProfileToFirestore(idStr, updated);
           return updated;
         }
         return p;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     addToast('Profile verification status updated successfully!', 'success');
   };
 
   const toggleBlockProfile = (profileId) => {
-    setProfiles((prev) =>
-      prev.map((p) => {
-        if (p.id === profileId) {
+    const idStr = String(profileId);
+    setProfiles((prev) => {
+      const next = prev.map((p) => {
+        if (String(p.id) === idStr) {
           const isCurrentlyBlocked = !!p.blocked;
           const updated = { ...p, blocked: !isCurrentlyBlocked };
-          saveProfileToFirestore(profileId, updated);
+          saveProfileToFirestore(idStr, updated);
           return updated;
         }
         return p;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     addToast('Profile block status updated successfully!', 'info');
   };
 
   const addProfile = (newProfileData) => {
     const id = 'p_' + Date.now();
-    const createdProfile = {
+    const createdProfile = normalizeProfile({
       id,
       verified: true,
       photos: newProfileData.photos || [],
@@ -714,25 +743,57 @@ export const ProfileProvider = ({ children }) => {
       fatherOccupation: 'Business',
       motherOccupation: 'Homemaker',
       ...newProfileData
-    };
+    });
 
-    setProfiles((prev) => [createdProfile, ...prev]);
-    saveProfileToFirestore(id, createdProfile);
+    setProfiles((prev) => {
+      const next = [createdProfile, ...prev];
+      try {
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    saveProfileToFirestore(String(id), createdProfile);
     addToast('New profile registered successfully!', 'success');
     return createdProfile;
   };
 
   const updateAdminProfile = (profileId, updatedData) => {
-    setProfiles((prev) =>
-      prev.map((p) => {
-        if (p.id === profileId) {
-          const updated = { ...p, ...updatedData };
-          saveProfileToFirestore(profileId, updated);
+    const idStr = String(profileId);
+    setProfiles((prev) => {
+      const next = prev.map((p) => {
+        if (String(p.id) === idStr) {
+          const merged = { ...p, ...updatedData };
+          if (updatedData.gender) {
+            const cleanG = String(updatedData.gender).toLowerCase().trim();
+            merged.gender = cleanG;
+            merged.lookingFor = cleanG;
+          }
+          const updated = normalizeProfile(merged);
+          saveProfileToFirestore(idStr, updated);
           return updated;
         }
         return p;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('reshimgath_user') || 'null');
+      if (savedUser && String(savedUser.id) === idStr) {
+        const mergedUser = { ...savedUser, ...updatedData };
+        if (updatedData.gender) {
+          const cleanG = String(updatedData.gender).toLowerCase().trim();
+          mergedUser.gender = cleanG;
+          mergedUser.lookingFor = cleanG;
+        }
+        const updatedUser = normalizeProfile(mergedUser);
+        localStorage.setItem('reshimgath_user', JSON.stringify(updatedUser));
+      }
+    } catch (e) {}
+
     addToast('Profile updated successfully by Admin!', 'success');
   };
 

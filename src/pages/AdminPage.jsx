@@ -144,7 +144,8 @@ export const AdminPage = ({ onNavigate }) => {
       (p.regId && p.regId.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (p.registrationId && String(p.registrationId).includes(searchQuery.trim()));
 
-    const matchesGender = genderFilter === 'all' || p.gender === genderFilter;
+    const pGender = (p.gender || '').toLowerCase().trim();
+    const matchesGender = genderFilter === 'all' || pGender === genderFilter.toLowerCase();
     const matchesVerification = 
       verificationFilter === 'all' || 
       (verificationFilter === 'verified' && p.verified) || 
@@ -1328,8 +1329,8 @@ export const AdminPage = ({ onNavigate }) => {
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Gender *</label>
                     <select
-                      value={editingProfile.gender || 'female'}
-                      onChange={(e) => setEditingProfile({ ...editingProfile, gender: e.target.value })}
+                      value={String(editingProfile.gender || 'female').toLowerCase()}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, gender: e.target.value.toLowerCase(), lookingFor: e.target.value.toLowerCase() })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-medium"
                     >
                       <option value="female">Bride (Female / वधू)</option>
