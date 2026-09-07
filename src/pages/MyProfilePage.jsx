@@ -5,6 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
+import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { compressImage } from '../utils/imageCompressor';
 import { 
   User, 
@@ -29,7 +30,11 @@ import {
   UserCheck,
   CheckCircle,
   Eye,
-  Clock
+  Clock,
+  Crown,
+  Sparkles,
+  Lock,
+  CreditCard
 } from 'lucide-react';
 
 export const MyProfilePage = ({ onNavigate }) => {
@@ -50,8 +55,16 @@ export const MyProfilePage = ({ onNavigate }) => {
   const [showPhotoManager, setShowPhotoManager] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const sub = user?.subscription || {};
+  const activePlanName = sub.planName ? `${sub.planName} Plan` : 'Free Tier / No Active Plan';
+  const remainingVisits = sub.creditsRemaining || 0;
+  const totalVisits = sub.creditsTotal || 0;
+  const unlockedCount = (sub.unlockedProfiles || []).length;
+  const progressPercent = totalVisits > 0 ? Math.min(100, Math.round((remainingVisits / totalVisits) * 100)) : 0;
 
   const visitorsRef = useRef(null);
   const scrollToVisitors = () => {
@@ -410,7 +423,16 @@ export const MyProfilePage = ({ onNavigate }) => {
         </div>
 
         {/* Action Buttons Grid */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto pt-2 sm:pt-0">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto pt-2 sm:pt-0 flex-wrap sm:flex-nowrap">
+          {/* Upgrade Plan Button */}
+          <button
+            onClick={() => setShowSubModal(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-1.5 border border-amber-300"
+          >
+            <Crown className="w-4 h-4 text-slate-950 fill-slate-950 shrink-0" />
+            <span>Upgrade Plan</span>
+          </button>
+
           {/* Edit Profile Modal Trigger */}
           <button
             onClick={handleOpenEditModal}
@@ -419,8 +441,6 @@ export const MyProfilePage = ({ onNavigate }) => {
             <Edit3 className="w-4 h-4 shrink-0" />
             <span>{t('editProfile')}</span>
           </button>
-
-
 
           <button
             onClick={() => {
@@ -435,7 +455,108 @@ export const MyProfilePage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 2. ACTIVITY STATS CARDS (INTERESTS RECEIVED, SENT, ACCEPTED, VISITS) */}
+      {/* 2. MEMBERSHIP & SUBSCRIPTION STATUS CARD */}
+      <div className="bg-gradient-to-br from-brand-plum via-brand-plumDark to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-luxury space-y-6 relative overflow-hidden border border-brand-gold/30">
+        
+        {/* Background Decorative Accent */}
+        <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none">
+          <Crown className="w-64 h-64 text-brand-gold" />
+        </div>
+
+        {/* Card Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5 relative z-10">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-2xl bg-brand-gold/20 text-brand-gold flex items-center justify-center border border-brand-gold/40 shadow-sm shrink-0">
+              <Crown className="w-6 h-6 fill-brand-gold" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2 flex-wrap gap-1.5">
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
+                  Membership & Subscription Status
+                </h2>
+                <span className="px-3 py-0.5 bg-brand-gold/20 text-brand-gold text-xs font-bold rounded-full border border-brand-gold/40">
+                  {sub.planName ? 'Active Member' : 'Free Member'}
+                </span>
+              </div>
+              <p className="text-xs text-brand-rose/80 mt-0.5 font-medium">
+                सदस्यत्व योजना व प्रोफाईल पाहण्याची उर्वरित संख्या
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowSubModal(true)}
+            className="px-5 py-2.5 bg-gradient-to-r from-brand-gold to-amber-400 text-slate-950 font-bold text-xs rounded-2xl shadow-lg hover:from-amber-400 hover:to-amber-300 transition-all flex items-center space-x-2 shrink-0 border border-brand-gold/50"
+          >
+            <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" />
+            <span>{sub.planName ? 'Upgrade Membership Plan' : 'Purchase Membership Plan'}</span>
+          </button>
+        </div>
+
+        {/* 3 Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+          
+          {/* Metric 1: Active Subscription Plan */}
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 space-y-1.5">
+            <span className="text-[11px] font-bold text-brand-rose/80 uppercase tracking-wider block">
+              Active Subscription Plan
+            </span>
+            <div className="font-serif font-bold text-xl sm:text-2xl text-brand-gold">
+              {activePlanName}
+            </div>
+            <p className="text-[11px] text-gray-300">
+              {sub.activatedAt 
+                ? `Activated on ${sub.activatedAt.split('T')[0]}` 
+                : 'Activate a plan to start viewing candidate contact details'}
+            </p>
+          </div>
+
+          {/* Metric 2: Visited / Unlocked Candidate Profiles */}
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 space-y-1.5">
+            <span className="text-[11px] font-bold text-brand-rose/80 uppercase tracking-wider block">
+              Visited / Unlocked Profiles
+            </span>
+            <div className="font-serif font-bold text-xl sm:text-2xl text-white flex items-center space-x-2">
+              <span>{unlockedCount}</span>
+              <span className="text-xs font-normal text-gray-300">Candidates</span>
+            </div>
+            <p className="text-[11px] text-gray-300">
+              Full candidate profile contact details opened
+            </p>
+          </div>
+
+          {/* Metric 3: Remaining Profile Visits */}
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-brand-rose/80 uppercase tracking-wider block">
+                Remaining Profile Visits
+              </span>
+              <span className="text-xs font-bold text-brand-gold">
+                {remainingVisits} / {totalVisits} Left
+              </span>
+            </div>
+
+            {/* Visual Credit Progress Bar */}
+            <div className="w-full bg-white/20 h-2.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-brand-gold to-amber-400 h-full transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            <p className="text-[11px] text-gray-300 pt-0.5">
+              {remainingVisits > 0 
+                ? `${remainingVisits} profile openings available` 
+                : '0 visits remaining — Upgrade plan to unlock more profiles'}
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 3. ACTIVITY STATS CARDS (INTERESTS RECEIVED, SENT, ACCEPTED, VISITS) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
         <div 
@@ -1220,6 +1341,12 @@ export const MyProfilePage = ({ onNavigate }) => {
           </div>
         </div>
       )}
+
+      {/* Subscription Modal Popup */}
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+      />
 
     </div>
   );
