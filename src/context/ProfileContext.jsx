@@ -183,7 +183,7 @@ export const ProfileProvider = ({ children }) => {
             const p = normalizeProfile(rawP, idx);
             if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) {
               const existing = map.get(String(p.id)) || {};
-              map.set(String(p.id), { ...existing, ...p });
+              map.set(String(p.id), { ...p, ...existing });
             }
           });
         }
@@ -767,6 +767,9 @@ export const ProfileProvider = ({ children }) => {
             const cleanG = String(updatedData.gender).toLowerCase().trim();
             merged.gender = cleanG;
             merged.lookingFor = cleanG;
+            delete merged.looking_for;
+            delete merged.seeking;
+            delete merged.matchFor;
           }
           const updated = normalizeProfile(merged);
           saveProfileToFirestore(idStr, updated);
@@ -788,6 +791,9 @@ export const ProfileProvider = ({ children }) => {
           const cleanG = String(updatedData.gender).toLowerCase().trim();
           mergedUser.gender = cleanG;
           mergedUser.lookingFor = cleanG;
+          delete mergedUser.looking_for;
+          delete mergedUser.seeking;
+          delete mergedUser.matchFor;
         }
         const updatedUser = normalizeProfile(mergedUser);
         localStorage.setItem('reshimgath_user', JSON.stringify(updatedUser));

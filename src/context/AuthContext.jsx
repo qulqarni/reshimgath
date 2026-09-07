@@ -40,14 +40,35 @@ export const getNextRegistrationId = () => {
 
 export const normalizeProfile = (p, defaultIndex = 0) => {
   if (!p) return p;
-  let raw = p.gender || p.lookingFor || p.looking_for || p.seeking || p.matchFor;
+
+  let raw = p.gender;
+  if (!raw || typeof raw !== 'string') {
+    raw = p.lookingFor || p.looking_for || p.seeking || p.matchFor || '';
+  }
+
   let genderVal = 'female';
-  if (typeof raw === 'string') {
+  if (typeof raw === 'string' && raw.trim() !== '') {
     const lower = raw.toLowerCase().trim();
-    if (lower === 'male' || lower === 'groom' || lower === 'man' || lower === 'boy' || lower.includes('groom') || lower.includes('male')) {
-      genderVal = 'male';
-    } else if (lower === 'female' || lower === 'bride' || lower === 'woman' || lower === 'girl' || lower.includes('bride') || lower.includes('female')) {
+    if (
+      lower === 'female' ||
+      lower === 'bride' ||
+      lower === 'woman' ||
+      lower === 'girl' ||
+      lower.includes('female') ||
+      lower.includes('bride') ||
+      lower.includes('वधू')
+    ) {
       genderVal = 'female';
+    } else if (
+      lower === 'male' ||
+      lower === 'groom' ||
+      lower === 'man' ||
+      lower === 'boy' ||
+      lower.includes('groom') ||
+      (lower.includes('male') && !lower.includes('female')) ||
+      lower.includes('वर')
+    ) {
+      genderVal = 'male';
     }
   }
 
@@ -67,6 +88,7 @@ export const normalizeProfile = (p, defaultIndex = 0) => {
   return {
     ...p,
     gender: genderVal,
+    lookingFor: genderVal,
     registrationId: numId,
     regId: `SS-${numId}`
   };
