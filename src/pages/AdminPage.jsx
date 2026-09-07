@@ -558,70 +558,129 @@ export const AdminPage = ({ onNavigate }) => {
         <div className="space-y-6 animate-fade-in">
           
           {/* Search & Filter Controls */}
-          <div className="bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
+            
+            {/* Top Row: Search & Active Filter Info */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               
               {/* Search Bar */}
-              <div className="relative w-full md:w-80">
-                <Search className="w-4 h-4 text-brand-gray absolute left-3.5 top-3.5" />
+              <div className="relative w-full sm:w-96">
+                <Search className="w-4 h-4 text-brand-gray absolute left-3.5 top-3" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, caste, district..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs font-medium"
+                  placeholder="Search name, caste, district, reg ID..."
+                  className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum bg-slate-50/50"
                 />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              {/* Status Badge & Reset Button */}
+              <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+                <span className="text-xs font-semibold text-brand-plum bg-brand-lightBg px-3 py-1.5 rounded-xl border border-brand-rose/20">
+                  Showing <strong>{filteredProfiles.length}</strong> of <strong>{profiles.length}</strong> Profiles
+                </span>
+                {(searchQuery || genderFilter !== 'all' || verificationFilter !== 'all' || blockStatusFilter !== 'all' || districtFilter !== 'all' || subscriptionFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setGenderFilter('all');
+                      setVerificationFilter('all');
+                      setBlockStatusFilter('all');
+                      setDistrictFilter('all');
+                      setSubscriptionFilter('all');
+                    }}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-800 underline transition-colors"
+                  >
+                    Reset Filters
+                  </button>
+                )}
+              </div>
+
+            </div>
+
+            {/* Filter Grid: 5 Equal Responsive Columns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t border-slate-100">
+              
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Subscription Plan
+                </label>
                 <select
                   value={subscriptionFilter}
                   onChange={(e) => setSubscriptionFilter(e.target.value)}
-                  className="p-2.5 rounded-xl border border-amber-300 bg-amber-50/50 text-xs font-bold text-amber-950"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum transition-all"
                 >
-                  <option value="all">All Plans (Paid & Free)</option>
-                  <option value="active">👑 Active Paid Subscriptions Only</option>
+                  <option value="all">All Subscription Plans</option>
+                  <option value="active">👑 Paid Subscriptions Only</option>
                   <option value="basic">Basic Plan (₹1,100)</option>
                   <option value="standard">Standard Plan (₹2,100)</option>
                   <option value="premium">Premium Plan (₹3,100)</option>
                   <option value="free">Free / No Active Plan</option>
                 </select>
+              </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Candidate Gender
+                </label>
                 <select
                   value={genderFilter}
                   onChange={(e) => setGenderFilter(e.target.value)}
-                  className="p-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-brand-charcoal"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum transition-all"
                 >
                   <option value="all">All Genders</option>
                   <option value="female">Brides (Female)</option>
                   <option value="male">Grooms (Male)</option>
                 </select>
+              </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Verification Status
+                </label>
                 <select
                   value={verificationFilter}
                   onChange={(e) => setVerificationFilter(e.target.value)}
-                  className="p-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-brand-charcoal"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum transition-all"
                 >
                   <option value="all">All Verification</option>
                   <option value="verified">Verified Only</option>
                   <option value="unverified">Unverified Only</option>
                 </select>
+              </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Account Status
+                </label>
                 <select
                   value={blockStatusFilter}
                   onChange={(e) => setBlockStatusFilter(e.target.value)}
-                  className="p-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-brand-charcoal"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum transition-all"
                 >
-                  <option value="all">All Statuses (Active & Blocked)</option>
+                  <option value="all">All Statuses</option>
                   <option value="active">Active Members Only</option>
                   <option value="blocked">Blocked Members Only 🚫</option>
                 </select>
+              </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  District / Region
+                </label>
                 <select
                   value={districtFilter}
                   onChange={(e) => setDistrictFilter(e.target.value)}
-                  className="p-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-brand-charcoal"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum transition-all"
                 >
                   <option value="all">All Districts</option>
                   <option value="Ichalkaranji">Ichalkaranji</option>
