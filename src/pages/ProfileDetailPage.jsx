@@ -194,18 +194,18 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       </div>
 
       {/* Main Structural Grid (Left Sidebar + Right Content Column) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-start">
         
         {/* LEFT SIDEBAR COLUMN */}
-        <aside className="lg:col-span-5 space-y-6">
+        <aside className="contents lg:block lg:col-span-5 lg:space-y-6">
           
           {/* Photo Gallery Card */}
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury">
+          <div className="order-1 bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury">
             <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
           </div>
 
           {/* Interest Status Card */}
-          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
+          <div className="order-3 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
             <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
               Interest Status
             </div>
@@ -283,7 +283,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           </div>
 
           {/* About Candidate Profile Overview Card */}
-          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5">
+          <div className="order-4 bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3.5">
             <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
               About {firstName}'s Profile
             </div>
@@ -323,10 +323,10 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         </aside>
 
         {/* RIGHT MAIN CONTENT COLUMN */}
-        <main className="lg:col-span-7 space-y-6">
+        <main className="contents lg:block lg:col-span-7 lg:space-y-6">
           
           {/* Hero Header Card */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+          <div className="order-2 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
             
             {/* Candidate Name & Tagline */}
             <div className="space-y-1">
@@ -387,7 +387,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
           {/* Personal Information Section Card */}
           {hasPersonalInfo && (
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+            <div className="order-5 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
               <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                   <User className="w-4 h-4" />
@@ -477,7 +477,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
           {/* Education & Career Section Card */}
           {hasCareer && (
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+            <div className="order-6 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
               <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                   <GraduationCap className="w-4 h-4" />
@@ -565,7 +565,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
           {/* Family Background Section Card */}
           {hasFamily && (
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+            <div className="order-7 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
               <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                   <Home className="w-4 h-4" />
@@ -629,7 +629,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
           {/* Lifestyle Section Card */}
           {hasLifestyle && (
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+            <div className="order-8 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
               <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                   <Utensils className="w-4 h-4" />
@@ -680,7 +680,9 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           )}
 
           {/* Candidate Maharashtrian Biodata Document Section */}
-          <BiodataPdfSection user={profile} isEditable={false} />
+          <div className="order-9">
+            <BiodataPdfSection user={profile} isEditable={false} />
+          </div>
 
         </main>
 
