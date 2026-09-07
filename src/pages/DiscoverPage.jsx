@@ -185,13 +185,15 @@ export const DiscoverPage = ({ onNavigate }) => {
       {/* Search & Header Title */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-brand-plum flex items-center gap-2">
-            <span>{t('discoverTitle')}</span>
-            <span className="text-xs font-sans px-2.5 py-0.5 rounded-full bg-brand-plum/10 text-brand-plum font-bold">
+          <div className="flex items-center flex-wrap gap-2.5">
+            <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-brand-plum tracking-tight leading-snug">
+              {t('discoverTitle')}
+            </h1>
+            <span className="shrink-0 whitespace-nowrap text-xs font-sans px-3 py-1 rounded-full bg-brand-plum/10 text-brand-plum font-bold border border-brand-plum/20">
               {filteredProfiles.length} Candidates
             </span>
-          </h1>
-          <p className="text-xs text-brand-gray mt-1">
+          </div>
+          <p className="text-xs text-brand-gray mt-1 leading-relaxed">
             {t('discoverSubtitle')}
           </p>
         </div>
@@ -215,15 +217,15 @@ export const DiscoverPage = ({ onNavigate }) => {
       </div>
 
       {/* TOP REDESIGNED HORIZONTAL FILTER PANEL */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-brand-rose/20 shadow-luxury space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-          <div className="flex items-center space-x-2">
-            <SlidersHorizontal className="w-4 h-4 text-brand-plum" />
-            <h3 className="font-serif font-bold text-sm text-brand-plum uppercase tracking-wider">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-brand-rose/20 shadow-luxury space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3 gap-2">
+          <div className="flex items-center space-x-2 min-w-0">
+            <SlidersHorizontal className="w-4 h-4 text-brand-plum shrink-0" />
+            <h3 className="font-serif font-bold text-xs sm:text-sm text-brand-plum uppercase tracking-wider truncate sm:whitespace-nowrap">
               Smart Profile Filters
             </h3>
             {activeFiltersCount > 0 && (
-              <span className="px-2 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
+              <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
                 {activeFiltersCount} Active
               </span>
             )}
@@ -231,10 +233,10 @@ export const DiscoverPage = ({ onNavigate }) => {
           {activeFiltersCount > 0 && (
             <button
               onClick={handleReset}
-              className="text-xs font-semibold text-brand-kesari hover:underline flex items-center space-x-1"
+              className="shrink-0 whitespace-nowrap text-xs font-semibold text-brand-kesari hover:underline flex items-center space-x-1"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset All</span>
+              <RotateCcw className="w-3 h-3 shrink-0" />
+              <span className="whitespace-nowrap">Reset All</span>
             </button>
           )}
         </div>
