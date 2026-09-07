@@ -15,7 +15,8 @@ export default {
           kesari: '#1565C0',    // Royal Blue (Secondary Logo Color)
           kesariLight: '#1E88E5',
           rose: '#F8BBD0',      // Soft Rose Pink Accent
-          gold: '#FF4081',      // Pink Rose Gold Accent
+          gold: '#FFD700',      // Vibrant Royal Gold Accent
+          goldDark: '#D4AF37',  // Metallic Gold Accent
           blue: '#0D47A1',      // Deep Royal Blue Accent
           charcoal: '#1F191B',  // Deep Rich Charcoal text
           gray: '#6B6366',      // Warm Gray secondary text

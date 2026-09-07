@@ -45,8 +45,8 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
         {/* Modal Top Banner */}
         <div className="bg-slate-900 text-white p-5 sm:p-6 flex items-center justify-between relative border-b border-amber-500/30 shrink-0">
           <div className="space-y-1 min-w-0 pr-6">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold border border-amber-400/40">
-              <Crown className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold shadow-sm border border-amber-300">
+              <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
               <span>संबोधी सारंग वधूवर सुचक केंद्र</span>
             </div>
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
