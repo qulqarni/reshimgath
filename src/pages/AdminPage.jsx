@@ -83,6 +83,9 @@ export const AdminPage = ({ onNavigate }) => {
     addSuccessStory,
     updateSuccessStory,
     deleteSuccessStory,
+    inquiries,
+    toggleResolveInquiry,
+    deleteInquiry,
     addToast 
   } = useProfiles();
 
@@ -125,13 +128,6 @@ export const AdminPage = ({ onNavigate }) => {
     email: 'pk9823435404@gmail.com',
     address: 'Sambodhi Sarang Marriage Bureau, Ichalkaranji, Maharashtra'
   });
-
-  // Mock Support Messages Queue
-  const [inquiries, setInquiries] = useState([
-    { id: 1, name: 'Suhas Patil', phone: '+91 98230 11223', email: 'suhas.patil@gmail.com', message: 'I would like to verify biodata PDF for profile ID p1.', date: 'Today, 10:15 AM', resolved: false },
-    { id: 2, name: 'Sunita Deshmukh', phone: '+91 98900 44556', email: 'sunita.d@gmail.com', message: 'Interested in registration assistance for my son in Ichalkaranji.', date: 'Yesterday, 4:30 PM', resolved: true },
-    { id: 3, name: 'Rajesh Kulkarni', phone: '+91 97654 32100', email: 'rajesh.k@gmail.com', message: 'Please update my native place to Kolhapur.', date: 'Aug 30, 2026', resolved: false }
-  ]);
 
   if (!isAdmin) {
     return (
@@ -382,13 +378,6 @@ export const AdminPage = ({ onNavigate }) => {
       weddingDate: 'February 2026 • Ichalkaranji Wedding Hall',
       photoUrl: '/story1.jpg'
     });
-  };
-
-  const toggleResolveInquiry = (id) => {
-    setInquiries((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, resolved: !item.resolved } : item))
-    );
-    addToast('Inquiry status updated!', 'success');
   };
 
   const handleSaveContactInfo = (e) => {
@@ -1152,47 +1141,79 @@ export const AdminPage = ({ onNavigate }) => {
       {activeTab === 'inquiries' && (
         <div className="space-y-6 animate-fade-in">
           <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden p-6 space-y-4">
-            <h3 className="font-serif font-bold text-xl text-brand-plum">Customer Helpline & Inquiries</h3>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-xl text-brand-plum">Customer Helpline & Inquiries</h3>
+                <p className="text-xs text-slate-500">Live support messages submitted by website visitors and candidates</p>
+              </div>
+              <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold rounded-xl">
+                {inquiries.filter(i => !i.resolved).length} Unresolved
+              </span>
+            </div>
 
-            <div className="space-y-4">
-              {inquiries.map((inq) => (
-                <div
-                  key={inq.id}
-                  className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                    inq.resolved ? 'bg-gray-50 border-gray-200 opacity-75' : 'bg-brand-lightBg/60 border-brand-rose/30 shadow-sm'
-                  }`}
-                >
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center space-x-3">
-                      <span className="font-bold text-brand-plum text-sm">{inq.name}</span>
-                      <span className="text-[10px] text-gray-500">{inq.date}</span>
-                    </div>
-                    <p className="text-brand-charcoal font-medium">{inq.message}</p>
-                    <div className="flex items-center space-x-4 text-[11px] text-brand-gray pt-1">
-                      <span className="flex items-center space-x-1">
-                        <Phone className="w-3 h-3 text-brand-plum" />
-                        <span>{inq.phone}</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <Mail className="w-3 h-3 text-brand-plum" />
-                        <span>{inq.email}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => toggleResolveInquiry(inq.id)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                      inq.resolved
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : 'bg-brand-plum text-white shadow hover:bg-brand-plumDark'
+            {inquiries.length === 0 ? (
+              <div className="p-8 text-center text-xs text-brand-gray space-y-2">
+                <MessageSquare className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="font-bold text-slate-600">No support inquiries yet.</p>
+                <p className="text-slate-400">When visitors fill out the Contact Us form, their messages will appear here in real-time.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {inquiries.map((inq) => (
+                  <div
+                    key={inq.id}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                      inq.resolved ? 'bg-gray-50 border-gray-200 opacity-75' : 'bg-brand-lightBg/60 border-brand-rose/30 shadow-sm'
                     }`}
                   >
-                    {inq.resolved ? '✓ Resolved' : 'Mark as Resolved'}
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div className="space-y-1 text-xs flex-1">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-bold text-brand-plum text-sm">{inq.name}</span>
+                        <span className="text-[10px] text-gray-500 font-medium">{inq.date}</span>
+                      </div>
+                      <p className="text-brand-charcoal font-medium leading-relaxed bg-white/60 p-3 rounded-xl border border-gray-100 mt-1">
+                        “{inq.message}”
+                      </p>
+                      <div className="flex flex-wrap items-center gap-4 text-[11px] text-brand-gray pt-1">
+                        <span className="flex items-center space-x-1 font-semibold text-slate-700">
+                          <Phone className="w-3.5 h-3.5 text-brand-plum" />
+                          <span>{inq.phone}</span>
+                        </span>
+                        <span className="flex items-center space-x-1 font-semibold text-slate-700">
+                          <Mail className="w-3.5 h-3.5 text-brand-plum" />
+                          <span>{inq.email}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        onClick={() => toggleResolveInquiry(inq.id)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          inq.resolved
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                            : 'bg-brand-plum text-white shadow hover:bg-brand-plumDark'
+                        }`}
+                      >
+                        {inq.resolved ? '✓ Resolved' : 'Mark as Resolved'}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete inquiry from ${inq.name}?`)) {
+                            deleteInquiry(inq.id);
+                          }
+                        }}
+                        className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all border border-rose-200"
+                        title="Delete inquiry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

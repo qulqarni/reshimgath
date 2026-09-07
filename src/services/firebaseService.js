@@ -438,3 +438,62 @@ export const subscribeToNotificationsFromFirestore = (callback) => {
     return () => {};
   }
 };
+
+// -------------------------------------------------------------
+// FIRESTORE INQUIRIES API
+// -------------------------------------------------------------
+
+export const fetchInquiriesFromFirestore = async () => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const querySnapshot = await getDocs(collection(db, INQUIRIES_COLLECTION));
+    const list = [];
+    querySnapshot.forEach((docSnap) => {
+      list.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    return list;
+  } catch (error) {
+    console.error('Error fetching inquiries from Firestore:', error);
+    return null;
+  }
+};
+
+export const saveInquiryToFirestore = async (inquiryData) => {
+  if (!isFirebaseConfigured || !inquiryData || !inquiryData.id) return true;
+  try {
+    const inquiryRef = doc(db, INQUIRIES_COLLECTION, String(inquiryData.id));
+    await setDoc(inquiryRef, inquiryData, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error saving inquiry to Firestore:', error);
+    return false;
+  }
+};
+
+export const deleteInquiryFromFirestore = async (inquiryId) => {
+  if (!isFirebaseConfigured || !inquiryId) return true;
+  try {
+    const inquiryRef = doc(db, INQUIRIES_COLLECTION, String(inquiryId));
+    await deleteDoc(inquiryRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting inquiry from Firestore:', error);
+    return false;
+  }
+};
+
+export const subscribeToInquiriesFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(collection(db, INQUIRIES_COLLECTION), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      callback(list);
+    });
+  } catch (error) {
+    console.error('Error subscribing to inquiries in Firestore:', error);
+    return () => {};
+  }
+};

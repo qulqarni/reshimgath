@@ -20,11 +20,20 @@ import {
   subscribeToChatsFromFirestore,
   subscribeToInterestsFromFirestore,
   subscribeToProfileViewsFromFirestore,
-  subscribeToNotificationsFromFirestore
+  subscribeToNotificationsFromFirestore,
+  saveInquiryToFirestore,
+  deleteInquiryFromFirestore,
+  subscribeToInquiriesFromFirestore
 } from '../services/firebaseService';
 import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
+
+export const DEFAULT_INQUIRIES = [
+  { id: 'inq_1', name: 'Suhas Patil', phone: '+91 98230 11223', email: 'suhas.patil@gmail.com', message: 'I would like to verify biodata PDF for profile ID p1.', date: 'Today, 10:15 AM', createdAt: new Date().toISOString(), resolved: false },
+  { id: 'inq_2', name: 'Sunita Deshmukh', phone: '+91 98900 44556', email: 'sunita.d@gmail.com', message: 'Interested in registration assistance for my son in Ichalkaranji.', date: 'Yesterday, 4:30 PM', createdAt: new Date().toISOString(), resolved: true },
+  { id: 'inq_3', name: 'Rajesh Kulkarni', phone: '+91 97654 32100', email: 'rajesh.k@gmail.com', message: 'Please update my native place to Kolhapur.', date: 'Aug 30, 2026', createdAt: new Date().toISOString(), resolved: false }
+];
 
 export const DEFAULT_HOME_CONTENT = {
   heroBadge: "Sambodhi Sarang Matrimony",
@@ -123,6 +132,16 @@ export const ProfileProvider = ({ children }) => {
     const saved = localStorage.getItem('reshimgath_stories');
     if (saved) return JSON.parse(saved);
     return DEFAULT_STORIES;
+  });
+
+  const [inquiries, setInquiries] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_inquiries');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return DEFAULT_INQUIRIES;
   });
 
   const { user } = useAuth();
@@ -235,6 +254,15 @@ export const ProfileProvider = ({ children }) => {
       }
     });
 
+    const unsubInquiries = subscribeToInquiriesFromFirestore((firestoreInquiries) => {
+      if (firestoreInquiries && firestoreInquiries.length > 0) {
+        setInquiries(firestoreInquiries);
+        try {
+          localStorage.setItem('reshimgath_inquiries', JSON.stringify(firestoreInquiries));
+        } catch (e) {}
+      }
+    });
+
     const loadOtherContent = async () => {
       const firestoreHome = await fetchHomeContentFromFirestore();
       if (firestoreHome) {
@@ -253,6 +281,7 @@ export const ProfileProvider = ({ children }) => {
       unsubInterests();
       unsubViews();
       unsubNotifs();
+      if (unsubInquiries) unsubInquiries();
     };
   }, []);
 
@@ -870,6 +899,61 @@ export const ProfileProvider = ({ children }) => {
     addToast('Success story removed from homepage.', 'info');
   };
 
+  const addInquiry = (data) => {
+    const newInquiry = {
+      id: `inq_${Date.now()}`,
+      name: data.name || 'Anonymous Candidate',
+      phone: data.phone || '',
+      email: data.email || '',
+      message: data.message || '',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + `, ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
+      createdAt: new Date().toISOString(),
+      resolved: false
+    };
+
+    setInquiries((prev) => {
+      const next = [newInquiry, ...prev];
+      try {
+        localStorage.setItem('reshimgath_inquiries', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    saveInquiryToFirestore(newInquiry);
+    addToast('Support inquiry submitted successfully! Our representative will contact you.', 'success');
+    return newInquiry;
+  };
+
+  const toggleResolveInquiry = (inquiryId) => {
+    setInquiries((prev) => {
+      const next = prev.map((inq) => {
+        if (String(inq.id) === String(inquiryId)) {
+          const updated = { ...inq, resolved: !inq.resolved };
+          saveInquiryToFirestore(updated);
+          return updated;
+        }
+        return inq;
+      });
+      try {
+        localStorage.setItem('reshimgath_inquiries', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    addToast('Inquiry resolution status updated!', 'info');
+  };
+
+  const deleteInquiry = (inquiryId) => {
+    setInquiries((prev) => {
+      const next = prev.filter((inq) => String(inq.id) !== String(inquiryId));
+      try {
+        localStorage.setItem('reshimgath_inquiries', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    deleteInquiryFromFirestore(inquiryId);
+    addToast('Inquiry record deleted.', 'info');
+  };
+
   return (
     <ProfileContext.Provider
       value={{
@@ -881,6 +965,10 @@ export const ProfileProvider = ({ children }) => {
         toasts,
         homeContent,
         stories,
+        inquiries,
+        addInquiry,
+        toggleResolveInquiry,
+        deleteInquiry,
         sendInterest,
         acceptInterest,
         declineInterest,

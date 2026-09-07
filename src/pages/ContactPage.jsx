@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useProfiles } from '../context/ProfileContext';
 import { Phone, Mail, MapPin, CheckCircle2, Send } from 'lucide-react';
 
 export const ContactPage = () => {
   const { t } = useLanguage();
+  const { addInquiry } = useProfiles();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.phone || !formData.message) return;
+    addInquiry({
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      message: formData.message
+    });
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
+    setTimeout(() => setSubmitted(false), 5000);
     setFormData({ name: '', email: '', phone: '', message: '' });
   };
 
