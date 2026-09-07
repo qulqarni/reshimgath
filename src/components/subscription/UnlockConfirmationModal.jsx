@@ -25,8 +25,8 @@ export const UnlockConfirmationModal = ({
     : (profile.avatar || null);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white max-w-md w-full rounded-3xl overflow-hidden shadow-2xl border border-brand-rose/30 my-auto animate-in zoom-in-95 duration-200 space-y-6 p-6 sm:p-7 relative text-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-4 flex items-center justify-center min-h-screen">
+      <div className="bg-white max-w-md w-full max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border border-brand-rose/30 my-auto animate-in zoom-in-95 duration-200 space-y-6 p-6 sm:p-7 relative text-center">
         
         {/* Close Button */}
         <button

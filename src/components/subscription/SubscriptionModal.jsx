@@ -39,8 +39,8 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white max-w-5xl w-full max-h-[94vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-brand-rose/30 my-auto animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center min-h-screen">
+      <div className="bg-white max-w-5xl w-full max-h-[85vh] sm:max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-brand-rose/30 my-auto animate-in zoom-in-95 duration-200">
         
         {/* Modal Top Banner */}
         <div className="bg-gradient-to-r from-brand-plum via-brand-plumDark to-brand-plum text-white p-5 sm:p-6 flex items-center justify-between relative border-b border-brand-gold/30 shrink-0">
