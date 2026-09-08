@@ -78,6 +78,7 @@ export const AdminPage = ({ onNavigate }) => {
     profiles, 
     toggleVerifyProfile, 
     toggleBlockProfile,
+    createAdminProfile,
     updateAdminProfile, 
     deleteProfile,
     homeContent,
@@ -105,6 +106,174 @@ export const AdminPage = ({ onNavigate }) => {
   // Modals state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  const INITIAL_NEW_PROFILE = {
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    gender: 'female',
+    age: '24',
+    dob: '',
+    height: '5\' 6" (168 cm)',
+    maritalStatus: 'Never Married',
+    religion: 'Hindu',
+    caste: 'Maratha',
+    motherTongue: 'Marathi',
+    district: 'Kolhapur',
+    city: 'Ichalkaranji',
+    nativePlace: '',
+    education: 'B.E. / B.Tech',
+    college: '',
+    occupation: 'Software Engineer / IT Professional',
+    company: '',
+    income: '₹ 8 - 12 Lakhs per annum',
+    fatherOccupation: '',
+    motherOccupation: '',
+    siblings: '',
+    familyType: 'Nuclear Family',
+    diet: 'Vegetarian',
+    smoking: 'No',
+    drinking: 'No',
+    aboutMe: '',
+    avatar: null,
+    photos: [],
+    biodataPdf: null,
+    verified: true,
+    subPlanId: 'none',
+    subCreditsTotal: 0,
+    subCreditsRemaining: 0
+  };
+
+  const [newProfileForm, setNewProfileForm] = useState(INITIAL_NEW_PROFILE);
+
+  const handleNewAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      const storageUrl = await uploadPhotoToFirebase(file, `new_${Date.now()}`, 'avatars');
+      setNewProfileForm((prev) => ({ ...prev, avatar: storageUrl }));
+      addToast('Profile picture uploaded to Firebase Storage!', 'success');
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      alert('Failed to upload image.');
+    }
+  };
+
+  const handleNewGalleryPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      const storageUrl = await uploadPhotoToFirebase(file, `new_${Date.now()}`, 'photos');
+      setNewProfileForm((prev) => ({
+        ...prev,
+        photos: [...(prev.photos || []), storageUrl]
+      }));
+      addToast('Gallery photo uploaded to Firebase Storage!', 'success');
+    } catch (err) {
+      console.error('Gallery photo upload failed:', err);
+      alert('Failed to upload image.');
+    }
+  };
+
+  const handleRemoveNewGalleryPhoto = (index) => {
+    setNewProfileForm((prev) => ({
+      ...prev,
+      photos: (prev.photos || []).filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleNewBiodataUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(file.name);
+
+    if (!isPdf && !isImage) {
+      alert('Please select a valid PDF document or Image file (JPG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size exceeds 10MB limit.');
+      return;
+    }
+
+    const fileSizeFormatted = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
+
+    try {
+      const firebaseStorageUrl = await uploadBiodataPdfToFirebase(file, `new_${Date.now()}`);
+      const newBiodata = {
+        fileName: file.name,
+        fileSize: fileSizeFormatted,
+        fileType: isImage ? 'image' : 'pdf',
+        uploadedAt: new Date().toISOString().split('T')[0],
+        url: firebaseStorageUrl
+      };
+
+      setNewProfileForm((prev) => ({ ...prev, biodataPdf: newBiodata }));
+      addToast('Biodata uploaded to Firebase Storage!', 'success');
+    } catch (err) {
+      console.error('Biodata upload failed:', err);
+      alert('Failed to upload Biodata file.');
+    }
+  };
+
+  const handleCreateProfileSubmit = async (e) => {
+    e.preventDefault();
+    if (!newProfileForm.name || !newProfileForm.name.trim()) {
+      alert('Please enter full candidate name.');
+      return;
+    }
+
+    const planObj = SUBSCRIPTION_PLANS.find(p => p.id === newProfileForm.subPlanId);
+    let subscription = null;
+
+    if (newProfileForm.subPlanId !== 'none' && planObj) {
+      subscription = {
+        planId: planObj.id,
+        planName: `${planObj.name} Plan`,
+        creditsTotal: Number(newProfileForm.subCreditsTotal || planObj.visits),
+        creditsRemaining: Number(newProfileForm.subCreditsRemaining || planObj.visits),
+        unlockedProfiles: [],
+        paymentId: `admin_created_${Date.now()}`,
+        activatedAt: new Date().toISOString()
+      };
+    } else {
+      subscription = {
+        planId: 'none',
+        planName: 'Free / Inactive',
+        creditsTotal: 0,
+        creditsRemaining: 0,
+        unlockedProfiles: [],
+        paymentId: null,
+        activatedAt: null
+      };
+    }
+
+    const profilePayload = {
+      ...newProfileForm,
+      subscription
+    };
+
+    await createAdminProfile(profilePayload);
+    setShowCreateModal(false);
+    setNewProfileForm(INITIAL_NEW_PROFILE);
+  };
+
   const [showAddStoryModal, setShowAddStoryModal] = useState(false);
   const [showEditStoryModal, setShowEditStoryModal] = useState(false);
   const [editingStory, setEditingStory] = useState(null);
@@ -574,7 +743,18 @@ export const AdminPage = ({ onNavigate }) => {
 
           <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
             <h3 className="font-serif font-bold text-lg text-brand-plum">Quick Bureau Actions</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <button
+                onClick={() => {
+                  setActiveTab('profiles');
+                  setShowCreateModal(true);
+                }}
+                className="p-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white rounded-2xl border border-brand-gold/40 transition-all font-bold text-xs flex items-center justify-center space-x-2 shadow-sm hover:shadow-md"
+              >
+                <Plus className="w-4 h-4 text-brand-gold" />
+                <span>Create New Profile (नवीन नोंदणी)</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('profiles')}
                 className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
@@ -625,8 +805,16 @@ export const AdminPage = ({ onNavigate }) => {
                 )}
               </div>
 
-              {/* Status Badge & Reset Button */}
+              {/* Status Badge, Reset & Create Button */}
               <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center space-x-1.5 border border-brand-gold/40 shrink-0"
+                >
+                  <Plus className="w-4 h-4 text-brand-gold" />
+                  <span>Create New Profile</span>
+                </button>
                 <span className="text-xs font-semibold text-brand-plum bg-brand-lightBg px-3 py-1.5 rounded-xl border border-brand-rose/20">
                   Showing <strong>{filteredProfiles.length}</strong> of <strong>{profiles.length}</strong> Profiles
                 </span>
@@ -2118,6 +2306,585 @@ export const AdminPage = ({ onNavigate }) => {
                 >
                   <Save className="w-4 h-4" />
                   <span>Save All Changes</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW MEMBER PROFILE MODAL (ADMIN) */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-white max-w-4xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto border border-brand-rose/20">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-plum text-brand-gold flex items-center justify-center font-bold shadow shrink-0">
+                  <Plus className="w-6 h-6 text-brand-gold stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-brand-plum">
+                    Create New Member Profile (नवीन सदस्य नोंदणी)
+                  </h3>
+                  <p className="text-xs text-brand-gray font-medium">
+                    Register a complete candidate profile with login credentials, photos, biodata & subscription.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCreateModal(false)} 
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProfileSubmit} className="space-y-6 text-xs">
+              
+              {/* SECTION 1: ACCOUNT CREDENTIALS & IDENTITY */}
+              <div className="bg-brand-plum/5 p-4 sm:p-6 rounded-2xl border border-brand-plum/20 space-y-4">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-brand-plum/20 pb-2 flex items-center space-x-1.5">
+                  <Lock className="w-4 h-4 text-brand-kesari" />
+                  <span>1. Account Login Credentials & Identity (खाता व लॉगिन माहिती)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Phone Number (Login ID) *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={newProfileForm.phone}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, phone: e.target.value })}
+                      placeholder="+91 98230 00000"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Initial Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        value={newProfileForm.password}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, password: e.target.value })}
+                        placeholder="Assign initial password"
+                        className="w-full pl-3 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-2.5 top-2.5 text-gray-400 hover:text-brand-plum"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Email Address (Optional)</label>
+                    <input
+                      type="email"
+                      value={newProfileForm.email}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, email: e.target.value })}
+                      placeholder="member@gmail.com"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Registration ID</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.regId}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, regId: e.target.value })}
+                      placeholder="Auto generated e.g. SS-1015"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-mono text-xs font-bold text-brand-plum"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: PHOTOS & MEDIA UPLOADS (FIREBASE STORAGE) */}
+              <div className="bg-amber-50/60 p-4 sm:p-6 rounded-2xl border border-amber-200 space-y-4">
+                <h4 className="font-bold text-sm text-amber-950 border-b border-amber-200 pb-2 flex items-center space-x-1.5">
+                  <Camera className="w-4 h-4 text-amber-600" />
+                  <span>2. Candidate Photos (Direct Firebase Storage Upload)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Primary Profile Photo */}
+                  <div className="space-y-2">
+                    <label className="block font-semibold text-gray-800">Primary Profile Photo (avatar)</label>
+                    <div className="flex items-center space-x-4">
+                      {newProfileForm.avatar ? (
+                        <img
+                          src={newProfileForm.avatar}
+                          alt="Avatar preview"
+                          className="w-20 h-20 rounded-2xl object-cover border-2 border-brand-gold shadow bg-white"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-2xl bg-white border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+                          <User className="w-8 h-8" />
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <label className="px-4 py-2 bg-brand-plum text-white rounded-xl font-bold text-xs cursor-pointer hover:bg-brand-plumDark transition-all inline-flex items-center space-x-1.5 shadow-sm">
+                          <UploadCloud className="w-4 h-4 text-brand-gold" />
+                          <span>Upload Avatar</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleNewAvatarUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {newProfileForm.avatar && (
+                          <button
+                            type="button"
+                            onClick={() => setNewProfileForm((prev) => ({ ...prev, avatar: null }))}
+                            className="block text-[11px] text-rose-600 font-semibold hover:underline"
+                          >
+                            Remove avatar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Photo Gallery */}
+                  <div className="space-y-2">
+                    <label className="block font-semibold text-gray-800">Photo Gallery Images ({newProfileForm.photos?.length || 0})</label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {(newProfileForm.photos || []).map((img, idx) => (
+                        <div key={idx} className="relative group w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-white">
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNewGalleryPhoto(idx)}
+                            className="absolute top-0.5 right-0.5 bg-rose-600 text-white p-0.5 rounded-full"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+
+                      <label className="w-14 h-14 rounded-xl border-2 border-dashed border-brand-rose/40 hover:border-brand-plum bg-white cursor-pointer flex flex-col items-center justify-center text-brand-plum transition-all shadow-sm">
+                        <Plus className="w-5 h-5" />
+                        <span className="text-[9px] font-bold">Add</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleNewGalleryPhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: BIODATA PDF / IMAGE DOCUMENT */}
+              <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-slate-200 pb-2 flex items-center space-x-1.5">
+                  <FileText className="w-4 h-4 text-brand-kesari" />
+                  <span>3. Biodata Document Attachment (PDF / Photo)</span>
+                </h4>
+
+                {newProfileForm.biodataPdf ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <FileText className="w-6 h-6 text-brand-plum shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-bold text-brand-plum text-xs truncate">{newProfileForm.biodataPdf.fileName}</p>
+                        <p className="text-[10px] text-gray-400">{newProfileForm.biodataPdf.fileSize} • Uploaded {newProfileForm.biodataPdf.uploadedAt}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewProfileForm((prev) => ({ ...prev, biodataPdf: null }))}
+                      className="px-3 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 hover:bg-rose-100"
+                    >
+                      Remove Biodata
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <span className="text-xs text-gray-500">Upload candidate's PDF or Image biodata file directly to Firebase Storage</span>
+                    <label className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shrink-0">
+                      <UploadCloud className="w-4 h-4 text-brand-gold" />
+                      <span>Upload Biodata PDF/IMG</span>
+                      <input
+                        type="file"
+                        accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
+                        onChange={handleNewBiodataUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 4: BASIC PERSONAL INFORMATION */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  4. Basic Personal Information
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newProfileForm.name}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, name: e.target.value })}
+                      placeholder="Candidate Full Name"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Gender *</label>
+                    <select
+                      value={newProfileForm.gender}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, gender: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-semibold"
+                    >
+                      <option value="female">Bride (Female / वधू)</option>
+                      <option value="male">Groom (Male / वर)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Age *</label>
+                    <input
+                      type="number"
+                      required
+                      min="18"
+                      max="80"
+                      value={newProfileForm.age}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, age: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Date of Birth (DOB)</label>
+                    <input
+                      type="date"
+                      value={newProfileForm.dob}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, dob: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Height</label>
+                    <select
+                      value={newProfileForm.height}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, height: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {HEIGHT_OPTIONS.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Marital Status</label>
+                    <select
+                      value={newProfileForm.maritalStatus}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, maritalStatus: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Never Married">Never Married</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Widowed">Widowed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: RELIGION, CASTE & LOCATION */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  5. Religion, Caste & Location
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Religion</label>
+                    <select
+                      value={newProfileForm.religion}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, religion: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {RELIGIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Caste / Community *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newProfileForm.caste}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, caste: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                      placeholder="e.g. Maratha, Brahmin, Lingayat..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Mother Tongue</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.motherTongue}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, motherTongue: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">District *</label>
+                    <select
+                      value={newProfileForm.district}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, district: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {MAHARASHTRA_DISTRICTS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">City / Area</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.city}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, city: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                      placeholder="e.g. Ichalkaranji, Kothrud"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Native Place (मूळ गाव)</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.nativePlace}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, nativePlace: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                      placeholder="e.g. Shirol, Sangli"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 6: EDUCATION & PROFESSION */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  6. Education & Career
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Degree</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.education}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, education: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">College / University</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.college}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, college: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Occupation</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.occupation}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, occupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Company</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.company}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, company: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Annual Income Range</label>
+                    <select
+                      value={newProfileForm.income}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, income: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {INCOME_RANGES.map((inc) => (
+                        <option key={inc} value={inc}>{inc}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 7: FAMILY & BIO */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1">
+                  7. Family Background & Lifestyle
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Father's Occupation</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.fatherOccupation}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, fatherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Mother's Occupation</label>
+                    <input
+                      type="text"
+                      value={newProfileForm.motherOccupation}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, motherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Family Type</label>
+                    <select
+                      value={newProfileForm.familyType}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, familyType: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Nuclear Family">Nuclear Family</option>
+                      <option value="Joint Family">Joint Family</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1 text-gray-700">About Candidate / Bio</label>
+                  <textarea
+                    rows={3}
+                    value={newProfileForm.aboutMe}
+                    onChange={(e) => setNewProfileForm({ ...newProfileForm, aboutMe: e.target.value })}
+                    placeholder="Brief family background, partner preferences..."
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 8: VERIFICATION & SUBSCRIPTION SETUP */}
+              <div className="bg-amber-50/80 p-4 sm:p-6 rounded-2xl border border-amber-300/80 space-y-4 shadow-sm">
+                <h4 className="font-bold text-sm text-amber-950 border-b border-amber-200 pb-2 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>8. Verification & Membership Subscription Grant</span>
+                  </div>
+                  <label className="flex items-center space-x-1.5 cursor-pointer text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                    <input
+                      type="checkbox"
+                      checked={newProfileForm.verified}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, verified: e.target.checked })}
+                      className="w-4 h-4 rounded text-emerald-600"
+                    />
+                    <span>Verified Badge</span>
+                  </label>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Assign Subscription Plan</label>
+                    <select
+                      value={newProfileForm.subPlanId}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const found = SUBSCRIPTION_PLANS.find(p => p.id === selectedId);
+                        setNewProfileForm(prev => ({
+                          ...prev,
+                          subPlanId: selectedId,
+                          subCreditsTotal: found ? found.visits : 0,
+                          subCreditsRemaining: found ? found.visits : 0
+                        }));
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-amber-300 font-bold text-slate-900 bg-white"
+                    >
+                      <option value="none">Free / No Active Plan</option>
+                      {SUBSCRIPTION_PLANS.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} Plan (₹{plan.price} — {plan.visits} Visits)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Remaining Visit Credits</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newProfileForm.subCreditsRemaining}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, subCreditsRemaining: parseInt(e.target.value) || 0 })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-bold text-emerald-700 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-slate-800">Total Plan Credits</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newProfileForm.subCreditsTotal}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, subCreditsTotal: parseInt(e.target.value) || 0 })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* FOOTER SUBMIT ACTIONS */}
+              <div className="pt-4 flex items-center justify-end space-x-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs shadow-lg hover:shadow-xl transition-all flex items-center space-x-2 border border-brand-gold/40"
+                >
+                  <Save className="w-4 h-4 text-brand-gold" />
+                  <span>Create Candidate Profile</span>
                 </button>
               </div>
             </form>

@@ -843,6 +843,49 @@ export const ProfileProvider = ({ children }) => {
     addToast('Profile updated successfully by Admin!', 'success');
   };
 
+  const createAdminProfile = async (newProfileData) => {
+    const timeStamp = Date.now();
+    const newId = `p_${timeStamp}`;
+    
+    let nextRegNum = 1015;
+    if (profiles.length > 0) {
+      const existingNums = profiles.map(p => {
+        const num = Number(String(p.registrationId || p.regId || '').replace(/[^0-9]/g, ''));
+        return isNaN(num) ? 0 : num;
+      });
+      nextRegNum = Math.max(...existingNums, 1000) + 1;
+    }
+
+    const regIdStr = newProfileData.regId || `SS-${nextRegNum}`;
+    const cleanGender = String(newProfileData.gender || 'female').toLowerCase().trim();
+
+    const rawProfile = {
+      id: newId,
+      regId: regIdStr,
+      registrationId: nextRegNum,
+      createdAt: new Date().toISOString(),
+      verified: newProfileData.verified !== undefined ? newProfileData.verified : true,
+      blocked: false,
+      gender: cleanGender,
+      lookingFor: cleanGender,
+      ...newProfileData
+    };
+
+    const normalized = normalizeProfile(rawProfile);
+
+    setProfiles((prev) => {
+      const updatedList = [normalized, ...prev];
+      try {
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(updatedList));
+      } catch (e) {}
+      return updatedList;
+    });
+
+    await saveProfileToFirestore(newId, normalized);
+    addToast(`New member profile (${normalized.name} — ${normalized.regId}) created successfully!`, 'success');
+    return normalized;
+  };
+
   const deleteProfile = async (profileId) => {
     const idStr = String(profileId);
 
@@ -994,6 +1037,7 @@ export const ProfileProvider = ({ children }) => {
         toggleVerifyProfile,
         toggleBlockProfile,
         addProfile,
+        createAdminProfile,
         updateAdminProfile,
         deleteProfile,
         updateHomeContent,
