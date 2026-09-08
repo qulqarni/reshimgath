@@ -36,7 +36,11 @@ export const MessagesPage = ({ onNavigate }) => {
     // 2. Exclude Admin accounts
     if (p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'))) return false;
 
-    // 3. Must be explicitly accepted for this user
+    // 3. Exclude Blocked candidate profiles (disappears from messages when blocked by admin)
+    const isMeAdmin = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
+    if (!isMeAdmin && p.blocked) return false;
+
+    // 4. Must be explicitly accepted for this user
     return (interests.accepted || []).some((a) => {
       if (typeof a === 'string') {
         return String(a).toLowerCase() === String(p.id).toLowerCase();

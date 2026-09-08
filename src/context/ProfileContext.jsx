@@ -658,13 +658,24 @@ export const ProfileProvider = ({ children }) => {
   // Calculate total unread messages count across all conversations for current user
   const totalUnreadMessagesCount = (() => {
     if (!user) return 0;
-    const meId = String(user.id);
+    const meId = String(user.id).toLowerCase();
+    const isMeAdmin = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
     let total = 0;
+
     Object.keys(chats).forEach((convoKey) => {
-      if (convoKey.includes(meId)) {
+      const parts = convoKey.split('_').map((id) => id.toLowerCase());
+      if (parts.includes(meId)) {
+        const otherId = parts.find((id) => id !== meId);
+        if (otherId) {
+          const partner = profiles.find((p) => String(p.id).toLowerCase() === otherId);
+          if (!isMeAdmin && partner && partner.blocked) {
+            return;
+          }
+        }
+
         const thread = chats[convoKey] || [];
         thread.forEach((msg) => {
-          if (String(msg.senderId) !== meId && msg.status !== 'read') {
+          if (String(msg.senderId).toLowerCase() !== meId && msg.status !== 'read') {
             total++;
           }
         });

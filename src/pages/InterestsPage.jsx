@@ -17,6 +17,8 @@ export const InterestsPage = ({ onNavigate }) => {
     return null;
   }
 
+  const isMeAdmin = user && (user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1');
+
   // Received profiles for current logged-in user
   const receivedList = (interests.received || [])
     .filter((r) => {
@@ -57,7 +59,8 @@ export const InterestsPage = ({ onNavigate }) => {
         time: r.timestamp || 'Recently'
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(p => isMeAdmin || !p.blocked);
 
   // Sent profiles by current logged-in user
   const sentList = (interests.sent || [])
@@ -89,12 +92,14 @@ export const InterestsPage = ({ onNavigate }) => {
         status: isAccepted ? 'Accepted' : isDeclined ? 'Declined' : 'Pending'
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(p => isMeAdmin || !p.blocked);
 
   // Shortlisted profiles
   const shortlistedList = (interests.shortlisted || [])
     .map((id) => profiles.find((item) => String(item.id) === String(id)))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(p => isMeAdmin || !p.blocked);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
