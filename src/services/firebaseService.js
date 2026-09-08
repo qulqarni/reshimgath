@@ -87,52 +87,98 @@ export const deleteProfileFromFirestore = async (profileId) => {
 };
 
 // -------------------------------------------------------------
-// FIREBASE STORAGE: BIODATA PDF MANAGEMENT
+// FIREBASE STORAGE: FILES & PHOTOS MANAGEMENT
 // -------------------------------------------------------------
 
 /**
- * Upload a Member Biodata PDF file to Firebase Storage
- * Store location: biodatas/{userId}/{fileName}
- * @param {File} file - PDF file object
- * @param {string} userId - Member user ID
- * @returns {Promise<string|null>} - Public Download URL of the uploaded PDF
+ * Core helper function to upload any File to Firebase Storage and return its public download URL
+ * @param {File} file - Browser File object
+ * @param {string} storagePath - Relative path inside Firebase Storage (e.g. photos/user_123/16000000_pic.jpg)
+ * @param {string} customContentType - Optional MIME type override
+ * @returns {Promise<string>} Public HTTPS Download URL
  */
-export const uploadBiodataPdfToFirebase = async (file, userId = 'guest') => {
+export const uploadFileToFirebaseStorage = async (file, storagePath, customContentType = null) => {
   if (!isFirebaseConfigured) {
-    console.info('Firebase Storage keys missing. Simulating PDF upload URL.');
-    // Simulated fallback download URL for instant testing
+    console.info('Firebase Storage not configured. Falling back to local Object URL.');
     return URL.createObjectURL(file);
   }
 
   try {
-    const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const storageRef = ref(storage, `biodatas/${userId}/${fileName}`);
+    const storageRef = ref(storage, storagePath);
+    const contentType = customContentType || file.type || 'application/octet-stream';
     
-    // Upload file bytes to Firebase Storage
-    const snapshot = await uploadBytes(storageRef, file, {
-      contentType: 'application/pdf'
-    });
+    // Upload raw file bytes to Firebase Storage
+    const snapshot = await uploadBytes(storageRef, file, { contentType });
 
-    // Get public downloadable URL
+    // Retrieve public HTTPS Download URL
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
   } catch (error) {
-    console.error('Error uploading PDF to Firebase Storage:', error);
+    console.error(`Error uploading file to Firebase Storage (${storagePath}):`, error);
     throw error;
   }
 };
 
 /**
- * Delete a Biodata PDF from Firebase Storage
+ * Upload a Member Biodata PDF or Image file to Firebase Storage
+ * Store location: biodatas/{userId}/{timestamp}_{fileName}
+ * @param {File} file - PDF or Image file object
+ * @param {string} userId - Member user ID
+ * @returns {Promise<string>} - Public Download URL of the uploaded file
+ */
+export const uploadBiodataPdfToFirebase = async (file, userId = 'guest') => {
+  const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const fileName = `${Date.now()}_${cleanName}`;
+  const storagePath = `biodatas/${userId}/${fileName}`;
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  const contentType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
+
+  return await uploadFileToFirebaseStorage(file, storagePath, contentType);
+};
+
+/**
+ * Upload a Member Profile Photo or Gallery Image to Firebase Storage
+ * Store location: {folder}/{userId}/{timestamp}_{fileName}
+ * @param {File} file - Image file object
+ * @param {string} userId - Member user ID
+ * @param {string} folder - 'photos' or 'avatars'
+ * @returns {Promise<string>} - Public Download URL of the uploaded photo
+ */
+export const uploadPhotoToFirebase = async (file, userId = 'guest', folder = 'photos') => {
+  const cleanName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
+  const fileName = `${Date.now()}_${cleanName}`;
+  const storagePath = `${folder}/${userId}/${fileName}`;
+  const contentType = file.type || 'image/jpeg';
+
+  return await uploadFileToFirebaseStorage(file, storagePath, contentType);
+};
+
+/**
+ * Upload a Success Story Photo to Firebase Storage
+ * Store location: stories/{timestamp}_{fileName}
+ * @param {File} file - Image file object
+ * @returns {Promise<string>} - Public Download URL of the uploaded story photo
+ */
+export const uploadStoryPhotoToFirebase = async (file) => {
+  const cleanName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'story.jpg';
+  const fileName = `${Date.now()}_${cleanName}`;
+  const storagePath = `stories/${fileName}`;
+  const contentType = file.type || 'image/jpeg';
+
+  return await uploadFileToFirebaseStorage(file, storagePath, contentType);
+};
+
+/**
+ * Delete a Biodata PDF or Photo from Firebase Storage
  */
 export const deleteBiodataPdfFromFirebase = async (pdfUrl) => {
-  if (!isFirebaseConfigured || !pdfUrl.includes('firebasestorage')) return true;
+  if (!isFirebaseConfigured || !pdfUrl || !pdfUrl.includes('firebasestorage')) return true;
   try {
     const storageRef = ref(storage, pdfUrl);
     await deleteObject(storageRef);
     return true;
   } catch (error) {
-    console.error('Error deleting PDF from Firebase Storage:', error);
+    console.error('Error deleting file from Firebase Storage:', error);
     return false;
   }
 };

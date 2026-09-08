@@ -49,7 +49,7 @@ export const EditProfilePage = ({ onNavigate }) => {
 
   const biodata = user?.biodataPdf;
 
-  const handlePdfUpload = (e) => {
+  const handlePdfUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -70,20 +70,21 @@ export const EditProfilePage = ({ onNavigate }) => {
       ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
       : `${Math.round(file.size / 1024)} KB`;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result;
+    try {
+      const firebaseStorageUrl = await uploadBiodataPdfToFirebase(file, user?.id || user?.regId || 'guest');
       const newBiodata = {
         fileName: file.name,
         fileSize: fileSizeFormatted,
         fileType: isImage ? 'image' : 'pdf',
         uploadedAt: new Date().toISOString().split('T')[0],
-        url: base64Url
+        url: firebaseStorageUrl
       };
 
-      updateProfile({ biodataPdf: newBiodata });
-    };
-    reader.readAsDataURL(file);
+      await updateProfile({ biodataPdf: newBiodata });
+    } catch (err) {
+      console.error('Error uploading biodata to Firebase Storage:', err);
+      alert('Failed to upload file to Firebase Storage.');
+    }
   };
 
   const handleSubmit = (e) => {

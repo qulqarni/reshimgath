@@ -7,6 +7,7 @@ import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LE
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { compressImage } from '../utils/imageCompressor';
+import { uploadPhotoToFirebase } from '../services/firebaseService';
 import { 
   User, 
   MapPin, 
@@ -215,11 +216,12 @@ export const MyProfilePage = ({ onNavigate }) => {
       return;
     }
     try {
-      // Compress image to lightweight ~30KB JPEG Base64 Data URL
-      const compressedBase64 = await compressImage(file, 600, 600, 0.8);
-      updateProfile({ avatar: compressedBase64 });
+      // Upload avatar to Firebase Storage (avatars/{userId}/...)
+      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'avatars');
+      await updateProfile({ avatar: storageUrl });
     } catch (err) {
-      console.error('Error compressing avatar image:', err);
+      console.error('Error uploading avatar image to Firebase Storage:', err);
+      alert('Failed to upload profile picture to Firebase Storage.');
     } finally {
       setShowAvatarMenu(false);
     }
@@ -239,13 +241,14 @@ export const MyProfilePage = ({ onNavigate }) => {
       return;
     }
     try {
-      // Compress gallery photo to ~50KB JPEG Base64 Data URL
-      const compressedBase64 = await compressImage(file, 800, 800, 0.8);
-      const updated = [...photos, compressedBase64];
-      updateProfile({ photos: updated });
+      // Upload gallery photo to Firebase Storage (photos/{userId}/...)
+      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'photos');
+      const updated = [...photos, storageUrl];
+      await updateProfile({ photos: updated });
       setActivePhotoIdx(updated.length - 1);
     } catch (err) {
-      console.error('Error compressing gallery photo:', err);
+      console.error('Error uploading gallery photo to Firebase Storage:', err);
+      alert('Failed to upload gallery photo to Firebase Storage.');
     }
   };
 

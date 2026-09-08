@@ -5,6 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
+import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase } from '../services/firebaseService';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -260,11 +261,12 @@ export const AdminPage = ({ onNavigate }) => {
       return;
     }
     try {
-      const base64Image = await compressImage(file, 800, 800, 0.8);
-      setEditingProfile((prev) => ({ ...prev, avatar: base64Image }));
+      const storageUrl = await uploadPhotoToFirebase(file, editingProfile?.id || 'admin_edit', 'avatars');
+      setEditingProfile((prev) => ({ ...prev, avatar: storageUrl }));
+      addToast('Profile photo uploaded to Firebase Storage!', 'success');
     } catch (err) {
       console.error('Avatar upload failed:', err);
-      alert('Failed to process image.');
+      alert('Failed to upload image to Firebase Storage.');
     }
   };
 
@@ -280,14 +282,15 @@ export const AdminPage = ({ onNavigate }) => {
       return;
     }
     try {
-      const base64Image = await compressImage(file, 800, 800, 0.8);
+      const storageUrl = await uploadPhotoToFirebase(file, editingProfile?.id || 'admin_edit', 'photos');
       setEditingProfile((prev) => ({
         ...prev,
-        photos: [...(prev.photos || []), base64Image]
+        photos: [...(prev.photos || []), storageUrl]
       }));
+      addToast('Gallery photo uploaded to Firebase Storage!', 'success');
     } catch (err) {
       console.error('Gallery photo upload failed:', err);
-      alert('Failed to process image.');
+      alert('Failed to upload gallery photo to Firebase Storage.');
     }
   };
 
@@ -311,11 +314,12 @@ export const AdminPage = ({ onNavigate }) => {
       return;
     }
     try {
-      const compressed = await compressImage(file, 800, 800, 0.8);
-      setNewStoryData((prev) => ({ ...prev, photoUrl: compressed }));
-      addToast('Photo uploaded from device successfully!', 'success');
+      const storageUrl = await uploadStoryPhotoToFirebase(file);
+      setNewStoryData((prev) => ({ ...prev, photoUrl: storageUrl }));
+      addToast('Story photo uploaded to Firebase Storage successfully!', 'success');
     } catch (err) {
-      console.error('Error compressing story photo:', err);
+      console.error('Error uploading story photo to Firebase Storage:', err);
+      alert('Failed to upload story photo to Firebase Storage.');
     }
   };
 
@@ -327,11 +331,12 @@ export const AdminPage = ({ onNavigate }) => {
       return;
     }
     try {
-      const compressed = await compressImage(file, 800, 800, 0.8);
-      setEditingStory((prev) => ({ ...prev, photoUrl: compressed }));
-      addToast('Photo uploaded from device successfully!', 'success');
+      const storageUrl = await uploadStoryPhotoToFirebase(file);
+      setEditingStory((prev) => ({ ...prev, photoUrl: storageUrl }));
+      addToast('Story photo uploaded to Firebase Storage successfully!', 'success');
     } catch (err) {
-      console.error('Error compressing story photo:', err);
+      console.error('Error uploading story photo to Firebase Storage:', err);
+      alert('Failed to upload story photo to Firebase Storage.');
     }
   };
 

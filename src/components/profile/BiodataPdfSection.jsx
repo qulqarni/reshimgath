@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { uploadBiodataPdfToFirebase } from '../../services/firebaseService';
 import { 
   FileText, 
   UploadCloud, 
@@ -15,7 +16,8 @@ import {
   Briefcase,
   Home,
   MapPin,
-  Heart
+  Heart,
+  Loader2
 } from 'lucide-react';
 
 export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) => {
@@ -27,7 +29,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
   const biodata = user?.biodataPdf || null;
   const firstName = user?.name ? user.name.split(' ')[0] : 'Candidate';
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -50,25 +52,29 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
       ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
       : `${Math.round(file.size / 1024)} KB`;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result;
+    try {
+      // Upload PDF / Image directly to Firebase Storage
+      const firebaseStorageUrl = await uploadBiodataPdfToFirebase(file, user?.id || user?.regId || 'guest');
+      
       const newBiodata = {
         fileName: file.name,
         fileSize: fileSizeFormatted,
         fileType: isImage ? 'image' : 'pdf',
         uploadedAt: new Date().toISOString().split('T')[0],
-        url: base64Url
+        url: firebaseStorageUrl
       };
 
       if (updateProfile) {
-        updateProfile({ biodataPdf: newBiodata });
+        await updateProfile({ biodataPdf: newBiodata });
       }
-      setIsUploading(false);
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Failed to upload Biodata to Firebase Storage:', error);
+      alert('Failed to upload file to Firebase Storage. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleRemove = () => {
