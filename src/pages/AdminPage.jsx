@@ -5,7 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
-import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, migrateExistingProfilesToFirebaseStorage } from '../services/firebaseService';
+import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase } from '../services/firebaseService';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -301,6 +301,52 @@ export const AdminPage = ({ onNavigate }) => {
       ...prev,
       photos: (prev.photos || []).filter((_, i) => i !== index)
     }));
+  };
+
+  const handleAdminBiodataUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(file.name);
+
+    if (!isPdf && !isImage) {
+      alert('Please select a valid PDF document or Image file (JPG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size exceeds 10MB limit.');
+      return;
+    }
+
+    const fileSizeFormatted = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
+
+    try {
+      const firebaseStorageUrl = await uploadBiodataPdfToFirebase(file, editingProfile?.id || 'admin_edit');
+      const newBiodata = {
+        fileName: file.name,
+        fileSize: fileSizeFormatted,
+        fileType: isImage ? 'image' : 'pdf',
+        uploadedAt: new Date().toISOString().split('T')[0],
+        url: firebaseStorageUrl
+      };
+
+      setEditingProfile((prev) => ({ ...prev, biodataPdf: newBiodata }));
+      addToast('Biodata uploaded to Firebase Storage successfully!', 'success');
+    } catch (err) {
+      console.error('Error uploading biodata in Admin:', err);
+      alert('Failed to upload Biodata file to Firebase Storage.');
+    }
+  };
+
+  const handleAdminRemoveBiodata = () => {
+    if (window.confirm('Are you sure you want to remove this member\'s Biodata?')) {
+      setEditingProfile((prev) => ({ ...prev, biodataPdf: null }));
+      addToast('Biodata removed from profile.', 'info');
+    }
   };
 
   const handleSaveHomeContent = (e) => {
@@ -1897,12 +1943,94 @@ export const AdminPage = ({ onNavigate }) => {
                 )}
               </div>
 
-              {/* SECTION 7: SUBSCRIPTION PLAN & PROFILE VISIT CREDITS */}
+              {/* SECTION 7: BIODATA DOCUMENT (PDF / PHOTO) */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-brand-plum border-b border-gray-100 pb-1 flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <FileText className="w-4 h-4 text-brand-kesari" />
+                    <span>7. Candidate Biodata Document (PDF / Photo)</span>
+                  </span>
+                </h4>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                  {editingProfile.biodataPdf ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-brand-plum text-brand-gold flex items-center justify-center font-bold text-xs shrink-0">
+                          {editingProfile.biodataPdf.fileType === 'image' ? 'IMG' : 'PDF'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-brand-plum text-xs truncate">
+                            {editingProfile.biodataPdf.fileName || 'Biodata Document'}
+                          </p>
+                          <p className="text-[11px] text-gray-500">
+                            {editingProfile.biodataPdf.fileSize || 'File'} • Uploaded {editingProfile.biodataPdf.uploadedAt || 'Recently'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 shrink-0">
+                        {editingProfile.biodataPdf.url && (
+                          <a
+                            href={editingProfile.biodataPdf.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-1"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-brand-gold" />
+                            <span>View Document</span>
+                          </a>
+                        )}
+
+                        <label className="px-3 py-1.5 bg-amber-50 text-amber-900 border border-amber-300 font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-100 transition-all flex items-center space-x-1">
+                          <UploadCloud className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Replace File</span>
+                          <input
+                            type="file"
+                            accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
+                            onChange={handleAdminBiodataUpload}
+                            className="hidden"
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={handleAdminRemoveBiodata}
+                          className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl hover:bg-rose-100 transition-all flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                      <div>
+                        <p className="text-xs font-bold text-brand-plum">No Biodata Document Uploaded</p>
+                        <p className="text-[11px] text-gray-500">Upload candidate's PDF or Image biodata file directly to Firebase Storage.</p>
+                      </div>
+
+                      <label className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shrink-0">
+                        <UploadCloud className="w-4 h-4 text-brand-gold" />
+                        <span>Upload Biodata (PDF / IMG)</span>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
+                          onChange={handleAdminBiodataUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 8: SUBSCRIPTION PLAN & PROFILE VISIT CREDITS */}
               <div className="bg-amber-50/80 p-4 sm:p-6 rounded-2xl border border-amber-300/80 space-y-4 shadow-sm">
                 <h4 className="font-bold text-sm text-amber-950 border-b border-amber-200 pb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
                     <Crown className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>7. Subscription Plan & Profile Visit Credits (Admin Management)</span>
+                    <span>8. Subscription Plan & Profile Visit Credits (Admin Management)</span>
                   </div>
                   <span className="text-[10px] font-extrabold text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full border border-amber-300">
                     Grant / Modify Subscriptions
