@@ -5,7 +5,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
-import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase } from '../services/firebaseService';
+import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, migrateExistingProfilesToFirebaseStorage } from '../services/firebaseService';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -39,7 +39,9 @@ import {
   Crown,
   CreditCard,
   Eye,
-  Award
+  Award,
+  UploadCloud,
+  Loader2
 } from 'lucide-react';
 
 export const getSubscriptionDetails = (p) => {
@@ -91,6 +93,33 @@ export const AdminPage = ({ onNavigate }) => {
   } = useProfiles();
 
   const [activeTab, setActiveTab] = useState('profiles'); // 'overview', 'profiles', 'content', 'stories', 'inquiries'
+
+  // Migration state
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState('');
+
+  const handleMigrateMedia = async () => {
+    if (!window.confirm('Do you want to scan and upload all existing profile photos, gallery images, and biodata PDFs to Firebase Storage?')) {
+      return;
+    }
+    setIsMigrating(true);
+    setMigrationStatus('Starting media migration...');
+    try {
+      const { updatedProfiles, migratedCount } = await migrateExistingProfilesToFirebaseStorage(
+        profiles,
+        (current, total, name) => {
+          setMigrationStatus(`Migrating ${current} of ${total}: ${name}`);
+        }
+      );
+      addToast(`Migration complete! Successfully uploaded ${migratedCount} files to Firebase Storage.`, 'success');
+      setMigrationStatus(`Migration complete! ${migratedCount} files stored on Firebase Storage.`);
+    } catch (err) {
+      console.error('Migration failed:', err);
+      addToast('Migration failed. Check console log for details.', 'error');
+    } finally {
+      setIsMigrating(false);
+    }
+  };
 
   // Profile Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -525,14 +554,14 @@ export const AdminPage = ({ onNavigate }) => {
           </div>
 
           <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
-            <h3 className="font-serif font-bold text-lg text-brand-plum">Quick Bureau Actions</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <h3 className="font-serif font-bold text-lg text-brand-plum">Quick Bureau Actions & Media Tools</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
                 onClick={() => setActiveTab('profiles')}
                 className="p-4 bg-brand-lightBg hover:bg-brand-plum hover:text-white rounded-2xl border border-brand-rose/20 transition-all font-bold text-xs flex items-center justify-center space-x-2 text-brand-plum"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Verify / Manage Profiles & Subscriptions (1-Click)</span>
+                <span>Verify / Manage Profiles & Subscriptions</span>
               </button>
 
               <button
@@ -542,7 +571,27 @@ export const AdminPage = ({ onNavigate }) => {
                 <Layout className="w-4 h-4" />
                 <span>Edit Homepage Content & Headlines</span>
               </button>
+
+              <button
+                onClick={handleMigrateMedia}
+                disabled={isMigrating}
+                className="p-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-2xl border border-amber-300 transition-all font-bold text-xs flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+              >
+                {isMigrating ? (
+                  <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+                ) : (
+                  <UploadCloud className="w-4 h-4 text-slate-950" />
+                )}
+                <span>{isMigrating ? 'Migrating Media...' : 'Migrate Existing Photos & PDFs to Firebase Storage'}</span>
+              </button>
             </div>
+
+            {migrationStatus && (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs font-bold text-amber-900 flex items-center space-x-2">
+                {isMigrating && <Loader2 className="w-4 h-4 animate-spin text-amber-700 shrink-0" />}
+                <span>{migrationStatus}</span>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -543,3 +543,142 @@ export const subscribeToInquiriesFromFirestore = (callback) => {
     return () => {};
   }
 };
+
+// -------------------------------------------------------------
+// FIREBASE STORAGE MEDIA MIGRATION UTILITY
+// -------------------------------------------------------------
+
+/**
+ * Convert a Base64 Data URL, relative asset path, or blob URL to a File object
+ */
+export const urlOrBase64ToFile = async (urlOrStr, defaultFileName = 'file.jpg') => {
+  if (!urlOrStr || typeof urlOrStr !== 'string') return null;
+
+  // Case 1: Base64 Data URL
+  if (urlOrStr.startsWith('data:')) {
+    try {
+      const arr = urlOrStr.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], defaultFileName, { type: mime });
+    } catch (err) {
+      console.error('Error converting base64 to File:', err);
+      return null;
+    }
+  }
+
+  // Case 2: Relative or remote URL (e.g. /profile1.jpg or http...)
+  try {
+    const res = await fetch(urlOrStr);
+    const blob = await res.blob();
+    const contentType = blob.type || (defaultFileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+    return new File([blob], defaultFileName, { type: contentType });
+  } catch (err) {
+    console.error(`Failed to fetch asset from URL (${urlOrStr}):`, err);
+    return null;
+  }
+};
+
+/**
+ * Scan and migrate all existing profile media (avatars, gallery photos, biodata PDFs) to Firebase Storage
+ * @param {Array} profilesList - List of member profiles
+ * @param {Function} onProgress - Progress callback function (index, total, currentProfileName)
+ * @returns {Promise<{ updatedProfiles: Array, migratedCount: number }>}
+ */
+export const migrateExistingProfilesToFirebaseStorage = async (profilesList = [], onProgress = null) => {
+  if (!isFirebaseConfigured || !Array.isArray(profilesList) || profilesList.length === 0) {
+    return { updatedProfiles: profilesList, migratedCount: 0 };
+  }
+
+  let totalMigratedFiles = 0;
+  const updatedProfiles = [];
+
+  for (let i = 0; i < profilesList.length; i++) {
+    const profile = { ...profilesList[i] };
+    const pId = profile.id || profile.regId || `profile_${i + 1}`;
+    let profileModified = false;
+
+    if (onProgress) {
+      onProgress(i + 1, profilesList.length, profile.name || `Profile ${pId}`);
+    }
+
+    // 1. Migrate Avatar
+    if (profile.avatar && typeof profile.avatar === 'string' && !profile.avatar.includes('firebasestorage.googleapis.com')) {
+      try {
+        const avatarFile = await urlOrBase64ToFile(profile.avatar, `avatar_${pId}.jpg`);
+        if (avatarFile) {
+          const storageUrl = await uploadPhotoToFirebase(avatarFile, pId, 'avatars');
+          profile.avatar = storageUrl;
+          profileModified = true;
+          totalMigratedFiles++;
+        }
+      } catch (err) {
+        console.error(`Failed to migrate avatar for profile ${pId}:`, err);
+      }
+    }
+
+    // 2. Migrate Gallery Photos
+    if (Array.isArray(profile.photos) && profile.photos.length > 0) {
+      const newPhotos = [];
+      for (let j = 0; j < profile.photos.length; j++) {
+        const photoUrl = profile.photos[j];
+        if (typeof photoUrl === 'string' && photoUrl.trim()) {
+          if (!photoUrl.includes('firebasestorage.googleapis.com')) {
+            try {
+              const photoFile = await urlOrBase64ToFile(photoUrl, `photo_${pId}_${j + 1}.jpg`);
+              if (photoFile) {
+                const storageUrl = await uploadPhotoToFirebase(photoFile, pId, 'photos');
+                newPhotos.push(storageUrl);
+                profileModified = true;
+                totalMigratedFiles++;
+              } else {
+                newPhotos.push(photoUrl);
+              }
+            } catch (err) {
+              console.error(`Failed to migrate gallery photo ${j} for profile ${pId}:`, err);
+              newPhotos.push(photoUrl);
+            }
+          } else {
+            newPhotos.push(photoUrl);
+          }
+        }
+      }
+      profile.photos = newPhotos;
+    }
+
+    // 3. Migrate Biodata PDF
+    if (profile.biodataPdf && profile.biodataPdf.url && !profile.biodataPdf.url.includes('firebasestorage.googleapis.com')) {
+      try {
+        const isPdf = profile.biodataPdf.fileType === 'pdf' || profile.biodataPdf.fileName?.toLowerCase().endsWith('.pdf');
+        const fileExt = isPdf ? '.pdf' : '.jpg';
+        const pdfFile = await urlOrBase64ToFile(profile.biodataPdf.url, profile.biodataPdf.fileName || `biodata_${pId}${fileExt}`);
+        if (pdfFile) {
+          const storageUrl = await uploadBiodataPdfToFirebase(pdfFile, pId);
+          profile.biodataPdf = {
+            ...profile.biodataPdf,
+            url: storageUrl
+          };
+          profileModified = true;
+          totalMigratedFiles++;
+        }
+      } catch (err) {
+        console.error(`Failed to migrate biodata PDF for profile ${pId}:`, err);
+      }
+    }
+
+    // If modified, save updated profile to Firestore
+    if (profileModified) {
+      await saveProfileToFirestore(profile.id || String(pId), profile);
+    }
+
+    updatedProfiles.push(profile);
+  }
+
+  return { updatedProfiles, migratedCount: totalMigratedFiles };
+};
