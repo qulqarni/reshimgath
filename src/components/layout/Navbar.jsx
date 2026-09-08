@@ -161,7 +161,7 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                 <span className="truncate max-w-[130px]">
                   {user?.subscription?.planName 
                     ? `${user.subscription.planName} • ${user.subscription.creditsRemaining || 0} Left`
-                    : 'Plans (बायोडेा)'}
+                    : 'Plans'}
                 </span>
               </button>
             )}
