@@ -461,7 +461,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
                     Contact Details (संपर्क माहिती)
                   </h3>
-                  <p className="text-[10px] text-brand-gray">Direct phone number, WhatsApp & address details</p>
+                  <p className="text-[10px] text-brand-gray">Direct phone number & email address</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center space-x-1">
@@ -495,32 +495,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                 )}
               </div>
 
-              {/* WhatsApp Chat Link */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-green-100 text-green-700 flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-brand-gray font-medium block">WhatsApp Chat</span>
-                    <p className="font-bold text-brand-plum text-xs mt-0.5 font-mono">
-                      {profile.phone || profile.mobile || '+91 98230 00000'}
-                    </p>
-                  </div>
-                </div>
-                {(profile.phone || profile.mobile) && (
-                  <a
-                    href={`https://wa.me/${String(profile.phone || profile.mobile).replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-bold rounded-xl transition-all flex items-center space-x-1 shadow-sm shrink-0"
-                  >
-                    <MessageCircle className="w-3 h-3" />
-                    <span>WhatsApp</span>
-                  </a>
-                )}
-              </div>
-
               {/* Email Address */}
               <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                 <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
@@ -530,19 +504,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   <span className="text-[10px] text-brand-gray font-medium block">Email Address</span>
                   <p className="font-bold text-brand-plum text-xs mt-0.5 truncate">
                     {profile.email || 'Contact bureau for email'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Location & Address */}
-              <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-brand-kesari" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-brand-gray font-medium block">Location & Address</span>
-                  <p className="font-bold text-brand-plum text-xs mt-0.5">
-                    {[profile.city, profile.district, profile.nativePlace].filter(Boolean).join(', ') || 'Maharashtra, India'}
                   </p>
                 </div>
               </div>
