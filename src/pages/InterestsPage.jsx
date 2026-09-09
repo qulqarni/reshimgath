@@ -495,7 +495,7 @@ export const InterestsPage = ({ onNavigate }) => {
               <p className="font-semibold">{t('noConnected')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {connectedList.map((p) => {
                 const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
                 const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
@@ -503,90 +503,85 @@ export const InterestsPage = ({ onNavigate }) => {
                 return (
                   <div
                     key={p.id}
-                    className="group bg-white rounded-3xl overflow-hidden border border-emerald-200 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col justify-between"
+                    className="bg-white rounded-2xl sm:rounded-3xl border border-emerald-200/80 p-4 sm:p-5 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                   >
-                    <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-brand-lightBg">
-                      {photo ? (
-                        <img
-                          src={photo}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-brand-lightBg text-brand-plum/40 p-4">
-                          <div className="w-16 h-16 rounded-full bg-brand-plum/10 border border-brand-plum/20 flex items-center justify-center mb-2">
-                            <User className="w-8 h-8 text-brand-plum/50" />
+                    {/* Left: Profile Photo & Basic Info */}
+                    <div className="flex items-center space-x-4 flex-1 min-w-0">
+                      <div className="relative shrink-0">
+                        {photo ? (
+                          <img
+                            src={photo}
+                            alt={p.name}
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-emerald-500/30 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col items-center justify-center text-emerald-700">
+                            <User className="w-8 h-8 opacity-60" />
+                            <span className="text-[10px] font-bold mt-1 opacity-70">No Photo</span>
                           </div>
-                          <span className="text-xs font-semibold text-brand-plum/60">No Profile Picture</span>
-                        </div>
-                      )}
+                        )}
+                        <span className="absolute -top-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow-sm" title="Connected">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      </div>
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/85 via-transparent to-black/30" />
-
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum truncate">
+                            {p.name}
+                          </h3>
                           {p.verified && <VerificationBadge size="small" />}
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
+                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px] rounded-full">
                             Reg ID: {profileSlug}
                           </span>
                         </div>
 
-                        <span className="px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
-                          <Check className="w-3 h-3 text-emerald-200" />
-                          <span>Connected</span>
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white space-y-1">
-                        <h3 className="font-serif text-lg font-bold text-white drop-shadow-sm truncate">
-                          {p.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-[11px] font-medium text-white/90 flex-wrap gap-y-1">
+                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-brand-charcoal font-medium">
                           {p.age && <span>{p.age} Yrs</span>}
                           {p.height && <span>• {p.height}</span>}
                           {p.district && (
-                            <span className="flex items-center space-x-0.5">
+                            <span className="flex items-center space-x-1 text-brand-gray">
                               <span>•</span>
-                              <MapPin className="w-3 h-3 text-brand-gold inline" />
+                              <MapPin className="w-3.5 h-3.5 text-brand-gold shrink-0" />
                               <span>{p.district}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-brand-gray pt-0.5">
+                          {p.caste && (
+                            <span className="flex items-center space-x-1">
+                              <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                              <span>Caste: <strong className="text-brand-charcoal font-semibold">{p.caste}</strong></span>
+                            </span>
+                          )}
+                          {p.education && (
+                            <span className="flex items-center space-x-1">
+                              <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                              <span className="truncate max-w-[200px]">{p.education}</span>
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
-                      <div className="space-y-2 border-b border-gray-100 pb-3">
-                        {p.caste && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">Caste: <strong>{p.caste}</strong></span>
-                          </div>
-                        )}
-                        {p.education && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">{p.education}</span>
-                          </div>
-                        )}
-                      </div>
+                    {/* Right: Actions */}
+                    <div className="flex sm:flex-col items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                      <button
+                        onClick={() => onNavigate('/messages')}
+                        className="flex-1 sm:flex-none w-full py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2"
+                      >
+                        <MessageSquare className="w-4 h-4 text-emerald-200" />
+                        <span>{t('sendMessage')}</span>
+                      </button>
 
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          onClick={() => onNavigate('/messages')}
-                          className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-1.5"
-                        >
-                          <MessageSquare className="w-4 h-4 text-emerald-200" />
-                          <span>{t('sendMessage')}</span>
-                        </button>
-                        <button
-                          onClick={() => onNavigate(`/profile/${p.id}`)}
-                          className="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-brand-plum font-bold text-xs rounded-xl transition-all flex items-center space-x-1 border border-gray-200 shrink-0"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Profile</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => onNavigate(`/profile/${p.id}`)}
+                        className="flex-1 sm:flex-none w-full py-2.5 px-5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 border border-brand-gold/30"
+                      >
+                        <Eye className="w-4 h-4 text-brand-gold" />
+                        <span>Open Profile</span>
+                      </button>
                     </div>
                   </div>
                 );
