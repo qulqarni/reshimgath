@@ -64,7 +64,9 @@ export const MyProfilePage = ({ onNavigate }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const sub = user?.subscription || {};
-  const activePlanName = sub.planName ? `${sub.planName} Plan` : 'Free Tier / No Active Plan';
+  const activePlanName = sub.planName 
+    ? (sub.planName.toLowerCase().includes('plan') ? sub.planName : `${sub.planName} Plan`) 
+    : 'Free Tier / No Active Plan';
   const remainingVisits = sub.creditsRemaining || 0;
   const totalVisits = sub.creditsTotal || 0;
   const unlockedCount = (sub.unlockedProfiles || []).length;
@@ -476,7 +478,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                   Membership & Subscription Status
                 </h2>
                 <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] sm:text-xs font-bold rounded-full whitespace-nowrap">
-                  {sub.planName ? `${sub.planName} Active` : 'Free Member'}
+                  {sub.planName ? `${activePlanName} Active` : 'Free Member'}
                 </span>
               </div>
               <p className="text-xs text-brand-gray font-medium leading-normal">
