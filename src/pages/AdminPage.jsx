@@ -149,6 +149,22 @@ export const AdminPage = ({ onNavigate }) => {
 
   const [newProfileForm, setNewProfileForm] = useState(INITIAL_NEW_PROFILE);
 
+  const handleOpenCreateModal = () => {
+    let nextRegNum = 1015;
+    if (profiles && profiles.length > 0) {
+      const existingNums = profiles.map(p => {
+        const num = Number(String(p.registrationId || p.regId || '').replace(/[^0-9]/g, ''));
+        return isNaN(num) ? 0 : num;
+      });
+      nextRegNum = Math.max(...existingNums, 1000) + 1;
+    }
+    setNewProfileForm({
+      ...INITIAL_NEW_PROFILE,
+      regId: `SS-${nextRegNum}`
+    });
+    setShowCreateModal(true);
+  };
+
   const handleNewAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -747,7 +763,7 @@ export const AdminPage = ({ onNavigate }) => {
               <button
                 onClick={() => {
                   setActiveTab('profiles');
-                  setShowCreateModal(true);
+                  handleOpenCreateModal();
                 }}
                 className="p-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white rounded-2xl border border-brand-gold/40 transition-all font-bold text-xs flex items-center justify-center space-x-2 shadow-sm hover:shadow-md"
               >
@@ -809,7 +825,7 @@ export const AdminPage = ({ onNavigate }) => {
               <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={handleOpenCreateModal}
                   className="px-4 py-2 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center space-x-1.5 border border-brand-gold/40 shrink-0"
                 >
                   <Plus className="w-4 h-4 text-brand-gold" />
@@ -2345,27 +2361,27 @@ export const AdminPage = ({ onNavigate }) => {
             <form onSubmit={handleCreateProfileSubmit} className="space-y-6 text-xs">
               
               {/* SECTION 1: ACCOUNT CREDENTIALS & IDENTITY */}
-              <div className="bg-brand-plum/5 p-4 sm:p-6 rounded-2xl border border-brand-plum/20 space-y-4">
-                <h4 className="font-bold text-sm text-brand-plum border-b border-brand-plum/20 pb-2 flex items-center space-x-1.5">
+              <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
+                <h4 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-2 flex items-center space-x-1.5">
                   <Lock className="w-4 h-4 text-brand-kesari" />
                   <span>1. Account Login Credentials & Identity (खाता व लॉगिन माहिती)</span>
                 </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Phone Number (Login ID) *</label>
+                    <label className="block font-semibold mb-1 text-slate-700">Mobile Number / Email (लॉगिन आयडी) *</label>
                     <input
-                      type="tel"
+                      type="text"
                       required
                       value={newProfileForm.phone}
                       onChange={(e) => setNewProfileForm({ ...newProfileForm, phone: e.target.value })}
-                      placeholder="+91 98230 00000"
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-mono text-xs"
+                      placeholder="e.g. 9823000000 or email@gmail.com"
+                      className="w-full p-2.5 bg-white rounded-xl border border-slate-300 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs font-medium text-slate-800"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Initial Password *</label>
+                    <label className="block font-semibold mb-1 text-slate-700">Initial Password *</label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? 'text' : 'password'}
@@ -2373,12 +2389,12 @@ export const AdminPage = ({ onNavigate }) => {
                         value={newProfileForm.password}
                         onChange={(e) => setNewProfileForm({ ...newProfileForm, password: e.target.value })}
                         placeholder="Assign initial password"
-                        className="w-full pl-3 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-mono"
+                        className="w-full pl-3 pr-9 py-2.5 bg-white rounded-xl border border-slate-300 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs font-mono text-slate-800"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-2.5 top-2.5 text-gray-400 hover:text-brand-plum"
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-brand-plum"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -2386,24 +2402,24 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Email Address (Optional)</label>
+                    <label className="block font-semibold mb-1 text-slate-700">Email Address (Optional)</label>
                     <input
                       type="email"
                       value={newProfileForm.email}
                       onChange={(e) => setNewProfileForm({ ...newProfileForm, email: e.target.value })}
                       placeholder="member@gmail.com"
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs"
+                      className="w-full p-2.5 bg-white rounded-xl border border-slate-300 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs text-slate-800"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Registration ID</label>
+                    <label className="block font-semibold mb-1 text-slate-700">Registration ID</label>
                     <input
                       type="text"
                       value={newProfileForm.regId}
                       onChange={(e) => setNewProfileForm({ ...newProfileForm, regId: e.target.value })}
-                      placeholder="Auto generated e.g. SS-1015"
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-mono text-xs font-bold text-brand-plum"
+                      placeholder="Auto generated e.g. SS-1016"
+                      className="w-full p-2.5 bg-white rounded-xl border border-slate-300 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 font-mono text-xs font-bold text-brand-plum"
                     />
                   </div>
                 </div>
