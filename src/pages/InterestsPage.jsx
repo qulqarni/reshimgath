@@ -2,14 +2,35 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
-import { Heart, Check, X, MessageSquare, Clock, ShieldCheck, UserCheck } from 'lucide-react';
+import { 
+  Heart, 
+  Check, 
+  X, 
+  MessageSquare, 
+  Clock, 
+  ShieldCheck, 
+  UserCheck, 
+  Eye, 
+  Trash2, 
+  MapPin, 
+  GraduationCap, 
+  Briefcase, 
+  User 
+} from 'lucide-react';
+import { VerificationBadge } from '../components/common/VerificationBadge';
+import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
+import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
 
 export const InterestsPage = ({ onNavigate }) => {
-  const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, acceptInterest, declineInterest } = useProfiles();
 
   const [activeTab, setActiveTab] = useState('received');
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [selectedProfileForUnlock, setSelectedProfileForUnlock] = useState(null);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [selectedProfileForSub, setSelectedProfileForSub] = useState(null);
 
   if (!isAuthenticated) {
     triggerPrivacyAlert();
@@ -18,6 +39,40 @@ export const InterestsPage = ({ onNavigate }) => {
   }
 
   const isMeAdmin = user && (user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1');
+
+  const handleOpenProfileClick = (targetProfile) => {
+    if (!targetProfile || !targetProfile.id) return;
+
+    const { canView, alreadyUnlocked, remainingVisits, hasActivePlan } = canViewProfile(targetProfile.id);
+
+    if (alreadyUnlocked || canView) {
+      onNavigate(`/profile/${targetProfile.id}`);
+      return;
+    }
+
+    if (!hasActivePlan || remainingVisits <= 0) {
+      setSelectedProfileForSub(targetProfile);
+      setShowSubModal(true);
+      return;
+    }
+
+    setSelectedProfileForUnlock(targetProfile);
+    setShowUnlockModal(true);
+  };
+
+  const handleConfirmUnlock = () => {
+    if (!selectedProfileForUnlock) return;
+    const targetId = selectedProfileForUnlock.id;
+    const success = unlockProfileForUser(targetId);
+    setShowUnlockModal(false);
+    setSelectedProfileForUnlock(null);
+
+    if (success) {
+      onNavigate(`/profile/${targetId}`);
+    } else {
+      setShowSubModal(true);
+    }
+  };
 
   // Received profiles for current logged-in user
   const receivedList = (interests.received || [])
@@ -169,45 +224,130 @@ export const InterestsPage = ({ onNavigate }) => {
               <p className="font-semibold">{t('noReceivedInterests')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {receivedList.map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-white p-5 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all flex flex-col sm:flex-row items-center justify-between gap-4"
-                >
-                  <div 
-                    onClick={() => onNavigate(`/profile/${p.id}`)}
-                    className="flex items-center space-x-4 cursor-pointer"
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {receivedList.map((p) => {
+                const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
+                const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
+                const viewStatus = canViewProfile(p.id);
+                const isUnlocked = viewStatus.alreadyUnlocked || viewStatus.canView;
+
+                return (
+                  <div
+                    key={p.id}
+                    className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col justify-between"
                   >
-                    <img
-                      src={p.avatar || p.photos?.[0]}
-                      alt={p.name}
-                      className="w-16 h-16 rounded-2xl object-cover"
-                    />
-                    <div>
-                      <h3 className="font-serif font-bold text-base text-brand-plum">{p.name}</h3>
-                      <p className="text-xs text-brand-gray">{p.age} yrs • {p.district} • {p.caste}</p>
-                      <span className="text-[10px] text-gray-400 font-medium">Received {p.time}</span>
+                    {/* Top Candidate Image Container */}
+                    <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-brand-lightBg">
+                      {photo ? (
+                        <img
+                          src={photo}
+                          alt={p.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-brand-lightBg text-brand-plum/40 p-4">
+                          <div className="w-16 h-16 rounded-full bg-brand-plum/10 border border-brand-plum/20 flex items-center justify-center mb-2">
+                            <User className="w-8 h-8 text-brand-plum/50" />
+                          </div>
+                          <span className="text-xs font-semibold text-brand-plum/60">No Profile Picture</span>
+                        </div>
+                      )}
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/85 via-transparent to-black/30" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                          {p.verified && <VerificationBadge size="small" />}
+                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
+                            Reg ID: {profileSlug}
+                          </span>
+                        </div>
+
+                        <span className="px-2.5 py-1 bg-white/90 backdrop-blur-md text-brand-plum text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
+                          <Clock className="w-3 h-3 text-brand-kesari" />
+                          <span>{p.time}</span>
+                        </span>
+                      </div>
+
+                      {/* Overlay Candidate Name & Key Details */}
+                      <div className="absolute bottom-3 left-4 right-4 text-white space-y-1">
+                        <h3 className="font-serif text-lg font-bold text-white drop-shadow-sm truncate">
+                          {p.name}
+                        </h3>
+                        <div className="flex items-center space-x-2 text-[11px] font-medium text-white/90 flex-wrap gap-y-1">
+                          {p.age && <span>{p.age} Yrs</span>}
+                          {p.height && <span>• {p.height}</span>}
+                          {p.district && (
+                            <span className="flex items-center space-x-0.5">
+                              <span>•</span>
+                              <MapPin className="w-3 h-3 text-brand-gold inline" />
+                              <span>{p.district}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Basic Profile Details Section */}
+                    <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
+                      <div className="space-y-2 border-b border-gray-100 pb-3">
+                        {p.caste && (
+                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
+                            <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                            <span className="truncate">Caste: <strong>{p.caste}</strong></span>
+                          </div>
+                        )}
+                        {p.education && (
+                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
+                            <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                            <span className="truncate">{p.education}</span>
+                          </div>
+                        )}
+                        {p.occupation && (
+                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
+                            <Briefcase className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                            <span className="truncate">{p.occupation}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-2 pt-1">
+                        {/* Primary Open Profile Button */}
+                        <button
+                          onClick={() => handleOpenProfileClick(p)}
+                          className="w-full py-2.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark hover:from-brand-plumDark hover:to-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 border border-brand-gold/30"
+                        >
+                          <Eye className="w-4 h-4 text-brand-gold" />
+                          <span>Open Profile {isUnlocked ? '(Unlocked)' : '(1 Credit)'}</span>
+                        </button>
+
+                        {/* Accept & Remove / Delete Buttons */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => acceptInterest(p.id)}
+                            className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-1.5"
+                          >
+                            <Check className="w-3.5 h-3.5 text-white" />
+                            <span>{t('acceptInterest')}</span>
+                          </button>
+
+                          <button
+                            onClick={() => declineInterest(p.id)}
+                            className="py-2 px-3 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 border border-rose-200"
+                            title="Delete / Remove Interest Request"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      onClick={() => acceptInterest(p.id)}
-                      className="flex-1 sm:flex-initial py-2.5 px-4 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
-                    >
-                      <Check className="w-4 h-4 text-brand-gold" />
-                      <span>{t('acceptInterest')}</span>
-                    </button>
-                    <button
-                      onClick={() => declineInterest(p.id)}
-                      className="py-2.5 px-3 bg-gray-100 text-gray-700 font-semibold text-xs rounded-xl hover:bg-rose-50 hover:text-rose-700"
-                    >
-                      {t('declineInterest')}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         )}
@@ -300,6 +440,23 @@ export const InterestsPage = ({ onNavigate }) => {
         )}
 
       </div>
+
+      {/* Subscription Modal Popup */}
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        targetProfileName={selectedProfileForSub?.name}
+      />
+
+      {/* Profile Unlock Confirmation Warning Modal */}
+      <UnlockConfirmationModal
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
+        onConfirm={handleConfirmUnlock}
+        profile={selectedProfileForUnlock}
+        remainingVisits={user?.subscription?.creditsRemaining || 0}
+        totalVisits={user?.subscription?.creditsTotal || 25}
+      />
 
     </div>
   );
