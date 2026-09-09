@@ -76,16 +76,21 @@ export const InterestsPage = ({ onNavigate }) => {
       const p = profiles.find((item) => String(item.id) === String(targetId));
       if (!p) return null;
 
-      const isAccepted = (interests.accepted || []).some((a) =>
-        typeof a === 'string'
-          ? a === targetId
-          : String(a.user1) === String(targetId) || String(a.user2) === String(targetId) || String(a.profileId) === String(targetId)
-      );
-      const isDeclined = (interests.declined || []).some((d) =>
-        typeof d === 'string'
-          ? d === targetId
-          : String(d.user1) === String(targetId) || String(d.user2) === String(targetId) || String(d.profileId) === String(targetId)
-      );
+      const myId = user?.id ? String(user.id).toLowerCase() : '';
+      const tId = String(targetId).toLowerCase();
+
+      const isAccepted = (interests.accepted || []).some((a) => {
+        if (typeof a !== 'object' || !a) return false;
+        const u1 = String(a.user1 || a.senderId || '').toLowerCase();
+        const u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
+        return (u1 === myId && u2 === tId) || (u1 === tId && u2 === myId);
+      });
+      const isDeclined = (interests.declined || []).some((d) => {
+        if (typeof d !== 'object' || !d) return false;
+        const u1 = String(d.user1 || d.senderId || '').toLowerCase();
+        const u2 = String(d.user2 || d.targetUserId || d.profileId || '').toLowerCase();
+        return (u1 === myId && u2 === tId) || (u1 === tId && u2 === myId);
+      });
 
       return {
         ...p,

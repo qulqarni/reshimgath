@@ -224,29 +224,36 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     );
   }
 
-  const isSent = (interests.sent || []).some(s => 
-    typeof s === 'string' 
-      ? s === profile.id 
-      : (String(s.profileId) === String(profile.id) && String(s.senderId) === String(user?.id))
-  );
+  const myId = user?.id ? String(user.id).toLowerCase() : '';
+  const targetId = profile?.id ? String(profile.id).toLowerCase() : '';
 
-  const isReceived = (interests.received || []).some(r => 
-    typeof r === 'string'
-      ? r === profile.id
-      : (String(r.profileId) === String(profile.id) && String(r.targetUserId) === String(user?.id))
-  );
+  const isSent = Boolean(myId && targetId) && (interests.sent || []).some(s => {
+    if (typeof s !== 'object' || !s) return false;
+    const sender = String(s.senderId || s.user1 || '').toLowerCase();
+    const target = String(s.profileId || s.targetUserId || s.user2 || '').toLowerCase();
+    return sender === myId && target === targetId;
+  });
 
-  const isAccepted = (interests.accepted || []).some(a => 
-    typeof a === 'string' 
-      ? a === profile.id 
-      : (String(a.profileId) === String(profile.id) || String(a.user1) === String(profile.id) || String(a.user2) === String(profile.id))
-  );
+  const isReceived = Boolean(myId && targetId) && (interests.received || []).some(r => {
+    if (typeof r !== 'object' || !r) return false;
+    const sender = String(r.senderId || r.user1 || '').toLowerCase();
+    const target = String(r.targetUserId || r.profileId || r.user2 || '').toLowerCase();
+    return sender === targetId && target === myId;
+  });
 
-  const isDeclined = (interests.declined || []).some(d => 
-    typeof d === 'string' 
-      ? d === profile.id 
-      : (String(d.profileId) === String(profile.id) || String(d.user1) === String(profile.id) || String(d.user2) === String(profile.id))
-  );
+  const isAccepted = Boolean(myId && targetId) && (interests.accepted || []).some(a => {
+    if (typeof a !== 'object' || !a) return false;
+    const u1 = String(a.user1 || a.senderId || '').toLowerCase();
+    const u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
+    return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
+  });
+
+  const isDeclined = Boolean(myId && targetId) && (interests.declined || []).some(d => {
+    if (typeof d !== 'object' || !d) return false;
+    const u1 = String(d.user1 || d.senderId || '').toLowerCase();
+    const u2 = String(d.user2 || d.targetUserId || d.profileId || '').toLowerCase();
+    return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
+  });
 
   const isShortlisted = (interests.shortlisted || []).includes(profile.id);
 

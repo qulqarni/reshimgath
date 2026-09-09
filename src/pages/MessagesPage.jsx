@@ -42,9 +42,6 @@ export const MessagesPage = ({ onNavigate }) => {
 
     // 4. Must be explicitly accepted for this user
     return (interests.accepted || []).some((a) => {
-      if (typeof a === 'string') {
-        return String(a).toLowerCase() === String(p.id).toLowerCase();
-      }
       if (typeof a === 'object' && a !== null) {
         const u1 = String(a.user1 || '').toLowerCase();
         const u2 = String(a.user2 || '').toLowerCase();

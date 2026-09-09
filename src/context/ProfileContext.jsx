@@ -181,31 +181,30 @@ export const ProfileProvider = ({ children }) => {
 
       setProfiles(() => {
         const map = new Map();
-        MOCK_PROFILES.forEach((p, idx) => {
-          const norm = normalizeProfile(p, idx);
-          if (!allExcluded.includes(String(norm.id)) && !isAdminCheck(norm)) map.set(String(norm.id), norm);
-        });
 
-        const saved = localStorage.getItem('reshimgath_profiles');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            parsed.forEach((p, idx) => {
-              const norm = normalizeProfile(p, idx);
-              if (!allExcluded.includes(String(norm.id)) && !isAdminCheck(norm)) map.set(String(norm.id), norm);
-            });
-          } catch (e) {}
-        }
-
+        // 1. Load live active profiles from Cloud Firestore
         if (firestoreProfiles && firestoreProfiles.length > 0) {
           firestoreProfiles.forEach((rawP, idx) => {
             const p = normalizeProfile(rawP, idx);
             if (!allExcluded.includes(String(p.id)) && !isAdminCheck(p)) {
-              const existing = map.get(String(p.id)) || {};
-              map.set(String(p.id), { ...p, ...existing });
+              map.set(String(p.id), p);
             }
           });
         }
+
+        // 2. Preserve logged-in candidate user profile if not yet synced in Firestore
+        if (user && user.id && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1') {
+          const normUser = normalizeProfile(user);
+          if (!allExcluded.includes(String(normUser.id))) {
+            const existing = map.get(String(normUser.id));
+            if (existing) {
+              map.set(String(normUser.id), { ...existing, ...normUser });
+            } else if (firestoreProfiles && firestoreProfiles.length === 0) {
+              map.set(String(normUser.id), normUser);
+            }
+          }
+        }
+
         const updatedList = Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
         try {
           localStorage.setItem('reshimgath_profiles', JSON.stringify(updatedList));
@@ -222,13 +221,19 @@ export const ProfileProvider = ({ children }) => {
 
     const unsubInterests = subscribeToInterestsFromFirestore((firestoreInterests) => {
       if (firestoreInterests) {
-        setInterests((prev) => ({
-          sent: firestoreInterests.sent || [],
-          received: firestoreInterests.received || [],
-          accepted: firestoreInterests.accepted || [],
-          declined: firestoreInterests.declined || [],
-          shortlisted: firestoreInterests.shortlisted || []
-        }));
+        const cleanObjItem = (item) => {
+          if (!item || typeof item !== 'object') return false;
+          const idStr = String(item.profileId || item.user1 || item.senderId || '');
+          return !['p1','p2','p3','p4','p5','p6','p7','p8','admin_1'].includes(idStr);
+        };
+
+        setInterests({
+          sent: (firestoreInterests.sent || []).filter(cleanObjItem),
+          received: (firestoreInterests.received || []).filter(cleanObjItem),
+          accepted: (firestoreInterests.accepted || []).filter(cleanObjItem),
+          declined: (firestoreInterests.declined || []).filter(cleanObjItem),
+          shortlisted: (firestoreInterests.shortlisted || []).filter(id => typeof id === 'string')
+        });
       }
     });
 
@@ -521,8 +526,14 @@ export const ProfileProvider = ({ children }) => {
     setInterests((prev) => {
       const updated = {
         ...prev,
-        received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
-        accepted: [...prev.accepted, acceptedEntry, profileId]
+        received: prev.received.filter((item) => {
+          const pid = typeof item === 'string' ? item : item.profileId || item.senderId;
+          return String(pid) !== String(profileId);
+        }),
+        accepted: [
+          ...(prev.accepted || []).filter(a => typeof a === 'object' && a !== null),
+          acceptedEntry
+        ]
       };
       saveInterestsToFirestore(updated);
       return updated;
