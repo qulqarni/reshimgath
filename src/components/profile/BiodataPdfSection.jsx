@@ -345,7 +345,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                     ॥ श्री गणेशाय नमः ॥
                   </div>
                   <h1 className="font-serif text-2xl sm:text-3xl font-bold text-brand-plum">
-                    रेशीमगाठ विवाह बायोडेटा
+                    संबोधी सारंग विवाह बायोडेटा
                   </h1>
                   <p className="text-xs text-brand-kesari font-semibold tracking-wide">
                     Sambodhi Sarang Matrimonial Bureau • Registration ID: SS-{user?.registrationId || user?.regId || 1001}
@@ -519,7 +519,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                 {/* Footer seal */}
                 <div className="pt-4 border-t border-amber-200/80 text-center space-y-1">
                   <p className="text-[10px] text-brand-plum font-bold tracking-wider uppercase">
-                    रेशीमगाठ विवाह संस्था • इचलकरंजी, महाराष्ट्र
+                    संबोधी सारंग विवाह संस्था • इचलकरंजी, महाराष्ट्र
                   </p>
                   <p className="text-[9px] text-brand-gray italic">
                     Certified Profile Document • Generated on Sambodhi Sarang Matrimony
