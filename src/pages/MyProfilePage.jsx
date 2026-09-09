@@ -506,7 +506,7 @@ export const MyProfilePage = ({ onNavigate }) => {
               Active Subscription Plan
             </span>
             <div className="font-serif font-extrabold text-xl sm:text-2xl text-brand-plum">
-              {sub.planName ? `${sub.planName} Plan` : 'Free Tier / No Active Plan'}
+              {activePlanName}
             </div>
             <p className="text-xs text-brand-gray leading-relaxed font-medium">
               {sub.activatedAt 
