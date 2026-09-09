@@ -203,7 +203,7 @@ export const MessagesPage = ({ onNavigate }) => {
       )}
 
       {/* Main Chat Container */}
-      <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[500px] sm:min-h-[600px] h-[72vh]">
+      <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[480px] sm:min-h-[600px] h-[calc(100vh-210px)] sm:h-[72vh]">
         
         {/* Left Conversation List Sidebar */}
         <aside className={`${mobileView === 'chat' ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-4 border-r border-gray-100 flex-col bg-brand-lightBg/30`}>

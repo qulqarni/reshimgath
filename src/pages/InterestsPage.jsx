@@ -566,21 +566,21 @@ export const InterestsPage = ({ onNavigate }) => {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex sm:flex-col items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                    <div className="flex sm:flex-col items-center gap-2 w-full sm:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                       <button
                         onClick={() => onNavigate('/messages')}
-                        className="flex-1 sm:flex-none w-full py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2"
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-3 sm:px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                       >
-                        <MessageSquare className="w-4 h-4 text-emerald-200" />
-                        <span>{t('sendMessage')}</span>
+                        <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-200 shrink-0" />
+                        <span className="whitespace-nowrap">{t('sendMessage')}</span>
                       </button>
 
                       <button
                         onClick={() => onNavigate(`/profile/${p.id}`)}
-                        className="flex-1 sm:flex-none w-full py-2.5 px-5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 border border-brand-gold/30"
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-3 sm:px-5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-[11px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
                       >
-                        <Eye className="w-4 h-4 text-brand-gold" />
-                        <span>Open Profile</span>
+                        <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-gold shrink-0" />
+                        <span className="whitespace-nowrap">Open Profile</span>
                       </button>
                     </div>
                   </div>
