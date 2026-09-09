@@ -150,11 +150,11 @@ export const Navbar = ({ currentPath, onNavigate }) => {
           {/* Right Action Icons & Controls */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
-            {/* Membership Plan Badge Button (Visible for logged-in candidates) */}
+            {/* Membership Plan Badge Button (Visible on desktop for logged-in candidates) */}
             {isAuthenticated && !isAdmin && (
               <button
                 onClick={() => setShowSubscriptionModal(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-900 hover:from-amber-100 hover:to-amber-200 transition-all text-xs font-bold shadow-sm shrink-0"
+                className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-900 hover:from-amber-100 hover:to-amber-200 transition-all text-xs font-bold shadow-sm shrink-0"
                 title="Membership Plans & Remaining Visits"
               >
                 <Crown className="w-3.5 h-3.5 text-amber-600 fill-amber-500 shrink-0" />
