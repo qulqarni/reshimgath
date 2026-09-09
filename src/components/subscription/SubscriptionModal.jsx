@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { SUBSCRIPTION_PLANS } from '../../data/subscriptionPlans';
 import { openRazorpayCheckout } from '../../services/razorpayService';
 import { useAuth } from '../../context/AuthContext';
@@ -22,10 +23,10 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -49,8 +50,8 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center min-h-screen">
+  return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
       <div className="bg-white max-w-5xl w-full max-h-[85vh] sm:max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-200 my-auto animate-in zoom-in-95 duration-200">
         
         {/* Modal Top Banner */}
@@ -195,6 +196,7 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -29,6 +30,17 @@ export const HomePage = ({ onNavigate }) => {
 
   const [selectedStory, setSelectedStory] = useState(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  useEffect(() => {
+    if (selectedStory) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedStory]);
 
   return (
     <div className="space-y-16 sm:space-y-24 pb-12">
@@ -224,10 +236,10 @@ export const HomePage = ({ onNavigate }) => {
       </section>
 
       {/* PERFECTLY CENTERED PHOTO LIGHTBOX MODAL */}
-      {selectedStory && (
+      {selectedStory && createPortal(
         <div 
           onClick={() => setSelectedStory(null)}
-          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 select-none animate-fade-in"
+          className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fade-in"
         >
           {/* Close Button Top Right */}
           <button
@@ -304,7 +316,8 @@ export const HomePage = ({ onNavigate }) => {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 

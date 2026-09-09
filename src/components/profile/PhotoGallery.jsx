@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Maximize2, X, ChevronLeft, ChevronRight, Image as ImageIcon, User, Camera } from 'lucide-react';
 
 export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [lightboxOpen]);
 
   // Extract all valid image URLs from avatar & photos props
   const validPhotos = [];
@@ -86,8 +98,8 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
       )}
 
       {/* Lightbox Modal */}
-      {lightboxOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
+      {lightboxOpen && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
           <button
             onClick={() => setLightboxOpen(false)}
             className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
@@ -122,7 +134,8 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
               <ChevronRight className="w-6 h-6" />
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

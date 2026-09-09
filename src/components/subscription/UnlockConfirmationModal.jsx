@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Eye, 
   X, 
@@ -21,10 +22,10 @@ export const UnlockConfirmationModal = ({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -35,8 +36,8 @@ export const UnlockConfirmationModal = ({
     ? profile.photos[0] 
     : (profile.avatar || null);
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-4 flex items-center justify-center min-h-screen">
+  return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/80 backdrop-blur-md p-4 flex items-center justify-center">
       <div className="bg-white max-w-md w-full max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border border-brand-rose/30 my-auto animate-in zoom-in-95 duration-200 space-y-6 p-6 sm:p-7 relative text-center">
         
         {/* Close Button */}
@@ -119,6 +120,7 @@ export const UnlockConfirmationModal = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

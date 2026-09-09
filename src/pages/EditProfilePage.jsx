@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
@@ -45,6 +46,17 @@ export const EditProfilePage = ({ onNavigate }) => {
 
   const [saved, setSaved] = useState(false);
   const [showViewerModal, setShowViewerModal] = useState(false);
+
+  useEffect(() => {
+    if (showViewerModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showViewerModal]);
   const fileInputRef = useRef(null);
 
   const biodata = user?.biodataPdf;
@@ -374,8 +386,8 @@ export const EditProfilePage = ({ onNavigate }) => {
       </div>
 
       {/* MAHARASHTRIAN BIODATA PDF VIEWER MODAL */}
-      {showViewerModal && biodata && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      {showViewerModal && biodata && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
             <button
@@ -438,7 +450,8 @@ export const EditProfilePage = ({ onNavigate }) => {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

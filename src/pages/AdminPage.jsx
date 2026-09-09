@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -293,6 +294,18 @@ export const AdminPage = ({ onNavigate }) => {
   const [showAddStoryModal, setShowAddStoryModal] = useState(false);
   const [showEditStoryModal, setShowEditStoryModal] = useState(false);
   const [editingStory, setEditingStory] = useState(null);
+
+  const isAnyModalOpen = showAddStoryModal || showEditStoryModal || showEditModal || showCreateModal;
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isAnyModalOpen]);
 
   // Homepage Content Editable Form State
   const [editableHomeContent, setEditableHomeContent] = useState(homeContent);
@@ -1521,8 +1534,8 @@ export const AdminPage = ({ onNavigate }) => {
       )}
 
       {/* MODAL: ADD SUCCESS STORY */}
-      {showAddStoryModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      {showAddStoryModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl">
             
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -1631,12 +1644,13 @@ export const AdminPage = ({ onNavigate }) => {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: EDIT SUCCESS STORY */}
-      {showEditStoryModal && editingStory && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      {showEditStoryModal && editingStory && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl">
             
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -1745,12 +1759,13 @@ export const AdminPage = ({ onNavigate }) => {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: EDIT PROFILE */}
-      {showEditModal && editingProfile && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      {showEditModal && editingProfile && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -2382,12 +2397,13 @@ export const AdminPage = ({ onNavigate }) => {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* CREATE NEW MEMBER PROFILE MODAL (ADMIN) */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      {showCreateModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white max-w-4xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto border border-brand-rose/20">
             
             {/* Modal Header */}
@@ -2961,7 +2977,8 @@ export const AdminPage = ({ onNavigate }) => {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -34,6 +35,17 @@ export const DiscoverPage = ({ onNavigate }) => {
   });
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  useEffect(() => {
+    if (showMobileFilters) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showMobileFilters]);
 
   const defaultGender = useMemo(() => {
     if (user && user.gender === 'male') return 'female';
@@ -435,8 +447,8 @@ export const DiscoverPage = ({ onNavigate }) => {
       </main>
 
       {/* Mobile Filter Modal Sheet */}
-      {showMobileFilters && (
-        <div className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end">
+      {showMobileFilters && createPortal(
+        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex flex-col justify-end">
           <div className="bg-white rounded-t-3xl p-6 space-y-5 animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-serif font-bold text-lg text-brand-plum">{t('filterTitle')}</h3>
@@ -563,7 +575,8 @@ export const DiscoverPage = ({ onNavigate }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Subscription Modal Popup */}

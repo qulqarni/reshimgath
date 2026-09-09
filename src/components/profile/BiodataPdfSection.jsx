@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { uploadBiodataPdfToFirebase } from '../../services/firebaseService';
 import { 
   FileText, 
@@ -25,6 +26,17 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showViewerModal, setShowViewerModal] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (showViewerModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showViewerModal]);
 
   const biodata = user?.biodataPdf || null;
   const firstName = user?.name ? user.name.split(' ')[0] : 'Candidate';
@@ -244,8 +256,8 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
       )}
 
       {/* FULL SCREEN BIODATA VIEWER MODAL */}
-      {showViewerModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      {showViewerModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
           <div className="bg-white max-w-3xl w-full max-h-[92vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-gray-200 my-auto print:max-h-none print:shadow-none print:border-none print:w-full print:rounded-none">
             
             {/* Modal Top Bar (Hidden during Print) */}
@@ -531,7 +543,8 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

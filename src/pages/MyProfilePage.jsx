@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
@@ -62,6 +63,18 @@ export const MyProfilePage = ({ onNavigate }) => {
   const [showAllVisitors, setShowAllVisitors] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const isAnyModalOpen = lightboxOpen || showEditModal || showPhotoManager;
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isAnyModalOpen]);
 
   const sub = user?.subscription || {};
   const activePlanName = sub.planName 
@@ -828,8 +841,8 @@ export const MyProfilePage = ({ onNavigate }) => {
       </div>
 
       {/* Lightbox Modal */}
-      {lightboxOpen && photos.length > 0 && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
+      {lightboxOpen && photos.length > 0 && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
           <button
             onClick={() => setLightboxOpen(false)}
             className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
@@ -862,12 +875,13 @@ export const MyProfilePage = ({ onNavigate }) => {
               <ChevronRight className="w-6 h-6" />
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* EDIT PROFILE INLINE MODAL WITH ALL REGISTRATION & SETUP FIELDS */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      {showEditModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white max-w-3xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
             <button
@@ -1306,12 +1320,13 @@ export const MyProfilePage = ({ onNavigate }) => {
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Interactive Photo Manager Modal */}
-      {showPhotoManager && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      {showPhotoManager && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-white max-w-xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
             
             <button
@@ -1373,7 +1388,8 @@ export const MyProfilePage = ({ onNavigate }) => {
             </button>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Subscription Modal Popup */}
