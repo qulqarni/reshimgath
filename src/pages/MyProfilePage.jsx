@@ -25,6 +25,8 @@ import {
   Maximize2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Save,
   FileText,
   Heart,
@@ -57,6 +59,7 @@ export const MyProfilePage = ({ onNavigate }) => {
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [showAllVisitors, setShowAllVisitors] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -604,24 +607,39 @@ export const MyProfilePage = ({ onNavigate }) => {
       </div>
 
       {/* 3. RECENT PROFILE VISITORS SECTION */}
-      <div ref={visitorsRef} className="space-y-4 bg-white p-6 rounded-3xl border border-brand-rose/20 shadow-luxury">
-        <div className="flex items-center justify-between border-b border-brand-rose/10 pb-3">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+      <div ref={visitorsRef} className="space-y-4 bg-white p-5 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury">
+        
+        {/* Responsive Section Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-brand-rose/10 pb-4">
+          <div className="flex items-start sm:items-center space-x-3 flex-1 min-w-0 w-full">
+            <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold shrink-0 mt-0.5 sm:mt-0 border border-indigo-100">
               <Eye className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="font-serif text-xl font-bold text-brand-plum">
+            <div className="min-w-0 flex-1">
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-plum leading-tight">
                 {t('recentVisitorsTitle')}
               </h2>
-              <p className="text-xs text-brand-gray">
+              <p className="text-xs text-brand-gray font-medium leading-normal">
                 {t('recentVisitorsSubtitle')}
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-            {visitsCount} Visitors
-          </span>
+
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto space-x-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-50">
+            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 whitespace-nowrap">
+              {visitsCount} Visitors
+            </span>
+            {myProfileViews.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllVisitors(!showAllVisitors)}
+                className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 sm:bg-transparent px-3 py-1 sm:px-0 sm:py-0 rounded-full sm:rounded-none border sm:border-0 border-indigo-200 hover:underline flex items-center space-x-1 transition-all"
+              >
+                <span>{showAllVisitors ? 'Show Less' : 'View All'}</span>
+                {showAllVisitors ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
         </div>
 
         {myProfileViews.length === 0 ? (
@@ -630,52 +648,68 @@ export const MyProfilePage = ({ onNavigate }) => {
             <p className="text-[11px]">As verified members view your profile, they will appear here automatically.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            {myProfileViews.map((visitor) => {
-              const visitorProfile = (profiles || []).find(
-                (p) =>
-                  String(p.id) === String(visitor.visitorId) ||
-                  String(p.regId) === String(visitor.visitorId) ||
-                  (p.registrationId && `SS-${p.registrationId}` === String(visitor.visitorId)) ||
-                  (p.email && visitor.visitorId === p.email)
-              );
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+              {(showAllVisitors ? myProfileViews : myProfileViews.slice(0, 3)).map((visitor) => {
+                const visitorProfile = (profiles || []).find(
+                  (p) =>
+                    String(p.id) === String(visitor.visitorId) ||
+                    String(p.regId) === String(visitor.visitorId) ||
+                    (p.registrationId && `SS-${p.registrationId}` === String(visitor.visitorId)) ||
+                    (p.email && visitor.visitorId === p.email)
+                );
 
-              const displayAvatar = visitorProfile?.avatar || (Array.isArray(visitorProfile?.photos) && visitorProfile.photos[0]) || visitor.avatar;
-              const displayName = visitorProfile?.name || visitor.visitorName;
-              const displayOccupation = visitorProfile?.occupation || visitor.occupation || 'Professional';
-              const displayLocation = visitorProfile?.district || visitor.location || 'Maharashtra';
-              const targetProfileId = visitorProfile?.regId || visitorProfile?.id || visitor.visitorId;
+                const displayAvatar = visitorProfile?.avatar || (Array.isArray(visitorProfile?.photos) && visitorProfile.photos[0]) || visitor.avatar;
+                const displayName = visitorProfile?.name || visitor.visitorName;
+                const displayOccupation = visitorProfile?.occupation || visitor.occupation || 'Professional';
+                const displayLocation = visitorProfile?.district || visitor.location || 'Maharashtra';
+                const targetProfileId = visitorProfile?.regId || visitorProfile?.id || visitor.visitorId;
 
-              return (
-                <div
-                  key={visitor.id}
-                  onClick={() => onNavigate(`/profile/${targetProfileId}`)}
-                  className="bg-brand-lightBg/60 p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
-                >
-                  {displayAvatar ? (
-                    <img
-                      src={displayAvatar}
-                      alt={displayName}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform bg-white"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-2xl bg-brand-plum/10 border-2 border-white shadow shrink-0 flex items-center justify-center text-brand-plum group-hover:scale-105 transition-transform">
-                      <User className="w-7 h-7 text-brand-plum/60" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-serif font-bold text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
-                      {displayName}
-                    </h4>
-                    <p className="text-xs text-brand-gray truncate">{displayOccupation} • {displayLocation}</p>
-                    <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Viewed {visitor.timestamp}</span>
+                return (
+                  <div
+                    key={visitor.id}
+                    onClick={() => onNavigate(`/profile/${targetProfileId}`)}
+                    className="bg-brand-lightBg/60 p-3.5 sm:p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
+                  >
+                    {displayAvatar ? (
+                      <img
+                        src={displayAvatar}
+                        alt={displayName}
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform bg-white"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-brand-plum/10 border-2 border-white shadow shrink-0 flex items-center justify-center text-brand-plum group-hover:scale-105 transition-transform">
+                        <User className="w-6 h-6 sm:w-7 sm:h-7 text-brand-plum/60" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-serif font-bold text-xs sm:text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
+                        {displayName}
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-brand-gray truncate">{displayOccupation} • {displayLocation}</p>
+                      <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-0.5">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>Viewed {visitor.timestamp}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* Bottom Expand Toggle Button */}
+            {myProfileViews.length > 3 && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAllVisitors(!showAllVisitors)}
+                  className="px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition-all inline-flex items-center justify-center space-x-1.5 border border-indigo-200 shadow-sm"
+                >
+                  <span>{showAllVisitors ? 'Show Less' : `View All Visitors (${myProfileViews.length})`}</span>
+                  {showAllVisitors ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
