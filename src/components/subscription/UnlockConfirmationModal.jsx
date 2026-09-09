@@ -72,7 +72,7 @@ export const UnlockConfirmationModal = ({
               {profile.name}
             </h3>
             <p className="text-xs font-semibold text-brand-gray mt-0.5">
-              Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`} • {profile.district || 'Maharashtra'}
+              Profile No. {profile.regId || `SS-${profile.registrationId || 1001}`} • {profile.district || 'Maharashtra'}
             </p>
           </div>
         </div>

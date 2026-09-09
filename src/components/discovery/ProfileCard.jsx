@@ -108,7 +108,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
           <div className="flex items-center space-x-1.5 flex-wrap gap-1">
             {profile.verified && <VerificationBadge size="small" />}
             <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-              Reg ID: {profileSlug}
+              Profile No. {profileSlug}
             </span>
           </div>
 
@@ -130,7 +130,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
         <div className="absolute bottom-3 left-3 right-3 text-white">
           <div className="flex items-baseline space-x-2">
             <h3 className="font-serif font-bold text-xl sm:text-2xl text-white tracking-wide drop-shadow-md">
-              {profile.name}
+              {profile.name ? profile.name.trim().split(' ')[0] : ''}
             </h3>
             <span className="text-sm font-semibold text-brand-rose drop-shadow-sm">
               {profile.age} yrs

@@ -299,7 +299,7 @@ export const InterestsPage = ({ onNavigate }) => {
                         <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                           {p.verified && <VerificationBadge size="small" />}
                           <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            Reg ID: {profileSlug}
+                            Profile No. {profileSlug}
                           </span>
                         </div>
 
@@ -418,7 +418,7 @@ export const InterestsPage = ({ onNavigate }) => {
                         <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                           {p.verified && <VerificationBadge size="small" />}
                           <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            Reg ID: {profileSlug}
+                            Profile No. {profileSlug}
                           </span>
                         </div>
 
@@ -532,7 +532,7 @@ export const InterestsPage = ({ onNavigate }) => {
                           </h3>
                           {p.verified && <VerificationBadge size="small" />}
                           <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px] rounded-full">
-                            Reg ID: {profileSlug}
+                            Profile No. {profileSlug}
                           </span>
                         </div>
 
@@ -629,7 +629,7 @@ export const InterestsPage = ({ onNavigate }) => {
                         <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                           {p.verified && <VerificationBadge size="small" />}
                           <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            Reg ID: {profileSlug}
+                            Profile No. {profileSlug}
                           </span>
                         </div>
                         <span className="px-2.5 py-1 bg-amber-500 text-white text-[10px] font-bold rounded-full shadow flex items-center space-x-1">

@@ -366,13 +366,18 @@ export const AdminPage = ({ onNavigate }) => {
 
   // Filtered profiles logic
   const filteredProfiles = profiles.filter((p) => {
+    const q = searchQuery.toLowerCase().trim();
+    const digitsQ = q.replace(/[^0-9]/g, '');
+    const pDigits = (String(p.regId || '') + String(p.registrationId || '') + String(p.id || '')).replace(/[^0-9]/g, '');
+
     const matchesSearch = 
-      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.caste?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.district?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.occupation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.regId && p.regId.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.registrationId && String(p.registrationId).includes(searchQuery.trim()));
+      p.name?.toLowerCase().includes(q) ||
+      p.caste?.toLowerCase().includes(q) ||
+      p.district?.toLowerCase().includes(q) ||
+      p.occupation?.toLowerCase().includes(q) ||
+      (p.regId && p.regId.toLowerCase().includes(q)) ||
+      (p.registrationId && String(p.registrationId).includes(q)) ||
+      (digitsQ.length > 0 && pDigits.includes(digitsQ));
 
     const pGender = (p.gender || '').toLowerCase().trim();
     const matchesGender = genderFilter === 'all' || pGender === genderFilter.toLowerCase();
@@ -866,7 +871,7 @@ export const AdminPage = ({ onNavigate }) => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search name, caste, district, reg ID..."
+                  placeholder="Search name, caste, district, Profile No..."
                   className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum bg-slate-50/50"
                 />
                 {searchQuery && (
@@ -1042,7 +1047,7 @@ export const AdminPage = ({ onNavigate }) => {
                                 </span>
                               )}
                             </div>
-                            <p className="text-[10px] font-bold text-brand-kesari">Reg ID: {p.regId || `SS-${p.registrationId || 1001}`}</p>
+                            <p className="text-[10px] font-bold text-brand-kesari">Profile No. {p.regId || `SS-${p.registrationId || 1001}`}</p>
                           </div>
                         </div>
                       </td>
@@ -1771,7 +1776,7 @@ export const AdminPage = ({ onNavigate }) => {
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div>
                 <h3 className="font-serif text-xl font-bold text-brand-plum">Edit Member Profile (Admin)</h3>
-                <p className="text-xs text-gray-500">Registration ID: #{editingProfile.regId || editingProfile.id}</p>
+                <p className="text-xs text-gray-500">Profile No. #{editingProfile.regId || editingProfile.id}</p>
               </div>
               <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
                 <X className="w-5 h-5 text-gray-500" />
@@ -2484,7 +2489,7 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
-                    <label className="block font-semibold mb-1 text-slate-700">Registration ID</label>
+                    <label className="block font-semibold mb-1 text-slate-700">Profile No.</label>
                     <input
                       type="text"
                       value={newProfileForm.regId}

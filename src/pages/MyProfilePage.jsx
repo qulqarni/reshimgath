@@ -434,7 +434,7 @@ export const MyProfilePage = ({ onNavigate }) => {
               <h1 className="font-serif text-xl sm:text-2xl font-bold text-brand-plum">{user?.name}</h1>
               <VerificationBadge size="small" />
               <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[11px] rounded-full shadow-sm border border-brand-gold/30">
-                Reg ID: {user?.regId || `SS-${user?.registrationId || 1001}`}
+                Profile No. {user?.regId || `SS-${user?.registrationId || 1001}`}
               </span>
             </div>
             <p className="text-xs text-brand-gray mt-0.5">

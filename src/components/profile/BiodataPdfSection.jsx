@@ -271,7 +271,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                     {user?.name || 'Candidate'} — Matrimonial Biodata
                   </h3>
                   <p className="text-[11px] text-brand-rose/80 truncate">
-                    Reg ID: SS-{user?.registrationId || user?.regId || 1001} • Confidential
+                    Profile No. SS-{user?.registrationId || user?.regId || 1001} • Confidential
                   </p>
                 </div>
               </div>
@@ -360,7 +360,7 @@ export const BiodataPdfSection = ({ user, updateProfile, isEditable = true }) =>
                     संबोधी सारंग विवाह बायोडेटा
                   </h1>
                   <p className="text-xs text-brand-kesari font-semibold tracking-wide">
-                    Sambodhi Sarang Matrimonial Bureau • Registration ID: SS-{user?.registrationId || user?.regId || 1001}
+                    Sambodhi Sarang Matrimonial Bureau • Profile No. SS-{user?.registrationId || user?.regId || 1001}
                   </p>
                 </div>
 

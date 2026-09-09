@@ -20,6 +20,7 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [selectedProfileForSubscription, setSelectedProfileForSubscription] = useState(null);
   const [showSubModal, setShowSubModal] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,8 +37,9 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  const isAnyModalOpen = showMobileFilters || showGuestAuthModal;
   useEffect(() => {
-    if (showMobileFilters) {
+    if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -45,7 +47,7 @@ export const DiscoverPage = ({ onNavigate }) => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showMobileFilters]);
+  }, [isAnyModalOpen]);
 
   const defaultGender = useMemo(() => {
     if (user && user.gender === 'male') return 'female';
@@ -71,7 +73,12 @@ export const DiscoverPage = ({ onNavigate }) => {
       }
 
       // 4. Gender Filter
-      if (genderFilter !== 'all') {
+      // Logged-in Male users see only female profiles, Logged-in Female users see only male profiles.
+      if (user && user.gender === 'male') {
+        if ((p.gender || '').toLowerCase().trim() !== 'female') return false;
+      } else if (user && user.gender === 'female') {
+        if ((p.gender || '').toLowerCase().trim() !== 'male') return false;
+      } else if (genderFilter !== 'all') {
         const g = (p.gender || '').toLowerCase().trim();
         const targetG = genderFilter.toLowerCase().trim();
         if (g !== targetG) return false;
@@ -115,9 +122,11 @@ export const DiscoverPage = ({ onNavigate }) => {
       // 9. Verified Only Filter
       if (verifiedOnly && !p.verified) return false;
 
-      // 10. Search Query Text
+      // 10. Search Query Text & Profile No.
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim();
+        const digitsQ = q.replace(/[^0-9]/g, '');
+
         const name = (p.name || '').toLowerCase();
         const dist = (p.district || '').toLowerCase();
         const edu = (p.education || '').toLowerCase();
@@ -126,6 +135,7 @@ export const DiscoverPage = ({ onNavigate }) => {
         const rel = (p.religion || '').toLowerCase();
         const regId = (p.regId || '').toLowerCase();
         const registrationId = String(p.registrationId || '').toLowerCase();
+        const profileDigits = (regId + registrationId + String(p.id || '')).replace(/[^0-9]/g, '');
 
         const matchesQ =
           name.includes(q) ||
@@ -135,7 +145,8 @@ export const DiscoverPage = ({ onNavigate }) => {
           caste.includes(q) ||
           rel.includes(q) ||
           regId.includes(q) ||
-          registrationId.includes(q);
+          registrationId.includes(q) ||
+          (digitsQ.length > 0 && profileDigits.includes(digitsQ));
 
         if (!matchesQ) return false;
       }
@@ -156,6 +167,11 @@ export const DiscoverPage = ({ onNavigate }) => {
   };
 
   const handleProfileClick = (targetProfile) => {
+    if (!isAuthenticated) {
+      setShowGuestAuthModal(true);
+      return;
+    }
+
     const { canView, remainingVisits, hasActivePlan } = canViewProfile(targetProfile.id);
 
     if (canView) {
@@ -199,37 +215,6 @@ export const DiscoverPage = ({ onNavigate }) => {
     return count;
   }, [genderFilter, defaultGender, selectedDistrict, selectedReligion, selectedCaste, minAge, maxAge, verifiedOnly, searchQuery]);
 
-  // Privacy Protection Enforcement for Non-Logged-In Users
-  if (!isAuthenticated) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-brand-rose/20 shadow-2xl space-y-6">
-          <div className="w-16 h-16 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center mx-auto">
-            <Lock className="w-8 h-8 text-brand-plum" />
-          </div>
-
-          <div className="space-y-2 max-w-lg mx-auto">
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-plum">
-              {t('privacyAlertTitle')}
-            </h2>
-            <p className="text-xs sm:text-sm text-brand-gray leading-relaxed">
-              {t('privacyAlertDesc')}
-            </p>
-          </div>
-
-          <div className="flex justify-center pt-4 max-w-xs mx-auto">
-            <button
-              onClick={() => onNavigate('/login')}
-              className="w-full py-3.5 px-6 bg-brand-plum text-white font-bold text-sm rounded-2xl shadow-xl hover:bg-brand-plumDark transition-all"
-            >
-              Login / Register to Discover Profiles
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
@@ -256,7 +241,7 @@ export const DiscoverPage = ({ onNavigate }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search candidate name, caste, district..."
+            placeholder="Search name, Profile No. (eg. 1001), district..."
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-brand-rose/20 bg-white text-xs shadow-sm focus:ring-2 focus:ring-brand-plum/20"
           />
           {searchQuery && (
@@ -595,6 +580,62 @@ export const DiscoverPage = ({ onNavigate }) => {
         remainingVisits={user?.subscription?.creditsRemaining || 0}
         totalVisits={user?.subscription?.creditsTotal || 25}
       />
+
+      {/* Guest Access Modal for Non-Logged-In Users */}
+      {showGuestAuthModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative text-center border border-brand-rose/20 animate-in zoom-in-95 duration-200">
+            
+            <button
+              onClick={() => setShowGuestAuthModal(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-brand-plum p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center mx-auto border-2 border-brand-plum/20 shadow-inner">
+              <Lock className="w-8 h-8 text-brand-plum" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-serif font-bold text-2xl text-brand-plum">
+                Access Candidate Profile
+              </h3>
+              <p className="text-xs text-brand-gray leading-relaxed px-2">
+                Create an Account or Log In and Buy a Subscription to access full profile details, view verified contact information, and connect with candidates.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowGuestAuthModal(false);
+                  onNavigate('/signup');
+                }}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-xl transition-all border border-brand-gold/30 flex items-center justify-center space-x-2"
+              >
+                <span>Create an Account / Sign Up</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowGuestAuthModal(false);
+                  onNavigate('/login');
+                }}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-brand-lightBg text-brand-plum font-bold text-xs rounded-xl border border-brand-rose/30 transition-all flex items-center justify-center space-x-2"
+              >
+                <span>Log In to Existing Account</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-400 italic">
+              Sambodhi Sarang Marriage Bureau • Verified Maharashtrian Matrimony
+            </p>
+
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

@@ -48,7 +48,7 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
         </h1>
         {profile.verified && <VerificationBadge size="small" />}
         <span className="px-3 py-1 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/40 shrink-0 whitespace-nowrap">
-          Reg ID: {profile.regId || `SS-${profile.registrationId || 1001}`}
+          Profile No. {profile.regId || `SS-${profile.registrationId || 1001}`}
         </span>
       </div>
 
@@ -161,26 +161,43 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 space-y-6 text-center">
         <div className="bg-white rounded-3xl p-8 sm:p-10 border border-brand-rose/30 shadow-2xl space-y-6">
-          <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto border-2 border-amber-300 shadow">
-            <Lock className="w-8 h-8 text-amber-700" />
+          <div className="w-16 h-16 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center mx-auto border-2 border-brand-plum/20 shadow-inner">
+            <Lock className="w-8 h-8 text-brand-plum" />
           </div>
 
           <div className="space-y-2">
             <h2 className="font-serif text-2xl font-bold text-brand-plum">
-              {profile.name} — Profile Access Locked
+              {!isAuthenticated ? 'Access Full Candidate Profile' : `${profile.name} — Profile Access Locked`}
             </h2>
-            <p className="text-xs text-brand-gray leading-relaxed">
-              Reg ID: {profile.regId || `SS-${profile.registrationId}`} • {profile.district || 'Maharashtra'}
+            <p className="text-xs text-brand-gray leading-relaxed font-semibold">
+              Profile No. {profile.regId || `SS-${profile.registrationId}`} • {profile.district || 'Maharashtra'}
             </p>
             <p className="text-xs sm:text-sm text-brand-charcoal pt-2 font-medium leading-relaxed">
-              {accessStatus.hasActivePlan && accessStatus.remainingVisits > 0
+              {!isAuthenticated
+                ? 'Create an Account or Log In and Buy a Subscription to access full profile details, view verified contact numbers, and connect with candidates.'
+                : accessStatus.hasActivePlan && accessStatus.remainingVisits > 0
                 ? `You have ${accessStatus.remainingVisits} profile unlock credits remaining out of ${accessStatus.totalVisits}. Unlock to view complete contact details, family background, and biodata.`
                 : 'A matrimonial membership plan is required to view complete candidate profile details and contact numbers.'}
             </p>
           </div>
 
           <div className="pt-2 flex flex-col gap-3 max-w-xs mx-auto">
-            {accessStatus.hasActivePlan && accessStatus.remainingVisits > 0 ? (
+            {!isAuthenticated ? (
+              <>
+                <button
+                  onClick={() => onNavigate('/signup')}
+                  className="w-full py-3.5 px-6 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+                >
+                  <span>Create an Account / Sign Up</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('/login')}
+                  className="w-full py-3 px-6 bg-gray-100 hover:bg-brand-lightBg text-brand-plum font-bold text-xs rounded-2xl border border-brand-rose/30 transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Log In to Existing Account</span>
+                </button>
+              </>
+            ) : accessStatus.hasActivePlan && accessStatus.remainingVisits > 0 ? (
               <button
                 onClick={() => setShowUnlockModal(true)}
                 className="w-full py-3.5 px-6 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
