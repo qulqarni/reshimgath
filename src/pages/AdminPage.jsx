@@ -307,7 +307,7 @@ export const AdminPage = ({ onNavigate }) => {
     location: 'Ichalkaranji & Kolhapur',
     quote: '“We found our perfect life partner through Sambodhi Sarang Marriage Bureau!”',
     weddingDate: 'February 2026 • Ichalkaranji Wedding Hall',
-    photoUrl: '/story1.jpg'
+    photos: []
   });
 
   // Bureau Contact Info (Editable)
@@ -548,12 +548,22 @@ export const AdminPage = ({ onNavigate }) => {
     }
     try {
       const storageUrl = await uploadStoryPhotoToFirebase(file);
-      setNewStoryData((prev) => ({ ...prev, photoUrl: storageUrl }));
-      addToast('Story photo uploaded to Firebase Storage successfully!', 'success');
+      setNewStoryData((prev) => ({
+        ...prev,
+        photos: [...(prev?.photos || []), { url: storageUrl, caption: `${prev?.names || 'Couple'} Wedding` }]
+      }));
+      addToast('Photo added to new story gallery!', 'success');
     } catch (err) {
       console.error('Error uploading story photo to Firebase Storage:', err);
       alert('Failed to upload story photo to Firebase Storage.');
     }
+  };
+
+  const handleRemoveAddStoryPhoto = (index) => {
+    setNewStoryData((prev) => ({
+      ...prev,
+      photos: (prev?.photos || []).filter((_, i) => i !== index)
+    }));
   };
 
   const handleEditStoryPhotoUpload = async (e) => {
@@ -565,22 +575,43 @@ export const AdminPage = ({ onNavigate }) => {
     }
     try {
       const storageUrl = await uploadStoryPhotoToFirebase(file);
-      setEditingStory((prev) => ({ ...prev, photoUrl: storageUrl }));
-      addToast('Story photo uploaded to Firebase Storage successfully!', 'success');
+      setEditingStory((prev) => ({
+        ...prev,
+        photos: [...(prev?.photos || []), { url: storageUrl, caption: `${prev?.names || 'Couple'} Wedding` }]
+      }));
+      addToast('Photo added to story gallery!', 'success');
     } catch (err) {
       console.error('Error uploading story photo to Firebase Storage:', err);
       alert('Failed to upload story photo to Firebase Storage.');
     }
   };
 
+  const handleRemoveEditStoryPhoto = (index) => {
+    setEditingStory((prev) => ({
+      ...prev,
+      photos: (prev?.photos || []).filter((_, i) => i !== index)
+    }));
+  };
+
   const handleOpenEditStory = (story) => {
+    let photoArray = [];
+    if (Array.isArray(story.photos) && story.photos.length > 0) {
+      photoArray = story.photos.map((p) =>
+        typeof p === 'string' ? { url: p, caption: '' } : { url: p.url || p.src || '', caption: p.caption || '' }
+      ).filter(p => !!p.url);
+    } else if (story.photoUrl) {
+      photoArray = [{ url: story.photoUrl, caption: '' }];
+    } else {
+      photoArray = [{ url: '/story1.jpg', caption: '' }];
+    }
+
     setEditingStory({
       id: story.id,
       names: story.names || '',
       location: story.location || '',
       quote: story.quote || '',
       weddingDate: story.weddingDate || '',
-      photoUrl: story.photos?.[0]?.url || '/story1.jpg'
+      photos: photoArray
     });
     setShowEditStoryModal(true);
   };
@@ -588,12 +619,19 @@ export const AdminPage = ({ onNavigate }) => {
   const handleSaveEditedStory = (e) => {
     e.preventDefault();
     if (!editingStory) return;
+    if (!editingStory.photos || editingStory.photos.length === 0) {
+      alert('Please upload at least 1 wedding photo for this story.');
+      return;
+    }
+    const cleanPhotos = editingStory.photos.map((p) =>
+      typeof p === 'string' ? { url: p, caption: `${editingStory.names} Wedding` } : { url: p.url, caption: p.caption || `${editingStory.names} Wedding` }
+    );
     updateSuccessStory(editingStory.id, {
       names: editingStory.names,
       location: editingStory.location,
       quote: editingStory.quote,
       weddingDate: editingStory.weddingDate,
-      photos: [{ url: editingStory.photoUrl || '/story1.jpg', caption: `${editingStory.names} Wedding` }]
+      photos: cleanPhotos
     });
     setShowEditStoryModal(false);
     setEditingStory(null);
@@ -601,12 +639,19 @@ export const AdminPage = ({ onNavigate }) => {
 
   const handleSaveNewStory = (e) => {
     e.preventDefault();
+    if (!newStoryData.photos || newStoryData.photos.length === 0) {
+      alert('Please upload at least 1 wedding photo from device.');
+      return;
+    }
+    const cleanPhotos = newStoryData.photos.map((p) =>
+      typeof p === 'string' ? { url: p, caption: `${newStoryData.names} Wedding` } : { url: p.url, caption: p.caption || `${newStoryData.names} Wedding` }
+    );
     addSuccessStory({
       names: newStoryData.names,
       location: newStoryData.location,
       quote: newStoryData.quote,
       weddingDate: newStoryData.weddingDate,
-      photos: [{ url: newStoryData.photoUrl || '/story1.jpg', caption: `${newStoryData.names} Wedding` }]
+      photos: cleanPhotos
     });
     setShowAddStoryModal(false);
     setNewStoryData({
@@ -614,7 +659,7 @@ export const AdminPage = ({ onNavigate }) => {
       location: 'Ichalkaranji & Kolhapur',
       quote: '“We found our perfect life partner through Sambodhi Sarang Marriage Bureau!”',
       weddingDate: 'February 2026 • Ichalkaranji Wedding Hall',
-      photoUrl: '/story1.jpg'
+      photos: []
     });
   };
 
@@ -1536,14 +1581,28 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Wedding Photo Image *</label>
-                <div className="flex items-center gap-3 mb-2">
-                  {newStoryData.photoUrl && (
-                    <img src={newStoryData.photoUrl} alt="Preview" className="w-16 h-16 object-cover rounded-xl border border-brand-rose/40" />
-                  )}
-                  <label className="cursor-pointer px-4 py-2.5 bg-brand-lightBg border border-brand-rose/30 text-brand-plum font-bold rounded-xl hover:bg-brand-rose/10 transition-all flex items-center space-x-2 text-xs">
-                    <Camera className="w-4 h-4 text-brand-plum" />
-                    <span>Upload Photo from Device</span>
+                <label className="block font-semibold mb-2 text-slate-800">Wedding Photo Gallery ({newStoryData.photos?.length || 0}) *</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {(newStoryData.photos || []).map((photoObj, idx) => {
+                    const pUrl = typeof photoObj === 'string' ? photoObj : photoObj.url;
+                    return (
+                      <div key={idx} className="relative group w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white shrink-0">
+                        <img src={pUrl} alt={`Wedding photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAddStoryPhoto(idx)}
+                          className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full shadow hover:bg-rose-700 transition-all"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <label className="w-20 h-20 rounded-2xl border-2 border-dashed border-brand-rose/40 hover:border-brand-plum bg-brand-lightBg/50 hover:bg-brand-rose/10 cursor-pointer flex flex-col items-center justify-center text-brand-plum transition-all shadow-sm shrink-0">
+                    <Camera className="w-5 h-5 text-brand-plum mb-1" />
+                    <span className="text-[10px] font-bold text-center px-1">Upload Photo</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -1552,15 +1611,6 @@ export const AdminPage = ({ onNavigate }) => {
                     />
                   </label>
                 </div>
-                <p className="text-[10px] text-gray-400 mb-1">Or paste an image URL below:</p>
-                <input
-                  type="text"
-                  required
-                  value={newStoryData.photoUrl}
-                  onChange={(e) => setNewStoryData({ ...newStoryData, photoUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full p-2.5 rounded-xl border border-gray-200"
-                />
               </div>
 
               <div className="pt-4 flex items-center justify-end space-x-3">
@@ -1645,14 +1695,28 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Wedding Photo Image *</label>
-                <div className="flex items-center gap-3 mb-2">
-                  {editingStory.photoUrl && (
-                    <img src={editingStory.photoUrl} alt="Preview" className="w-16 h-16 object-cover rounded-xl border border-brand-rose/40" />
-                  )}
-                  <label className="cursor-pointer px-4 py-2.5 bg-brand-lightBg border border-brand-rose/30 text-brand-plum font-bold rounded-xl hover:bg-brand-rose/10 transition-all flex items-center space-x-2 text-xs">
-                    <Camera className="w-4 h-4 text-brand-plum" />
-                    <span>Upload Photo from Device</span>
+                <label className="block font-semibold mb-2 text-slate-800">Wedding Photo Gallery ({editingStory.photos?.length || 0}) *</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {(editingStory.photos || []).map((photoObj, idx) => {
+                    const pUrl = typeof photoObj === 'string' ? photoObj : photoObj.url;
+                    return (
+                      <div key={idx} className="relative group w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white shrink-0">
+                        <img src={pUrl} alt={`Wedding photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditStoryPhoto(idx)}
+                          className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full shadow hover:bg-rose-700 transition-all"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <label className="w-20 h-20 rounded-2xl border-2 border-dashed border-brand-rose/40 hover:border-brand-plum bg-brand-lightBg/50 hover:bg-brand-rose/10 cursor-pointer flex flex-col items-center justify-center text-brand-plum transition-all shadow-sm shrink-0">
+                    <Camera className="w-5 h-5 text-brand-plum mb-1" />
+                    <span className="text-[10px] font-bold text-center px-1">Upload Photo</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -1661,15 +1725,6 @@ export const AdminPage = ({ onNavigate }) => {
                     />
                   </label>
                 </div>
-                <p className="text-[10px] text-gray-400 mb-1">Or paste an image URL below:</p>
-                <input
-                  type="text"
-                  required
-                  value={editingStory.photoUrl}
-                  onChange={(e) => setEditingStory({ ...editingStory, photoUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full p-2.5 rounded-xl border border-gray-200"
-                />
               </div>
 
               <div className="pt-4 flex items-center justify-end space-x-3">
