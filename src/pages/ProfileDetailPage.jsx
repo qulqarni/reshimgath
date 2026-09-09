@@ -34,7 +34,8 @@ import {
   UserCheck,
   Phone,
   Mail,
-  MessageCircle
+  MessageCircle,
+  RotateCcw
 } from 'lucide-react';
 
 const HeroHeaderCard = ({ profile, hasValue }) => (
@@ -99,7 +100,7 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { profiles, interests, sendInterest, acceptInterest, declineInterest, toggleShortlist, recordProfileView } = useProfiles();
+  const { profiles, interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, recordProfileView } = useProfiles();
 
   const [showSubModal, setShowSubModal] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
@@ -418,8 +419,18 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                 </button>
               </div>
             ) : isSent ? (
-              <div className="w-full py-3 bg-amber-50 text-amber-900 border border-amber-300 rounded-2xl font-bold text-xs text-center">
-                {t('interestSent')}
+              <div className="space-y-2">
+                <div className="w-full py-3 bg-amber-50 text-amber-900 border border-amber-300 rounded-2xl font-bold text-xs text-center flex items-center justify-center space-x-2">
+                  <UserCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>{t('interestSent')}</span>
+                </div>
+                <button
+                  onClick={() => withdrawInterest(profile.id)}
+                  className="w-full py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-2xl border border-rose-200 transition-all flex items-center justify-center space-x-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Withdraw / Cancel Request</span>
+                </button>
               </div>
             ) : (
               <button

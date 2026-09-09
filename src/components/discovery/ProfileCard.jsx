@@ -3,11 +3,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useProfiles } from '../../context/ProfileContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { VerificationBadge } from '../common/VerificationBadge';
-import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User } from 'lucide-react';
+import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw } from 'lucide-react';
 
 export const ProfileCard = ({ profile, onSelect }) => {
   const { isAuthenticated, triggerPrivacyAlert } = useAuth();
-  const { interests, sendInterest, acceptInterest, declineInterest, toggleShortlist } = useProfiles();
+  const { interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist } = useProfiles();
   const { t } = useLanguage();
 
   const { user } = useAuth();
@@ -199,13 +199,20 @@ export const ProfileCard = ({ profile, onSelect }) => {
               </button>
             </div>
           ) : isSent ? (
-            <button
-              disabled
-              className="w-full py-2.5 px-4 rounded-2xl bg-amber-50 text-amber-800 border border-amber-300/80 font-bold text-xs flex items-center justify-center space-x-2 cursor-default"
-            >
-              <UserCheck className="w-4 h-4 text-amber-600" />
-              <span>{t('interestSent')}</span>
-            </button>
+            <div className="flex gap-2">
+              <span className="flex-1 py-2 px-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs flex items-center justify-center space-x-1">
+                <UserCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{t('interestSent')}</span>
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); withdrawInterest(profile.id); }}
+                className="py-2 px-3 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 shrink-0"
+                title="Withdraw Interest Request"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Withdraw</span>
+              </button>
+            </div>
           ) : (
             <button
               onClick={handleAction}

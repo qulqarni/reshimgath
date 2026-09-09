@@ -581,6 +581,30 @@ export const ProfileProvider = ({ children }) => {
     addToast('Interest declined.', 'info');
   };
 
+  const withdrawInterest = (profileId) => {
+    if (!user) return;
+
+    setInterests((prev) => {
+      const updated = {
+        ...prev,
+        sent: (prev.sent || []).filter((item) => {
+          const pid = typeof item === 'string' ? item : (item.profileId || item.targetUserId);
+          const sid = typeof item === 'string' ? user.id : (item.senderId || item.user1);
+          return !(String(pid).toLowerCase() === String(profileId).toLowerCase() && String(sid).toLowerCase() === String(user.id).toLowerCase());
+        }),
+        received: (prev.received || []).filter((item) => {
+          const pid = typeof item === 'string' ? item : (item.profileId || item.senderId);
+          const tid = typeof item === 'string' ? '' : (item.targetUserId || item.user2);
+          return !(String(pid).toLowerCase() === String(user.id).toLowerCase() && String(tid).toLowerCase() === String(profileId).toLowerCase());
+        })
+      };
+      saveInterestsToFirestore(updated);
+      return updated;
+    });
+
+    addToast('Interest request withdrawn successfully.', 'info');
+  };
+
   const toggleShortlist = (profileId) => {
     setInterests((prev) => {
       const isShortlisted = prev.shortlisted.includes(profileId);
@@ -1037,6 +1061,7 @@ export const ProfileProvider = ({ children }) => {
         sendInterest,
         acceptInterest,
         declineInterest,
+        withdrawInterest,
         toggleShortlist,
         sendMessage,
         markChatAsRead,

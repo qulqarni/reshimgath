@@ -15,7 +15,8 @@ import {
   MapPin, 
   GraduationCap, 
   Briefcase, 
-  User 
+  User,
+  RotateCcw
 } from 'lucide-react';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
@@ -24,7 +25,7 @@ import { UnlockConfirmationModal } from '../components/subscription/UnlockConfir
 export const InterestsPage = ({ onNavigate }) => {
   const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { profiles, interests, acceptInterest, declineInterest } = useProfiles();
+  const { profiles, interests, acceptInterest, declineInterest, withdrawInterest } = useProfiles();
 
   const [activeTab, setActiveTab] = useState('received');
   const [showUnlockModal, setShowUnlockModal] = useState(false);
@@ -395,9 +396,19 @@ export const InterestsPage = ({ onNavigate }) => {
                         {t('requestDeclined')}
                       </span>
                     ) : (
-                      <span className="text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                        {t('pendingStatus')}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-amber-800 font-semibold bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                          {t('pendingStatus')}
+                        </span>
+                        <button
+                          onClick={() => withdrawInterest(p.id)}
+                          className="py-1 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-full border border-rose-200 transition-all flex items-center space-x-1"
+                          title="Withdraw / Cancel Interest Request"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Withdraw</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

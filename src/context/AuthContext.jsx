@@ -332,7 +332,24 @@ export const AuthProvider = ({ children }) => {
     const total = sub.creditsTotal || 0;
     const hasPlan = (sub.planId && total > 0) || remaining > 0;
 
-    if (isAlreadyUnlocked) {
+    // Check if target user has sent an interest request to current user (Received Interest)
+    // If target user initiated an interest request to current user, viewing target profile is 100% FREE!
+    const interestsSaved = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('reshimgath_interests') || '{}');
+      } catch (e) {
+        return {};
+      }
+    })();
+    const receivedArray = interestsSaved.received || [];
+    const isReceivedFromTarget = receivedArray.some(r => {
+      if (!r) return false;
+      const sender = typeof r === 'string' ? r : (r.senderId || r.profileId || r.user1);
+      const target = typeof r === 'string' ? user.id : (r.targetUserId || r.user2);
+      return String(sender).toLowerCase() === targetIdStr && String(target).toLowerCase() === String(user.id).toLowerCase();
+    });
+
+    if (isAlreadyUnlocked || isReceivedFromTarget) {
       return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
     }
 
