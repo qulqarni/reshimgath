@@ -463,20 +463,20 @@ export const MyProfilePage = ({ onNavigate }) => {
         
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-          <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold border border-amber-200 shrink-0">
+          <div className="flex items-start sm:items-center space-x-3 w-full sm:w-auto">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold border border-amber-200 shrink-0 mt-0.5 sm:mt-0">
               <Crown className="w-5 h-5 text-amber-700" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2 flex-wrap gap-1.5">
-                <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-plum">
+            <div className="space-y-1 flex-1 min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
+                <h2 className="font-serif text-lg sm:text-2xl font-bold text-brand-plum leading-tight">
                   Membership & Subscription Status
                 </h2>
-                <span className="px-3 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
+                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] sm:text-xs font-bold rounded-full whitespace-nowrap">
                   {sub.planName ? `${sub.planName} Active` : 'Free Member'}
                 </span>
               </div>
-              <p className="text-xs text-brand-gray mt-0.5 font-medium">
+              <p className="text-xs text-brand-gray font-medium leading-normal">
                 सदस्यत्व योजना व प्रोफाईल पाहण्याची उर्वरित संख्या
               </p>
             </div>
@@ -485,9 +485,9 @@ export const MyProfilePage = ({ onNavigate }) => {
           <button
             type="button"
             onClick={() => setShowSubModal(true)}
-            className="px-5 py-2.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center space-x-2 shrink-0 border border-brand-gold/40"
+            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 shrink-0 border border-brand-gold/40"
           >
-            <Sparkles className="w-4 h-4 text-brand-gold" />
+            <Sparkles className="w-4 h-4 text-brand-gold shrink-0" />
             <span>{sub.planName ? 'Upgrade Membership Plan' : 'Purchase Membership Plan'}</span>
           </button>
         </div>
