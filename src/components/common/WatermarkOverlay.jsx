@@ -1,11 +1,11 @@
 import React from 'react';
 
 export const WatermarkOverlay = ({ size = 'medium', className = '' }) => {
-  let sizeClasses = 'w-24 sm:w-32';
+  let sizeClasses = 'w-24 sm:w-32 translate-y-10 sm:translate-y-14';
   if (size === 'small') {
-    sizeClasses = 'w-8 sm:w-10';
+    sizeClasses = 'w-8 sm:w-10 translate-y-2';
   } else if (size === 'large') {
-    sizeClasses = 'w-36 sm:w-48';
+    sizeClasses = 'w-36 sm:w-48 translate-y-14 sm:translate-y-20';
   }
 
   return (
@@ -13,7 +13,7 @@ export const WatermarkOverlay = ({ size = 'medium', className = '' }) => {
       <img
         src="/logo.png"
         alt="Watermark"
-        className={`${sizeClasses} h-auto opacity-35 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] object-contain`}
+        className={`${sizeClasses} h-auto opacity-35 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] object-contain transition-transform`}
       />
     </div>
   );
