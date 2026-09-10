@@ -60,9 +60,9 @@ export const MAHARASHTRA_COMMUNITIES = [
 export const RELIGIONS = [
   'Hindu',
   'Jain',
-  'Buddhism',
-  'Sikhism',
-  'Christianity',
+  'Buddhist',
+  'Sikh',
+  'Christian',
   'Islam',
   'Other'
 ];

@@ -124,7 +124,7 @@ export const DiscoverPage = ({ onNavigate }) => {
       if (selectedReligion !== 'All') {
         const r = (p.religion || '').toLowerCase().trim();
         const targetR = selectedReligion.toLowerCase().trim();
-        if (targetR === 'buddhism' || targetR === 'bauddha') {
+        if (targetR === 'buddhism' || targetR === 'buddhist' || targetR === 'bauddha') {
           if (!r.includes('buddh') && !r.includes('bauddha')) return false;
         } else if (!r.includes(targetR) && !targetR.includes(r)) {
           return false;
