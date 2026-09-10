@@ -689,6 +689,18 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   </div>
                 )}
 
+                {hasValue(profile.isGovtEmployee) && (
+                  <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
+                    <div className="w-8 h-8 rounded-xl bg-amber-100/60 text-amber-800 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-amber-700" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-brand-gray font-medium block">Government Employee (शासकीय कर्मचारी)</span>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.isGovtEmployee}</p>
+                    </div>
+                  </div>
+                )}
+
                 {hasValue(profile.income) && (
                   <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
                     <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">

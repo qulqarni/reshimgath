@@ -42,6 +42,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     college: user?.college || '',
     occupation: initOcc,
     customOccupation: initCustomOcc,
+    isGovtEmployee: user?.isGovtEmployee || '',
     company: user?.company || '',
     income: user?.income || '',
     fatherOccupation: user?.fatherOccupation || '',
@@ -309,6 +310,19 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                     className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
                   />
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Are you Government Employee ? (शासकीय कर्मचारी आहात का?)</label>
+                <select
+                  value={formData.isGovtEmployee || ''}
+                  onChange={(e) => setFormData({ ...formData, isGovtEmployee: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-xs font-medium"
+                >
+                  <option value="">Select (निवडा)</option>
+                  <option value="Yes">Yes (होय)</option>
+                  <option value="No">No (नाही)</option>
+                </select>
               </div>
 
               <div>

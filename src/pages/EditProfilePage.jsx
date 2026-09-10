@@ -30,6 +30,7 @@ export const EditProfilePage = ({ onNavigate }) => {
     nativePlace: user?.nativePlace || '',
     education: user?.education || '',
     occupation: user?.occupation || '',
+    isGovtEmployee: user?.isGovtEmployee || '',
     company: user?.company || '',
     income: user?.income || '',
     caste: user?.caste || '',
@@ -238,6 +239,19 @@ export const EditProfilePage = ({ onNavigate }) => {
                 onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
                 className="w-full p-2.5 rounded-xl border border-gray-200"
               />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Are you Government Employee ?</label>
+              <select
+                value={formData.isGovtEmployee || ''}
+                onChange={(e) => setFormData({ ...formData, isGovtEmployee: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-gray-200"
+              >
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
             </div>
           </div>
 

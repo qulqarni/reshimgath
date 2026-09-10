@@ -129,6 +129,7 @@ export const AdminPage = ({ onNavigate }) => {
     education: 'B.E. / B.Tech',
     college: '',
     occupation: 'Software Engineer / IT Professional',
+    isGovtEmployee: 'No',
     company: '',
     income: '₹ 8 - 12 Lakhs per annum',
     fatherOccupation: '',
@@ -2107,6 +2108,18 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Are you Government Employee ?</label>
+                    <select
+                      value={editingProfile.isGovtEmployee || 'No'}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, isGovtEmployee: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-medium text-slate-800"
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block font-semibold mb-1 text-gray-700">Company / Organization</label>
                     <input
                       type="text"
@@ -2927,6 +2940,18 @@ export const AdminPage = ({ onNavigate }) => {
                         className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
                       />
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Are you Government Employee ?</label>
+                    <select
+                      value={newProfileForm.isGovtEmployee || 'No'}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, isGovtEmployee: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-medium text-slate-800"
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
                   </div>
 
                   <div>
