@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -149,6 +149,8 @@ export const AdminPage = ({ onNavigate }) => {
   };
 
   const [newProfileForm, setNewProfileForm] = useState(INITIAL_NEW_PROFILE);
+  const newBiodataFileInputRef = useRef(null);
+  const editBiodataFileInputRef = useRef(null);
 
   const handleOpenCreateModal = () => {
     let nextRegNum = 1015;
@@ -246,6 +248,8 @@ export const AdminPage = ({ onNavigate }) => {
     } catch (err) {
       console.error('Biodata upload failed:', err);
       alert('Failed to upload Biodata file.');
+    } finally {
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -542,6 +546,8 @@ export const AdminPage = ({ onNavigate }) => {
     } catch (err) {
       console.error('Error uploading biodata in Admin:', err);
       alert('Failed to upload Biodata file to Firebase Storage.');
+    } finally {
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -1951,14 +1957,31 @@ export const AdminPage = ({ onNavigate }) => {
 
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Caste / Community *</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingProfile.caste || ''}
-                      onChange={(e) => setEditingProfile({ ...editingProfile, caste: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
-                      placeholder="e.g. Maratha, Brahmin, Lingayat..."
-                    />
+                    <select
+                      value={MAHARASHTRA_COMMUNITIES.includes(editingProfile.caste) ? editingProfile.caste : 'Other'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setEditingProfile({ ...editingProfile, caste: 'Other', customCaste: '' });
+                        } else {
+                          setEditingProfile({ ...editingProfile, caste: val, customCaste: '' });
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-medium"
+                    >
+                      {MAHARASHTRA_COMMUNITIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    {(!MAHARASHTRA_COMMUNITIES.includes(editingProfile.caste) || editingProfile.caste === 'Other') && (
+                      <input
+                        type="text"
+                        placeholder="Type custom caste..."
+                        value={editingProfile.caste === 'Other' ? (editingProfile.customCaste || '') : (editingProfile.caste || '')}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, caste: e.target.value, customCaste: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -2017,13 +2040,31 @@ export const AdminPage = ({ onNavigate }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Education Degree</label>
-                    <input
-                      type="text"
-                      value={editingProfile.education || ''}
-                      onChange={(e) => setEditingProfile({ ...editingProfile, education: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
-                      placeholder="e.g. B.E. Computer Science, MBA"
-                    />
+                    <select
+                      value={EDUCATION_LEVELS.includes(editingProfile.education) ? editingProfile.education : 'Other'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setEditingProfile({ ...editingProfile, education: 'Other', customEducation: '' });
+                        } else {
+                          setEditingProfile({ ...editingProfile, education: val, customEducation: '' });
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-medium"
+                    >
+                      {EDUCATION_LEVELS.map((edu) => (
+                        <option key={edu} value={edu}>{edu}</option>
+                      ))}
+                    </select>
+                    {(!EDUCATION_LEVELS.includes(editingProfile.education) || editingProfile.education === 'Other') && (
+                      <input
+                        type="text"
+                        placeholder="Type custom degree / qualification..."
+                        value={editingProfile.education === 'Other' ? (editingProfile.customEducation || '') : (editingProfile.education || '')}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, education: e.target.value, customEducation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -2038,13 +2079,31 @@ export const AdminPage = ({ onNavigate }) => {
 
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Occupation / Job</label>
-                    <input
-                      type="text"
-                      value={editingProfile.occupation || ''}
-                      onChange={(e) => setEditingProfile({ ...editingProfile, occupation: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
-                      placeholder="e.g. Software Engineer, Doctor"
-                    />
+                    <select
+                      value={OCCUPATIONS.includes(editingProfile.occupation) ? editingProfile.occupation : 'Other'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setEditingProfile({ ...editingProfile, occupation: 'Other', customOccupation: '' });
+                        } else {
+                          setEditingProfile({ ...editingProfile, occupation: val, customOccupation: '' });
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-medium"
+                    >
+                      {OCCUPATIONS.map((occ) => (
+                        <option key={occ} value={occ}>{occ}</option>
+                      ))}
+                    </select>
+                    {(!OCCUPATIONS.includes(editingProfile.occupation) || editingProfile.occupation === 'Other') && (
+                      <input
+                        type="text"
+                        placeholder="Type custom occupation / profession..."
+                        value={editingProfile.occupation === 'Other' ? (editingProfile.customOccupation || '') : (editingProfile.occupation || '')}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, occupation: e.target.value, customOccupation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -2276,16 +2335,21 @@ export const AdminPage = ({ onNavigate }) => {
                         <p className="text-[11px] text-gray-500">Upload candidate's PDF or Image biodata file directly to Firebase Storage.</p>
                       </div>
 
-                      <label className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => editBiodataFileInputRef.current?.click()}
+                        className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shrink-0"
+                      >
                         <UploadCloud className="w-4 h-4 text-brand-gold" />
                         <span>Upload Biodata (PDF / IMG)</span>
-                        <input
-                          type="file"
-                          accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
-                          onChange={handleAdminBiodataUpload}
-                          className="hidden"
-                        />
-                      </label>
+                      </button>
+                      <input
+                        type="file"
+                        ref={editBiodataFileInputRef}
+                        accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
+                        onChange={handleAdminBiodataUpload}
+                        className="hidden"
+                      />
                     </div>
                   )}
                 </div>
@@ -2596,16 +2660,21 @@ export const AdminPage = ({ onNavigate }) => {
                 ) : (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                     <span className="text-xs text-gray-500">Upload candidate's PDF or Image biodata file directly to Firebase Storage</span>
-                    <label className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => newBiodataFileInputRef.current?.click()}
+                      className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-brand-plumDark transition-all flex items-center space-x-1.5 shrink-0"
+                    >
                       <UploadCloud className="w-4 h-4 text-brand-gold" />
                       <span>Upload Biodata PDF/IMG</span>
-                      <input
-                        type="file"
-                        accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
-                        onChange={handleNewBiodataUpload}
-                        className="hidden"
-                      />
-                    </label>
+                    </button>
+                    <input
+                      type="file"
+                      ref={newBiodataFileInputRef}
+                      accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={handleNewBiodataUpload}
+                      className="hidden"
+                    />
                   </div>
                 )}
               </div>
@@ -2712,14 +2781,31 @@ export const AdminPage = ({ onNavigate }) => {
 
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Caste / Community *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newProfileForm.caste}
-                      onChange={(e) => setNewProfileForm({ ...newProfileForm, caste: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
-                      placeholder="e.g. Maratha, Brahmin, Lingayat..."
-                    />
+                    <select
+                      value={MAHARASHTRA_COMMUNITIES.includes(newProfileForm.caste) ? newProfileForm.caste : 'Other'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setNewProfileForm({ ...newProfileForm, caste: 'Other', customCaste: '' });
+                        } else {
+                          setNewProfileForm({ ...newProfileForm, caste: val, customCaste: '' });
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-medium"
+                    >
+                      {MAHARASHTRA_COMMUNITIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    {(!MAHARASHTRA_COMMUNITIES.includes(newProfileForm.caste) || newProfileForm.caste === 'Other') && (
+                      <input
+                        type="text"
+                        placeholder="Type custom caste..."
+                        value={newProfileForm.caste === 'Other' ? (newProfileForm.customCaste || '') : newProfileForm.caste}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, caste: e.target.value, customCaste: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -2776,13 +2862,32 @@ export const AdminPage = ({ onNavigate }) => {
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Degree</label>
-                    <input
-                      type="text"
-                      value={newProfileForm.education}
-                      onChange={(e) => setNewProfileForm({ ...newProfileForm, education: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
-                    />
+                    <label className="block font-semibold mb-1 text-gray-700">Education Degree</label>
+                    <select
+                      value={EDUCATION_LEVELS.includes(newProfileForm.education) ? newProfileForm.education : 'Other'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setNewProfileForm({ ...newProfileForm, education: 'Other', customEducation: '' });
+                        } else {
+                          setNewProfileForm({ ...newProfileForm, education: val, customEducation: '' });
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-medium"
+                    >
+                      {EDUCATION_LEVELS.map((edu) => (
+                        <option key={edu} value={edu}>{edu}</option>
+                      ))}
+                    </select>
+                    {(!EDUCATION_LEVELS.includes(newProfileForm.education) || newProfileForm.education === 'Other') && (
+                      <input
+                        type="text"
+                        placeholder="Type custom degree / qualification..."
+                        value={newProfileForm.education === 'Other' ? (newProfileForm.customEducation || '') : newProfileForm.education}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, education: e.target.value, customEducation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -2796,13 +2901,32 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Occupation</label>
-                    <input
-                      type="text"
-                      value={newProfileForm.occupation}
-                      onChange={(e) => setNewProfileForm({ ...newProfileForm, occupation: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
-                    />
+                    <label className="block font-semibold mb-1 text-gray-700">Occupation / Profession</label>
+                    <select
+                      value={OCCUPATIONS.includes(newProfileForm.occupation) ? newProfileForm.occupation : 'Other'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setNewProfileForm({ ...newProfileForm, occupation: 'Other', customOccupation: '' });
+                        } else {
+                          setNewProfileForm({ ...newProfileForm, occupation: val, customOccupation: '' });
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 font-medium"
+                    >
+                      {OCCUPATIONS.map((occ) => (
+                        <option key={occ} value={occ}>{occ}</option>
+                      ))}
+                    </select>
+                    {(!OCCUPATIONS.includes(newProfileForm.occupation) || newProfileForm.occupation === 'Other') && (
+                      <input
+                        type="text"
+                        placeholder="Type custom occupation / profession..."
+                        value={newProfileForm.occupation === 'Other' ? (newProfileForm.customOccupation || '') : newProfileForm.occupation}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, occupation: e.target.value, customOccupation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
                   </div>
 
                   <div>
