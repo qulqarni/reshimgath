@@ -11,12 +11,7 @@ export const SUBSCRIPTION_PLANS = [
     headerBg: 'from-emerald-600 to-emerald-800',
     buttonBg: 'bg-emerald-700 hover:bg-emerald-800 text-white',
     features: [
-      'स्वतःचा बायोडाटा वेबसाईटवर तयार करणे',
-      'नवीन स्थळे वेबसाईटवर पाहणे',
-      'Basic Search सुविधा',
-      'आवडलेले स्थळ Shortlist करण्याची सुविधा',
-      '25 Contact Number / Profile Visits पाहण्याची सुविधा',
-      'स्वतःचा Profile Update करण्याची सुविधा',
+      '25 Contact Number पाहण्याची सुविधा',
       'Profile ला Interest पाठविण्याची सुविधा'
     ]
   },
@@ -32,12 +27,8 @@ export const SUBSCRIPTION_PLANS = [
     headerBg: 'from-blue-600 to-indigo-800',
     buttonBg: 'bg-blue-600 hover:bg-blue-700 text-white',
     features: [
-      'स्वतःचा बायोडाटा वेबसाईटवर तयार करणे',
-      'नवीन स्थळे वेबसाईटवर पाहणे',
-      'Basic Search सुविधा',
       'आवडलेले स्थळ Shortlist करण्याची सुविधा',
-      '50 Contact Number / Profile Visits पाहण्याची सुविधा',
-      'स्वतःचा Profile Update करण्याची सुविधा',
+      '50 Contact Number पाहण्याची सुविधा',
       'Profile ला Interest पाठविण्याची सुविधा'
     ]
   },
@@ -53,18 +44,11 @@ export const SUBSCRIPTION_PLANS = [
     headerBg: 'from-amber-600 via-brand-plum to-brand-plumDark',
     buttonBg: 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold',
     features: [
-      'स्वतःचा बायोडाटा वेबसाईटवर तयार करणे',
-      'नवीन स्थळे वेबसाईटवर पाहणे',
-      'Basic Search सुविधा',
       'आवडलेले स्थळ Shortlist करण्याची सुविधा',
-      '75 Contact Number / Profile Visits पाहण्याची सुविधा',
-      'स्वतःचा Profile Update करण्याची सुविधा',
+      '75 Contact Number पाहण्याची सुविधा',
       'Biodata PDF पाहण्याची सुविधा',
       'Profile ला Interest पाठविण्याची सुविधा',
-      'WhatsApp वर Suitable Biodata पाठवले जातील',
-      'WhatsApp Group ॲक्सेस',
-      'Contact Support for Suitable Matches',
-      '1 Year Validity (१ वर्ष वैधता)'
+      'WhatsApp Group ॲक्सेस'
     ]
   }
 ];
