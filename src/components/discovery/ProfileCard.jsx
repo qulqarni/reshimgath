@@ -107,9 +107,6 @@ export const ProfileCard = ({ profile, onSelect }) => {
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
           <div className="flex items-center space-x-1.5 flex-wrap gap-1">
             {profile.verified && <VerificationBadge size="small" />}
-            <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-              Profile No. {profileSlug}
-            </span>
           </div>
 
           {/* Shortlist Bookmark Button */}
@@ -150,10 +147,18 @@ export const ProfileCard = ({ profile, onSelect }) => {
         </div>
       </div>
 
-      {/* Card Info Body */}
+      {/* Card Info Body (White Box Below Photo) */}
       <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
         
         <div className="space-y-2 text-xs text-brand-charcoal">
+          
+          {/* Profile Number Below Photo in White Box */}
+          <div className="flex items-center justify-between pb-2 border-b border-brand-rose/10">
+            <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
+            <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/30">
+              {profileSlug}
+            </span>
+          </div>
           
           <div className="flex items-center space-x-2.5 text-brand-gray">
             <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />

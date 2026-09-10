@@ -298,9 +298,6 @@ export const InterestsPage = ({ onNavigate }) => {
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
                         <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                           {p.verified && <VerificationBadge size="small" />}
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            Profile No. {profileSlug}
-                          </span>
                         </div>
 
                         <span className="px-2.5 py-1 bg-white/90 backdrop-blur-md text-brand-plum text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
@@ -329,6 +326,12 @@ export const InterestsPage = ({ onNavigate }) => {
 
                     <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
                       <div className="space-y-2 border-b border-gray-100 pb-3">
+                        <div className="flex items-center justify-between pb-1">
+                          <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
+                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
+                            {profileSlug}
+                          </span>
+                        </div>
                         {p.caste && (
                           <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
                             <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
@@ -417,9 +420,6 @@ export const InterestsPage = ({ onNavigate }) => {
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
                         <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                           {p.verified && <VerificationBadge size="small" />}
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            Profile No. {profileSlug}
-                          </span>
                         </div>
 
                         <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
@@ -448,6 +448,12 @@ export const InterestsPage = ({ onNavigate }) => {
 
                     <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
                       <div className="space-y-2 border-b border-gray-100 pb-3">
+                        <div className="flex items-center justify-between pb-1">
+                          <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
+                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
+                            {profileSlug}
+                          </span>
+                        </div>
                         {p.caste && (
                           <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
                             <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
@@ -628,9 +634,6 @@ export const InterestsPage = ({ onNavigate }) => {
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
                         <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                           {p.verified && <VerificationBadge size="small" />}
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            Profile No. {profileSlug}
-                          </span>
                         </div>
                         <span className="px-2.5 py-1 bg-amber-500 text-white text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
                           <Bookmark className="w-3 h-3 text-amber-100 fill-amber-100" />
@@ -658,6 +661,12 @@ export const InterestsPage = ({ onNavigate }) => {
 
                     <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
                       <div className="space-y-2 border-b border-gray-100 pb-3">
+                        <div className="flex items-center justify-between pb-1">
+                          <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
+                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
+                            {profileSlug}
+                          </span>
+                        </div>
                         {p.caste && (
                           <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
                             <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
