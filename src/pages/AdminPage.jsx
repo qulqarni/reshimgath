@@ -391,7 +391,7 @@ export const AdminPage = ({ onNavigate }) => {
                 required
                 value={adminEmailInput}
                 onChange={(e) => setAdminEmailInput(e.target.value)}
-                placeholder="pk9823435404@gmail.com"
+                placeholder="user@gmail.com"
                 className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-brand-charcoal focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
               />
             </div>

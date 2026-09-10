@@ -142,7 +142,7 @@ export const ContactPage = () => {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="pk9823435404@gmail.com"
+                placeholder="user@gmail.com"
                 className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
               />
             </div>
