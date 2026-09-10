@@ -25,6 +25,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { AdminPage } from './pages/AdminPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
 
 function AppContent() {
   // Helper to determine initial path & profile id from browser address bar URL slug
@@ -118,6 +120,12 @@ function AppContent() {
         return <AboutPage onNavigate={handleNavigate} />;
       case '/contact':
         return <ContactPage onNavigate={handleNavigate} />;
+      case '/privacy-policy':
+      case '/privacy':
+        return <PrivacyPolicyPage onNavigate={handleNavigate} />;
+      case '/terms-of-service':
+      case '/terms':
+        return <TermsOfServicePage onNavigate={handleNavigate} />;
       case '/admin':
         return <AdminPage onNavigate={handleNavigate} />;
       default:

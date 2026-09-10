@@ -96,9 +96,9 @@ export const Footer = ({ onNavigate }) => {
         <div className="mt-6 sm:mt-12 pt-4 sm:pt-6 border-t border-brand-rose/20 flex flex-col sm:flex-row items-center justify-between text-[11px] sm:text-xs text-brand-gray gap-2 sm:gap-4 text-center sm:text-left">
           <p>© 2026 Sambodhi Sarang Marriage Bureau. All rights reserved.</p>
           <div className="flex items-center space-x-4">
-            <button onClick={() => onNavigate('/about')} className="hover:text-brand-plum transition-colors">Privacy Policy</button>
+            <button onClick={() => onNavigate('/privacy-policy')} className="hover:text-brand-plum transition-colors">Privacy Policy</button>
             <span>•</span>
-            <button onClick={() => onNavigate('/about')} className="hover:text-brand-plum transition-colors">Terms of Service</button>
+            <button onClick={() => onNavigate('/terms-of-service')} className="hover:text-brand-plum transition-colors">Terms of Service</button>
           </div>
         </div>
       </div>
