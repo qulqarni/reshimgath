@@ -74,17 +74,17 @@ export const Footer = ({ onNavigate }) => {
             <p className="hidden sm:block text-xs text-brand-gray">
               Need assistance with profile creation or Biodata verification? Our support team is ready to help you.
             </p>
-            <div className="flex flex-col items-start w-fit mx-auto md:mx-0 space-y-2.5 text-xs text-brand-charcoal font-medium">
-              <div className="flex items-center space-x-2 text-left">
+            <div className="flex flex-col items-center md:items-start space-y-2 text-xs text-brand-charcoal font-medium">
+              <div className="flex items-center justify-center md:justify-start space-x-2">
                 <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
                 <span>+91 9823425404</span>
               </div>
-              <div className="flex items-center space-x-2 text-left">
+              <div className="flex items-center justify-center md:justify-start space-x-2">
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
                 <span>pk9823435404@gmail.com</span>
               </div>
-              <div className="flex items-start space-x-2 text-left max-w-[280px] sm:max-w-none">
-                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0 mt-0.5" />
+              <div className="flex items-center justify-center md:justify-start space-x-2 text-center md:text-left">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
                 <span>Sambodhi Sarang Marriage Bureau, Ichalkaranji, Maharashtra</span>
               </div>
             </div>
