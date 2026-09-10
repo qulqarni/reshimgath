@@ -84,11 +84,11 @@ export const ProfileCard = ({ profile, onSelect }) => {
       className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
     >
       {/* Top Image Container */}
-      <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-brand-lightBg">
+      <div className="relative h-96 sm:h-[420px] w-full overflow-hidden bg-brand-lightBg">
         <img
           src={profile.avatar || (Array.isArray(profile.photos) && profile.photos[0]) || '/default-avatar.png'}
           alt={profile.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover object-[center_top] group-hover:scale-105 transition-transform duration-500"
         />
 
         {/* Gradient Overlay for Badges & Bottom Text */}
