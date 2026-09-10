@@ -135,8 +135,29 @@ export const DiscoverPage = ({ onNavigate }) => {
       if (selectedCaste !== 'All') {
         const c = (p.caste || '').toLowerCase().trim();
         const targetC = selectedCaste.toLowerCase().trim();
-        const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
-        if (!c.includes(targetC) && !c.includes(baseTarget)) return false;
+
+        if (targetC === 'other') {
+          const standardList = MAHARASHTRA_COMMUNITIES
+            .filter((item) => item.toLowerCase().trim() !== 'other')
+            .map((item) => item.toLowerCase().trim());
+
+          const isStandardCaste = c && standardList.some((std) => {
+            const baseStd = std.split(' ')[0].replace(/[^a-z]/g, '');
+            const baseC = c.split(' ')[0].replace(/[^a-z]/g, '');
+            return (
+              c === std ||
+              c.includes(std) ||
+              std.includes(c) ||
+              (baseStd.length >= 3 && c.includes(baseStd)) ||
+              (baseC.length >= 3 && std.includes(baseC))
+            );
+          });
+
+          if (isStandardCaste) return false;
+        } else {
+          const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
+          if (!c.includes(targetC) && !c.includes(baseTarget)) return false;
+        }
       }
 
       // 8. Age Range Filter
