@@ -126,41 +126,46 @@ export const ProfileCard = ({ profile, onSelect }) => {
       {/* Card Info Body (White Box Below Photo) */}
       <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
         
-        {/* 2-Column Info Layout: Name & Location at Left | Education & Occupation at Right */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+        {/* Name & 4 Inline Items Section */}
+        <div className="space-y-2">
           
-          {/* Left Column: Name (+ Age) & Location */}
-          <div className="space-y-2 min-w-0">
-            {/* Candidate Name & Age */}
-            <div className="flex items-baseline space-x-1.5 min-w-0">
-              <h3 className="font-serif font-bold text-lg sm:text-xl text-slate-900 tracking-wide truncate">
-                {profile.name ? profile.name.trim().split(' ')[0] : ''}
-              </h3>
-              <span className="text-xs font-bold text-brand-rose shrink-0">
-                {profile.age} yrs
-              </span>
-            </div>
+          {/* Top Line: Candidate Name ONLY (Nothing in front of name) */}
+          <h3 className="font-serif font-bold text-xl sm:text-2xl text-slate-900 tracking-wide truncate">
+            {profile.name ? profile.name.trim().split(' ')[0] : ''}
+          </h3>
 
-            {/* Location */}
-            <div className="flex items-center space-x-1.5 text-slate-900 font-bold min-w-0">
-              <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
-              <span className="truncate">{profile.district || 'Maharashtra'}</span>
-            </div>
-          </div>
+          {/* Below Name: 4 Things in front of each other (Age, Education, Work, Location) */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-slate-900 font-bold">
+            
+            {/* 1. Age */}
+            <span className="text-brand-rose font-extrabold shrink-0">
+              {profile.age} yrs
+            </span>
 
-          {/* Right Column: Education & Occupation */}
-          <div className="space-y-2 min-w-0 pt-0.5">
-            {/* Education */}
-            <div className="flex items-center space-x-1.5 text-slate-900 font-bold min-w-0">
+            <span className="text-gray-300 font-normal select-none">•</span>
+
+            {/* 2. Education */}
+            <div className="flex items-center space-x-1 min-w-0">
               <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
               <span className="truncate" title={profile.education}>{profile.education}</span>
             </div>
 
-            {/* Occupation / Profession */}
-            <div className="flex items-center space-x-1.5 text-slate-900 font-bold min-w-0">
+            <span className="text-gray-300 font-normal select-none">•</span>
+
+            {/* 3. Work / Occupation */}
+            <div className="flex items-center space-x-1 min-w-0">
               <Briefcase className="w-4 h-4 text-brand-kesari shrink-0" />
-              <span className="truncate" title={profile.occupation}>{profile.occupation}</span>
+              <span className="truncate" title={profile.occupation}>{profile.occupation || '-'}</span>
             </div>
+
+            <span className="text-gray-300 font-normal select-none">•</span>
+
+            {/* 4. Location */}
+            <div className="flex items-center space-x-1 min-w-0">
+              <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
+              <span className="truncate">{profile.district || 'Maharashtra'}</span>
+            </div>
+
           </div>
 
         </div>
