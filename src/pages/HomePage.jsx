@@ -53,7 +53,7 @@ export const HomePage = ({ onNavigate }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const PROFILES_PER_PAGE = 10;
+  const PROFILES_PER_PAGE = 12;
 
   const casteOptions = useMemo(() => {
     const list = [...MAHARASHTRA_COMMUNITIES];
