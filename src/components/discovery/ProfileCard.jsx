@@ -137,7 +137,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
           <div className="flex items-center space-x-3 text-xs text-gray-200 mt-1 font-medium">
             <span className="flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-brand-kesari" />
-              {profile.district}, {profile.nativePlace || 'MH'}
+              {profile.district || 'Maharashtra'}
             </span>
             <span>•</span>
             <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-md text-[11px] font-semibold text-white">
@@ -171,7 +171,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
           </div>
 
           <div className="flex items-center justify-between text-xs pt-1 border-t border-brand-rose/10 text-brand-gray">
-            <span>Native: <strong className="text-brand-plum">{profile.nativePlace || 'Maharashtra'}</strong></span>
+            <span>District: <strong className="text-brand-plum">{profile.district || 'Maharashtra'}</strong></span>
             <span>Caste: <strong className="text-brand-plum">{profile.caste || 'Maharashtrian'}</strong></span>
           </div>
 
