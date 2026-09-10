@@ -22,20 +22,55 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
+  const defaultGender = useMemo(() => {
+    if (user && user.gender === 'male') return 'female';
+    if (user && user.gender === 'female') return 'male';
+    return 'all';
+  }, [user]);
+
+  const defaultCaste = useMemo(() => {
+    if (!user || !user.caste) return 'All';
+    const userCaste = String(user.caste).trim();
+    if (!userCaste) return 'All';
+
+    const matched = MAHARASHTRA_COMMUNITIES.find((c) => {
+      const cLower = c.toLowerCase();
+      const uLower = userCaste.toLowerCase();
+      const baseUser = uLower.split(' ')[0].replace(/[^a-z]/g, '');
+      const baseCommunity = cLower.split(' ')[0].replace(/[^a-z]/g, '');
+      return (
+        cLower === uLower ||
+        cLower.includes(uLower) ||
+        uLower.includes(cLower) ||
+        (baseUser && baseCommunity && baseUser === baseCommunity)
+      );
+    });
+
+    return matched || userCaste;
+  }, [user]);
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedReligion, setSelectedReligion] = useState('All');
-  const [selectedCaste, setSelectedCaste] = useState('All');
+  const [selectedCaste, setSelectedCaste] = useState(() => defaultCaste);
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('60');
-  const [genderFilter, setGenderFilter] = useState(() => {
-    if (user && user.gender === 'male') return 'female';
-    if (user && user.gender === 'female') return 'male';
-    return 'all';
-  });
+  const [genderFilter, setGenderFilter] = useState(() => defaultGender);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  useEffect(() => {
+    setSelectedCaste(defaultCaste);
+  }, [defaultCaste]);
+
+  const casteOptions = useMemo(() => {
+    const list = [...MAHARASHTRA_COMMUNITIES];
+    if (selectedCaste && selectedCaste !== 'All' && !list.includes(selectedCaste)) {
+      list.unshift(selectedCaste);
+    }
+    return list;
+  }, [selectedCaste]);
 
   const isAnyModalOpen = showMobileFilters || showGuestAuthModal;
   useEffect(() => {
@@ -48,12 +83,6 @@ export const DiscoverPage = ({ onNavigate }) => {
       document.body.style.overflow = 'unset';
     };
   }, [isAnyModalOpen]);
-
-  const defaultGender = useMemo(() => {
-    if (user && user.gender === 'male') return 'female';
-    if (user && user.gender === 'female') return 'male';
-    return 'all';
-  }, [user]);
 
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
@@ -158,7 +187,7 @@ export const DiscoverPage = ({ onNavigate }) => {
   const handleReset = () => {
     setSelectedDistrict('All');
     setSelectedReligion('All');
-    setSelectedCaste('All');
+    setSelectedCaste(defaultCaste);
     setMinAge('18');
     setMaxAge('60');
     setGenderFilter(defaultGender);
@@ -334,7 +363,7 @@ export const DiscoverPage = ({ onNavigate }) => {
               className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
             >
               <option value="All">All Communities / Castes</option>
-              {MAHARASHTRA_COMMUNITIES.map((c) => (
+              {casteOptions.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -500,7 +529,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                   className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                 >
                   <option value="All">All Communities / Castes</option>
-                  {MAHARASHTRA_COMMUNITIES.map((c) => (
+                  {casteOptions.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
