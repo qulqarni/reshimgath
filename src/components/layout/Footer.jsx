@@ -74,17 +74,17 @@ export const Footer = ({ onNavigate }) => {
             <p className="hidden sm:block text-xs text-brand-gray">
               Need assistance with profile creation or Biodata verification? Our support team is ready to help you.
             </p>
-            <div className="flex flex-col items-center md:items-start space-y-1.5 sm:space-y-2 text-xs text-brand-charcoal font-medium">
-              <div className="flex items-center justify-center md:justify-start space-x-2">
+            <div className="flex flex-col items-center md:items-start space-y-2 text-xs text-brand-charcoal font-medium">
+              <div className="flex items-center space-x-2">
                 <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
                 <span>+91 9823425404</span>
               </div>
-              <div className="flex items-center justify-center md:justify-start space-x-2">
+              <div className="flex items-center space-x-2">
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
                 <span>pk9823435404@gmail.com</span>
               </div>
-              <div className="flex items-center justify-center md:justify-start space-x-2 text-center md:text-left">
-                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
+              <div className="flex items-start space-x-2 text-left max-w-[280px] sm:max-w-none">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0 mt-0.5" />
                 <span>Sambodhi Sarang Marriage Bureau, Ichalkaranji, Maharashtra</span>
               </div>
             </div>
@@ -94,12 +94,12 @@ export const Footer = ({ onNavigate }) => {
 
         {/* Bottom Bar */}
         <div className="mt-6 sm:mt-12 pt-4 sm:pt-6 border-t border-brand-rose/20 flex flex-col sm:flex-row items-center justify-between text-[11px] sm:text-xs text-brand-gray gap-2 sm:gap-4 text-center sm:text-left">
-          <p>© 2026 Sambodhi Sarang Marriage Bureau. All rights reserved.</p>
-          <div className="flex items-center space-x-4">
-            <button onClick={() => onNavigate('/privacy-policy')} className="hover:text-brand-plum transition-colors">Privacy Policy</button>
+          <div className="flex items-center space-x-4 order-1 sm:order-2">
+            <button onClick={() => onNavigate('/privacy-policy')} className="hover:text-brand-plum transition-colors font-medium">Privacy Policy</button>
             <span>•</span>
-            <button onClick={() => onNavigate('/terms-of-service')} className="hover:text-brand-plum transition-colors">Terms of Service</button>
+            <button onClick={() => onNavigate('/terms-of-service')} className="hover:text-brand-plum transition-colors font-medium">Terms of Service</button>
           </div>
+          <p className="order-2 sm:order-1">© 2026 Sambodhi Sarang Marriage Bureau. All rights reserved.</p>
         </div>
       </div>
     </footer>
