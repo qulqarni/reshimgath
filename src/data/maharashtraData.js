@@ -61,9 +61,7 @@ export const RELIGIONS = [
   'Hindu',
   'Jain',
   'Buddhist',
-  'Sikh',
   'Christian',
-  'Islam',
   'Other'
 ];
 
