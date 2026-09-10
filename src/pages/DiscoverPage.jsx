@@ -6,7 +6,7 @@ import { useProfiles } from '../context/ProfileContext';
 import { ProfileCard } from '../components/discovery/ProfileCard';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS } from '../data/maharashtraData';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
 import { Search, Filter, ShieldCheck, X, Lock, RotateCcw, SlidersHorizontal } from 'lucide-react';
 
 const AGE_OPTIONS = Array.from({ length: 53 }, (_, i) => 18 + i);
@@ -54,6 +54,8 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedReligion, setSelectedReligion] = useState('All');
   const [selectedCaste, setSelectedCaste] = useState(() => defaultCaste);
+  const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('All');
+  const [selectedEducation, setSelectedEducation] = useState('All');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('60');
   const [genderFilter, setGenderFilter] = useState(() => defaultGender);
@@ -102,7 +104,6 @@ export const DiscoverPage = ({ onNavigate }) => {
       }
 
       // 4. Gender Filter
-      // Logged-in Male users see only female profiles, Logged-in Female users see only male profiles.
       if (user && user.gender === 'male') {
         if ((p.gender || '').toLowerCase().trim() !== 'female') return false;
       } else if (user && user.gender === 'female') {
@@ -113,14 +114,39 @@ export const DiscoverPage = ({ onNavigate }) => {
         if (g !== targetG) return false;
       }
 
-      // 5. District Filter
+      // 5. Marital Status Filter
+      if (selectedMaritalStatus !== 'All') {
+        const ms = (p.maritalStatus || '').toLowerCase().trim();
+        const targetMS = selectedMaritalStatus.toLowerCase().trim();
+
+        if (targetMS === 'unmarried') {
+          if (ms && !ms.includes('unmarried') && !ms.includes('never married') && !ms.includes('single')) {
+            return false;
+          }
+        } else if (targetMS === 'divorced') {
+          if (!ms.includes('divorce')) return false;
+        } else if (targetMS === 'widowed') {
+          if (!ms.includes('widow')) return false;
+        }
+      }
+
+      // 6. Age Range Filter
+      const ageNum = parseInt(p.age, 10);
+      if (!isNaN(ageNum)) {
+        const minA = parseInt(minAge, 10);
+        const maxA = parseInt(maxAge, 10);
+        if (!isNaN(minA) && ageNum < minA) return false;
+        if (!isNaN(maxA) && ageNum > maxA) return false;
+      }
+
+      // 7. District Filter
       if (selectedDistrict !== 'All') {
         const d = (p.district || '').toLowerCase().trim();
         const targetD = selectedDistrict.toLowerCase().trim();
         if (d !== targetD && !d.includes(targetD) && !targetD.includes(d)) return false;
       }
 
-      // 6. Religion Filter
+      // 8. Religion Filter
       if (selectedReligion !== 'All') {
         const r = (p.religion || '').toLowerCase().trim();
         const targetR = selectedReligion.toLowerCase().trim();
@@ -131,7 +157,7 @@ export const DiscoverPage = ({ onNavigate }) => {
         }
       }
 
-      // 7. Caste / Community Filter
+      // 9. Caste / Community Filter
       if (selectedCaste !== 'All') {
         const c = (p.caste || '').toLowerCase().trim();
         const targetC = selectedCaste.toLowerCase().trim();
@@ -160,19 +186,29 @@ export const DiscoverPage = ({ onNavigate }) => {
         }
       }
 
-      // 8. Age Range Filter
-      const ageNum = parseInt(p.age, 10);
-      if (!isNaN(ageNum)) {
-        const minA = parseInt(minAge, 10);
-        const maxA = parseInt(maxAge, 10);
-        if (!isNaN(minA) && ageNum < minA) return false;
-        if (!isNaN(maxA) && ageNum > maxA) return false;
+      // 10. Education Filter
+      if (selectedEducation !== 'All') {
+        const edu = (p.education || '').toLowerCase().trim();
+        const targetEdu = selectedEducation.toLowerCase().trim();
+        const firstToken = targetEdu.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+        if (targetEdu === 'other') {
+          const isStandard = EDUCATION_LEVELS
+            .filter((item) => item.toLowerCase().trim() !== 'other')
+            .some((std) => {
+              const stdToken = std.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+              return stdToken && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(stdToken);
+            });
+          if (isStandard) return false;
+        } else if (!edu.includes(targetEdu) && (firstToken.length >= 2 ? !edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(firstToken) : true)) {
+          return false;
+        }
       }
 
-      // 9. Verified Only Filter
+      // 11. Verified Only Filter
       if (verifiedOnly && !p.verified) return false;
 
-      // 10. Search Query Text & Profile No.
+      // 12. Search Query Text & Profile No.
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim();
         const digitsQ = q.replace(/[^0-9]/g, '');
@@ -203,12 +239,14 @@ export const DiscoverPage = ({ onNavigate }) => {
 
       return true;
     });
-  }, [profiles, user, genderFilter, selectedDistrict, selectedReligion, selectedCaste, minAge, maxAge, verifiedOnly, searchQuery]);
+  }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, verifiedOnly, searchQuery]);
 
   const handleReset = () => {
     setSelectedDistrict('All');
     setSelectedReligion('All');
     setSelectedCaste(defaultCaste);
+    setSelectedMaritalStatus('All');
+    setSelectedEducation('All');
     setMinAge('18');
     setMaxAge('60');
     setGenderFilter(defaultGender);
@@ -256,14 +294,16 @@ export const DiscoverPage = ({ onNavigate }) => {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (genderFilter !== defaultGender && genderFilter !== 'all') count++;
+    if (selectedMaritalStatus !== 'All') count++;
+    if (minAge !== '18' || maxAge !== '60') count++;
     if (selectedDistrict !== 'All') count++;
     if (selectedReligion !== 'All') count++;
     if (selectedCaste !== 'All') count++;
-    if (minAge !== '18' || maxAge !== '60') count++;
+    if (selectedEducation !== 'All') count++;
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [genderFilter, defaultGender, selectedDistrict, selectedReligion, selectedCaste, minAge, maxAge, verifiedOnly, searchQuery]);
+  }, [genderFilter, defaultGender, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, verifiedOnly, searchQuery]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -275,7 +315,7 @@ export const DiscoverPage = ({ onNavigate }) => {
             <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-brand-plum tracking-tight leading-snug">
               {t('discoverTitle')}
             </h1>
-            <span className="shrink-0 whitespace-nowrap text-xs font-sans px-3 py-1 rounded-full bg-brand-plum/10 text-brand-plum font-bold border border-brand-plum/20">
+            <span className="hidden sm:inline-block shrink-0 whitespace-nowrap text-xs font-sans px-3 py-1 rounded-full bg-brand-plum/10 text-brand-plum font-bold border border-brand-plum/20">
               {filteredProfiles.length} Candidates
             </span>
           </div>
@@ -302,8 +342,24 @@ export const DiscoverPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* TOP REDESIGNED HORIZONTAL FILTER PANEL */}
-      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-brand-rose/20 shadow-luxury space-y-4">
+        {/* Mobile Filter Button */}
+        <div className="md:hidden">
+          <button
+            onClick={() => setShowMobileFilters(true)}
+            className="w-full py-3.5 px-5 bg-brand-plum text-white font-bold text-sm rounded-2xl flex items-center justify-center space-x-2 shadow-luxury border border-brand-gold/40 hover:bg-brand-plumDark transition-all"
+          >
+            <Filter className="w-4 h-4 text-brand-gold" />
+            <span>Filter</span>
+            {activeFiltersCount > 0 && (
+              <span className="ml-1.5 px-2 py-0.5 bg-brand-kesari text-white text-[10px] font-bold rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* TOP REDESIGNED HORIZONTAL FILTER PANEL (DESKTOP VIEW ONLY) */}
+        <div className="hidden md:block bg-white rounded-3xl p-4 sm:p-6 border border-brand-rose/20 shadow-luxury space-y-4">
         <div className="flex items-center justify-between border-b border-gray-100 pb-3 gap-2">
           <div className="flex items-center space-x-2 min-w-0">
             <SlidersHorizontal className="w-4 h-4 text-brand-plum shrink-0" />
@@ -328,7 +384,7 @@ export const DiscoverPage = ({ onNavigate }) => {
         </div>
 
         {/* Filter Controls Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs font-semibold">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
           
           {/* 1. Gender */}
           <div>
@@ -344,7 +400,47 @@ export const DiscoverPage = ({ onNavigate }) => {
             </select>
           </div>
 
-          {/* 2. District */}
+          {/* 2. Marital Status */}
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-1">Marital Status / वैवाहिक स्थिती</label>
+            <select
+              value={selectedMaritalStatus}
+              onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+              className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+            >
+              <option value="All">All Marital Statuses</option>
+              <option value="Unmarried">Unmarried (अविवाहित)</option>
+              <option value="Divorced">Divorced (घटस्फोटित)</option>
+              <option value="Widowed">Widowed (विधवा/विधुर)</option>
+            </select>
+          </div>
+
+          {/* 3. Age Range (From Age to To Age) */}
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-1">Age Range / वय (From - To)</label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <select
+                value={minAge}
+                onChange={(e) => setMinAge(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                {AGE_OPTIONS.map((a) => (
+                  <option key={`disc-from-${a}`} value={a}>From {a}</option>
+                ))}
+              </select>
+              <select
+                value={maxAge}
+                onChange={(e) => setMaxAge(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                {AGE_OPTIONS.map((a) => (
+                  <option key={`disc-to-${a}`} value={a}>To {a}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* 4. District */}
           <div>
             <label className="block text-[11px] text-gray-500 mb-1">District / जिल्हा</label>
             <select
@@ -360,7 +456,7 @@ export const DiscoverPage = ({ onNavigate }) => {
             </select>
           </div>
 
-          {/* 3. Religion */}
+          {/* 5. Religion */}
           <div>
             <label className="block text-[11px] text-gray-500 mb-1">Religion / धर्म</label>
             <select
@@ -375,7 +471,7 @@ export const DiscoverPage = ({ onNavigate }) => {
             </select>
           </div>
 
-          {/* 4. Caste / Community */}
+          {/* 6. Caste / Community */}
           <div>
             <label className="block text-[11px] text-gray-500 mb-1">Caste / जात-समाज</label>
             <select
@@ -390,29 +486,19 @@ export const DiscoverPage = ({ onNavigate }) => {
             </select>
           </div>
 
-          {/* 5. Age Range */}
-          <div>
-            <label className="block text-[11px] text-gray-500 mb-1">Age Range (वय)</label>
-            <div className="grid grid-cols-2 gap-1.5">
-              <select
-                value={minAge}
-                onChange={(e) => setMinAge(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                {AGE_OPTIONS.map((a) => (
-                  <option key={`min-${a}`} value={a}>Min {a}y</option>
-                ))}
-              </select>
-              <select
-                value={maxAge}
-                onChange={(e) => setMaxAge(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                {AGE_OPTIONS.map((a) => (
-                  <option key={`max-${a}`} value={a}>Max {a}y</option>
-                ))}
-              </select>
-            </div>
+          {/* 7. Education */}
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="block text-[11px] text-gray-500 mb-1">Education / शिक्षण</label>
+            <select
+              value={selectedEducation}
+              onChange={(e) => setSelectedEducation(e.target.value)}
+              className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+            >
+              <option value="All">All Education Backgrounds</option>
+              {EDUCATION_LEVELS.map((edu) => (
+                <option key={edu} value={edu}>{edu}</option>
+              ))}
+            </select>
           </div>
 
         </div>
@@ -510,6 +596,46 @@ export const DiscoverPage = ({ onNavigate }) => {
                 </select>
               </div>
 
+              {/* Marital Status */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Marital Status / वैवाहिक स्थिती</label>
+                <select
+                  value={selectedMaritalStatus}
+                  onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Marital Statuses</option>
+                  <option value="Unmarried">Unmarried (अविवाहित)</option>
+                  <option value="Divorced">Divorced (घटस्फोटित)</option>
+                  <option value="Widowed">Widowed (विधवा/विधुर)</option>
+                </select>
+              </div>
+
+              {/* Age Range */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Age Range / वय (From - To)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={minAge}
+                    onChange={(e) => setMinAge(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`m-from-${a}`} value={a}>From {a}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={maxAge}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`m-to-${a}`} value={a}>To {a}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* District */}
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">District / जिल्हा</label>
@@ -556,29 +682,19 @@ export const DiscoverPage = ({ onNavigate }) => {
                 </select>
               </div>
 
-              {/* Age Range */}
+              {/* Education */}
               <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Age Range (वय)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={minAge}
-                    onChange={(e) => setMinAge(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                  >
-                    {AGE_OPTIONS.map((a) => (
-                      <option key={`m-min-${a}`} value={a}>Min {a}y</option>
-                    ))}
-                  </select>
-                  <select
-                    value={maxAge}
-                    onChange={(e) => setMaxAge(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                  >
-                    {AGE_OPTIONS.map((a) => (
-                      <option key={`m-max-${a}`} value={a}>Max {a}y</option>
-                    ))}
-                  </select>
-                </div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Education / शिक्षण</label>
+                <select
+                  value={selectedEducation}
+                  onChange={(e) => setSelectedEducation(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Education Backgrounds</option>
+                  {EDUCATION_LEVELS.map((edu) => (
+                    <option key={edu} value={edu}>{edu}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Verified Only */}

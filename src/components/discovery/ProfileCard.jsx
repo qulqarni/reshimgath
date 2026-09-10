@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useProfiles } from '../../context/ProfileContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { VerificationBadge } from '../common/VerificationBadge';
-import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw } from 'lucide-react';
+import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall } from 'lucide-react';
 
 export const ProfileCard = ({ profile, onSelect }) => {
   const { isAuthenticated, triggerPrivacyAlert } = useAuth();
@@ -48,7 +48,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
   const handleAction = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-      triggerPrivacyAlert();
+      onSelect(profileSlug, 'sendInterest');
       return;
     }
 
@@ -91,8 +91,8 @@ export const ProfileCard = ({ profile, onSelect }) => {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/80 via-transparent to-black/20" />
+        {/* Gradient Overlay for Badges & Bottom Text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
 
         {/* Top Badges */}
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
@@ -114,58 +114,71 @@ export const ProfileCard = ({ profile, onSelect }) => {
           </button>
         </div>
 
-        {/* Bottom Details Overlay on Image */}
-        <div className="absolute bottom-3 left-3 right-3 text-white">
-          <div className="flex items-baseline space-x-2">
-            <h3 className="font-serif font-bold text-xl sm:text-2xl text-white tracking-wide drop-shadow-md">
-              {profile.name ? profile.name.trim().split(' ')[0] : ''}
-            </h3>
-            <span className="text-sm font-semibold text-brand-rose drop-shadow-sm">
-              {profile.age} yrs
-            </span>
-          </div>
-
-          <div className="flex items-center text-xs text-gray-200 mt-1 font-medium">
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-brand-kesari" />
-              {profile.district || 'Maharashtra'}
-            </span>
-          </div>
+        {/* Profile Number on Image Bottom Left (Normal text as before, no background) */}
+        <div className="absolute bottom-3 left-3 text-white font-medium text-xs drop-shadow-md flex items-center space-x-1">
+          <span className="text-gray-200">Profile No.</span>
+          <span className="font-bold text-white">
+            {profile.registrationId ? String(profile.registrationId) : (profile.regId ? (String(profile.regId).replace(/[^0-9]/g, '') || profile.regId) : (String(profile.id).replace(/[^0-9]/g, '') || profile.id))}
+          </span>
         </div>
       </div>
 
       {/* Card Info Body (White Box Below Photo) */}
       <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
         
-        <div className="space-y-2 text-xs text-brand-charcoal">
+        {/* 2-Column Info Layout: Name & Location at Left | Education & Occupation at Right */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
           
-          {/* Profile Number Below Photo in White Box */}
-          <div className="flex items-center justify-between pb-2 border-b border-brand-rose/10">
-            <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
-            <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-xs rounded-full shadow-sm border border-brand-gold/30">
-              {profileSlug}
-            </span>
-          </div>
-          
-          <div className="flex items-center space-x-2.5 text-brand-gray">
-            <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
-            <span className="truncate font-medium">{profile.education}</span>
+          {/* Left Column: Name (+ Age) & Location */}
+          <div className="space-y-2 min-w-0">
+            {/* Candidate Name & Age */}
+            <div className="flex items-baseline space-x-1.5 min-w-0">
+              <h3 className="font-serif font-bold text-lg sm:text-xl text-slate-900 tracking-wide truncate">
+                {profile.name ? profile.name.trim().split(' ')[0] : ''}
+              </h3>
+              <span className="text-xs font-bold text-brand-rose shrink-0">
+                {profile.age} yrs
+              </span>
+            </div>
+
+            {/* Location */}
+            <div className="flex items-center space-x-1.5 text-slate-900 font-bold min-w-0">
+              <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
+              <span className="truncate">{profile.district || 'Maharashtra'}</span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2.5 text-brand-gray">
-            <Briefcase className="w-4 h-4 text-brand-kesari shrink-0" />
-            <span className="truncate font-medium">{profile.occupation}</span>
-          </div>
+          {/* Right Column: Education & Occupation */}
+          <div className="space-y-2 min-w-0 pt-0.5">
+            {/* Education */}
+            <div className="flex items-center space-x-1.5 text-slate-900 font-bold min-w-0">
+              <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
+              <span className="truncate" title={profile.education}>{profile.education}</span>
+            </div>
 
-          <div className="flex items-center justify-between text-xs pt-1 border-t border-brand-rose/10 text-brand-gray">
-            <span>District: <strong className="text-brand-plum">{profile.district || 'Maharashtra'}</strong></span>
-            <span>Caste: <strong className="text-brand-plum">{profile.caste || 'Maharashtrian'}</strong></span>
+            {/* Occupation / Profession */}
+            <div className="flex items-center space-x-1.5 text-slate-900 font-bold min-w-0">
+              <Briefcase className="w-4 h-4 text-brand-kesari shrink-0" />
+              <span className="truncate" title={profile.occupation}>{profile.occupation}</span>
+            </div>
           </div>
 
         </div>
 
         {/* Action Button Section */}
-        <div className="pt-2">
+        <div className="pt-2 space-y-2">
+          {/* Contact Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(profileSlug, 'contact');
+            }}
+            className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all border border-emerald-400/30"
+          >
+            <PhoneCall className="w-4 h-4 text-amber-300 shrink-0" />
+            <span>Contact</span>
+          </button>
+
           {isAccepted ? (
             <button
               onClick={handleAction}

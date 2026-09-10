@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { PaithaniDivider } from '../components/common/PaithaniDivider';
 import { ProfileCard } from '../components/discovery/ProfileCard';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
 import { 
   Heart, 
   Search, 
@@ -21,8 +22,13 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Filter,
+  RotateCcw,
+  SlidersHorizontal
 } from 'lucide-react';
+
+const AGE_OPTIONS = Array.from({ length: 53 }, (_, i) => 18 + i);
 
 export const HomePage = ({ onNavigate }) => {
   const { user, isAuthenticated, loginAsDemo } = useAuth();
@@ -32,23 +38,208 @@ export const HomePage = ({ onNavigate }) => {
   const [selectedStory, setSelectedStory] = useState(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
 
-  const featuredProfiles = useMemo(() => {
-    let list = (profiles || []).filter(p => !p.blocked && !p.isAdmin && p.id !== 'admin_1' && (p.email ? !p.email.includes('admin') : true));
-    if (user && user.id) {
-      list = list.filter(p => String(p.id) !== String(user.id));
-      if (user.gender === 'male') {
-        const females = list.filter(p => (p.gender || '').toLowerCase().trim() === 'female');
-        if (females.length > 0) list = females;
-      } else if (user.gender === 'female') {
-        const males = list.filter(p => (p.gender || '').toLowerCase().trim() === 'male');
-        if (males.length > 0) list = males;
-      }
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [selectedReligion, setSelectedReligion] = useState('All');
+  const [selectedCaste, setSelectedCaste] = useState('All');
+  const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('All');
+  const [selectedEducation, setSelectedEducation] = useState('All');
+  const [minAge, setMinAge] = useState('18');
+  const [maxAge, setMaxAge] = useState('60');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
+
+  const casteOptions = useMemo(() => {
+    const list = [...MAHARASHTRA_COMMUNITIES];
+    if (selectedCaste && selectedCaste !== 'All' && !list.includes(selectedCaste)) {
+      list.unshift(selectedCaste);
     }
-    return list.slice(0, 4);
-  }, [profiles, user]);
+    return list;
+  }, [selectedCaste]);
+
+  const filteredProfiles = useMemo(() => {
+    return (profiles || []).filter((p) => {
+      // 1. Exclude logged-in user's own profile
+      if (user && (String(p.id) === String(user.id) || (user.email && p.email === user.email))) {
+        return false;
+      }
+      // 2. Exclude Admin profiles
+      if (p.isAdmin || p.role === 'admin' || p.id === 'admin_1' || (p.email && p.email.includes('admin'))) {
+        return false;
+      }
+      // 3. Exclude Blocked profiles
+      if (p.blocked) {
+        return false;
+      }
+
+      // 4. Gender Filter
+      if (user && user.gender === 'male') {
+        if ((p.gender || '').toLowerCase().trim() !== 'female') return false;
+      } else if (user && user.gender === 'female') {
+        if ((p.gender || '').toLowerCase().trim() !== 'male') return false;
+      } else if (genderFilter !== 'all') {
+        const g = (p.gender || '').toLowerCase().trim();
+        const targetG = genderFilter.toLowerCase().trim();
+        if (g !== targetG) return false;
+      }
+
+      // 5. Marital Status Filter
+      if (selectedMaritalStatus !== 'All') {
+        const ms = (p.maritalStatus || '').toLowerCase().trim();
+        const targetMS = selectedMaritalStatus.toLowerCase().trim();
+
+        if (targetMS === 'unmarried') {
+          if (ms && !ms.includes('unmarried') && !ms.includes('never married') && !ms.includes('single')) {
+            return false;
+          }
+        } else if (targetMS === 'divorced') {
+          if (!ms.includes('divorce')) return false;
+        } else if (targetMS === 'widowed') {
+          if (!ms.includes('widow')) return false;
+        }
+      }
+
+      // 6. Age Range Filter
+      const ageNum = parseInt(p.age, 10);
+      if (!isNaN(ageNum)) {
+        const minA = parseInt(minAge, 10);
+        const maxA = parseInt(maxAge, 10);
+        if (!isNaN(minA) && ageNum < minA) return false;
+        if (!isNaN(maxA) && ageNum > maxA) return false;
+      }
+
+      // 7. District Filter
+      if (selectedDistrict !== 'All') {
+        const d = (p.district || '').toLowerCase().trim();
+        const targetD = selectedDistrict.toLowerCase().trim();
+        if (d !== targetD && !d.includes(targetD) && !targetD.includes(d)) return false;
+      }
+
+      // 8. Religion Filter
+      if (selectedReligion !== 'All') {
+        const r = (p.religion || '').toLowerCase().trim();
+        const targetR = selectedReligion.toLowerCase().trim();
+        if (targetR === 'buddhism' || targetR === 'buddhist' || targetR === 'bauddha') {
+          if (!r.includes('buddh') && !r.includes('bauddha')) return false;
+        } else if (!r.includes(targetR) && !targetR.includes(r)) {
+          return false;
+        }
+      }
+
+      // 9. Caste / Community Filter
+      if (selectedCaste !== 'All') {
+        const c = (p.caste || '').toLowerCase().trim();
+        const targetC = selectedCaste.toLowerCase().trim();
+        if (targetC === 'other') {
+          const standardList = MAHARASHTRA_COMMUNITIES
+            .filter((item) => item.toLowerCase().trim() !== 'other')
+            .map((item) => item.toLowerCase().trim());
+
+          const isStandardCaste = c && standardList.some((std) => {
+            const baseStd = std.split(' ')[0].replace(/[^a-z]/g, '');
+            const baseC = c.split(' ')[0].replace(/[^a-z]/g, '');
+            return (
+              c === std ||
+              c.includes(std) ||
+              std.includes(c) ||
+              (baseStd.length >= 3 && c.includes(baseStd)) ||
+              (baseC.length >= 3 && std.includes(baseC))
+            );
+          });
+          if (isStandardCaste) return false;
+        } else {
+          const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
+          if (!c.includes(targetC) && !c.includes(baseTarget)) return false;
+        }
+      }
+
+      // 10. Education Filter
+      if (selectedEducation !== 'All') {
+        const edu = (p.education || '').toLowerCase().trim();
+        const targetEdu = selectedEducation.toLowerCase().trim();
+        const firstToken = targetEdu.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+        if (targetEdu === 'other') {
+          const isStandard = EDUCATION_LEVELS
+            .filter((item) => item.toLowerCase().trim() !== 'other')
+            .some((std) => {
+              const stdToken = std.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+              return stdToken && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(stdToken);
+            });
+          if (isStandard) return false;
+        } else if (!edu.includes(targetEdu) && (firstToken.length >= 2 ? !edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(firstToken) : true)) {
+          return false;
+        }
+      }
+
+      // 11. Verified Only Filter
+      if (verifiedOnly && !p.verified) return false;
+
+      // 12. Search Query Text & Profile No.
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase().trim();
+        const digitsQ = q.replace(/[^0-9]/g, '');
+
+        const name = (p.name || '').toLowerCase();
+        const dist = (p.district || '').toLowerCase();
+        const edu = (p.education || '').toLowerCase();
+        const occ = (p.occupation || '').toLowerCase();
+        const caste = (p.caste || '').toLowerCase();
+        const rel = (p.religion || '').toLowerCase();
+        const regId = (p.regId || '').toLowerCase();
+        const registrationId = String(p.registrationId || '').toLowerCase();
+        const profileDigits = (regId + registrationId + String(p.id || '')).replace(/[^0-9]/g, '');
+
+        const matchesQ =
+          name.includes(q) ||
+          dist.includes(q) ||
+          edu.includes(q) ||
+          occ.includes(q) ||
+          caste.includes(q) ||
+          rel.includes(q) ||
+          regId.includes(q) ||
+          registrationId.includes(q) ||
+          (digitsQ.length > 0 && profileDigits.includes(digitsQ));
+
+        if (!matchesQ) return false;
+      }
+
+      return true;
+    });
+  }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, verifiedOnly, searchQuery]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (genderFilter !== 'all') count++;
+    if (selectedMaritalStatus !== 'All') count++;
+    if (minAge !== '18' || maxAge !== '60') count++;
+    if (selectedDistrict !== 'All') count++;
+    if (selectedReligion !== 'All') count++;
+    if (selectedCaste !== 'All') count++;
+    if (selectedEducation !== 'All') count++;
+    if (verifiedOnly) count++;
+    if (searchQuery.trim()) count++;
+    return count;
+  }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, verifiedOnly, searchQuery]);
+
+  const handleReset = () => {
+    setSearchQuery('');
+    setSelectedDistrict('All');
+    setSelectedReligion('All');
+    setSelectedCaste('All');
+    setSelectedMaritalStatus('All');
+    setSelectedEducation('All');
+    setMinAge('18');
+    setMaxAge('60');
+    setGenderFilter('all');
+    setVerifiedOnly(false);
+  };
 
   useEffect(() => {
-    if (selectedStory) {
+    if (selectedStory || showMobileFilters || showGuestAuthModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -56,33 +247,28 @@ export const HomePage = ({ onNavigate }) => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [selectedStory]);
+  }, [selectedStory, showMobileFilters, showGuestAuthModal]);
 
   return (
-    <div className="space-y-16 sm:space-y-24 pb-12">
+    <div className="space-y-16 sm:space-y-24 pt-6 sm:pt-10 pb-12">
       
-      {/* HERO SECTION WITH SHARP BACKGROUND IMAGE AND HIGH-CONTRAST TEXT */}
+      {/* HERO SECTION WITH SHARP BACKGROUND IMAGE AND HIGH-CONTRAST TEXT (TEMPORARILY COMMENTED OUT) */}
+      {/*
       <section className="relative overflow-hidden min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] py-12 sm:py-16 lg:py-20 bg-cover bg-center bg-no-repeat flex items-center" style={{ backgroundImage: `url('/hero-bg.jpg')` }}>
         
-        {/* Rich Black Shade Overlay for Contrast & Elegance */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/20" />
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 w-full overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
-            {/* Left Hero Text Column */}
             <div className="lg:col-span-7 space-y-5 sm:space-y-8 text-center lg:text-left w-full max-w-full overflow-hidden">
               
-
-
-              {/* Tagline Badge */}
               <div className="inline-flex items-center gap-1.5 bg-brand-plum/30 border border-brand-rose/50 text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-md backdrop-blur-md max-w-full">
                 <Sparkles className="w-3.5 h-3.5 text-brand-rose shrink-0" />
                 <span className="truncate">{homeContent.heroBadge || t('heroBadge')}</span>
               </div>
 
-              {/* Headlines */}
               <div className="space-y-2 sm:space-y-4">
                 <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-snug sm:leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] break-words">
                   {homeContent.heroTitle || t('heroTitle')}
@@ -96,7 +282,6 @@ export const HomePage = ({ onNavigate }) => {
                 {homeContent.heroSubtext || t('heroSubtext')}
               </p>
 
-              {/* Hero CTA Buttons */}
               <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2.5 sm:gap-4 w-full">
                 <button
                   onClick={() => onNavigate(isAuthenticated ? '/discover' : '/signup')}
@@ -106,11 +291,8 @@ export const HomePage = ({ onNavigate }) => {
                   <span>{t('findMatchCTA')}</span>
                   <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" />
                 </button>
-
-
               </div>
 
-              {/* Trust Indicators */}
               <div className="pt-5 sm:pt-8 border-t border-white/25 flex flex-col items-center justify-center space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4 text-center sm:text-left">
                 <div className="flex items-center justify-center space-x-2 sm:space-x-2.5">
                   <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
@@ -128,12 +310,8 @@ export const HomePage = ({ onNavigate }) => {
 
             </div>
 
-            {/* Right Side Dark Glassmorphic Feature Card for Maximum Contrast */}
             <div className="hidden lg:block lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md lg:max-w-none">
-                
-
-
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/30 bg-white/10 backdrop-blur-md p-6 sm:p-8 space-y-6 text-white">
                   
                   <div className="space-y-2 border-b border-white/20 pb-4">
@@ -182,7 +360,6 @@ export const HomePage = ({ onNavigate }) => {
                   </button>
 
                 </div>
-
               </div>
             </div>
 
@@ -190,45 +367,262 @@ export const HomePage = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* PAITHANI DIVIDER */}
       <PaithaniDivider />
+      */}
 
-      {/* FEATURED CANDIDATE PROFILES SECTION BELOW HERO */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-brand-rose/15 pb-4">
-          <div className="space-y-1 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 bg-brand-plum/10 text-brand-plum px-3 py-1 rounded-full text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-brand-kesari" />
-              <span>Verified Matrimonial Profiles</span>
+      {/* CANDIDATE PROFILES SECTION WITH SMART SEARCH & FILTER */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        
+        {/* Section Header & Keyword Search Input */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-brand-rose/15 pb-4">
+          <div>
+            <div className="hidden sm:flex items-center flex-wrap gap-2.5">
+              <div className="inline-flex items-center gap-1.5 bg-brand-plum/10 text-brand-plum px-3 py-1 rounded-full text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-brand-kesari" />
+                <span>Verified Matrimonial Profiles</span>
+              </div>
+              <span className="shrink-0 whitespace-nowrap text-xs font-sans px-3 py-1 rounded-full bg-brand-plum/10 text-brand-plum font-bold border border-brand-plum/20">
+                {filteredProfiles.length} Candidates Found
+              </span>
             </div>
-            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum">
-              Featured Candidate Profiles
+            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum mt-1">
+              Find Your Perfect Alliance
             </h2>
             <p className="text-xs sm:text-sm text-brand-gray">
-              Explore active verified profiles looking for dignified Maharashtrian alliances
+              Filter active verified profiles by gender, district, religion, caste, and age
             </p>
           </div>
 
+          {/* Top Search Bar */}
+          <div className="relative w-full md:w-80">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search name, Profile No. (eg. 1001), district..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-2xl border border-brand-rose/20 bg-white text-xs shadow-sm focus:ring-2 focus:ring-brand-plum/20"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-3 text-gray-400 hover:text-brand-plum">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Filter Button */}
+        <div className="md:hidden">
           <button
-            onClick={() => onNavigate('/discover')}
-            className="hidden sm:inline-flex items-center space-x-1.5 px-5 py-2.5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow transition-all border border-brand-gold/30 shrink-0"
+            onClick={() => setShowMobileFilters(true)}
+            className="w-full py-3.5 px-5 bg-brand-plum text-white font-bold text-sm rounded-2xl flex items-center justify-center space-x-2 shadow-luxury border border-brand-gold/40 hover:bg-brand-plumDark transition-all"
           >
-            <span>See More Profiles</span>
-            <ArrowRight className="w-4 h-4 text-brand-gold" />
+            <Filter className="w-4 h-4 text-brand-gold" />
+            <span>Filter</span>
+            {activeFiltersCount > 0 && (
+              <span className="ml-1.5 px-2 py-0.5 bg-brand-kesari text-white text-[10px] font-bold rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
         </div>
 
-        {featuredProfiles.length === 0 ? (
-          <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 text-center text-xs text-brand-gray">
-            No profiles available to display at the moment.
+        {/* SMART PROFILE FILTER PANEL (DESKTOP VIEW ONLY) */}
+        <div className="hidden md:block bg-white rounded-3xl p-4 sm:p-6 border border-brand-rose/20 shadow-luxury space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 gap-2">
+            <div className="flex items-center space-x-2 min-w-0">
+              <SlidersHorizontal className="w-4 h-4 text-brand-plum shrink-0" />
+              <h3 className="font-serif font-bold text-xs sm:text-sm text-brand-plum uppercase tracking-wider truncate sm:whitespace-nowrap">
+                Search & Filter Candidates
+              </h3>
+              {activeFiltersCount > 0 && (
+                <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
+                  {activeFiltersCount} Active
+                </span>
+              )}
+            </div>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={handleReset}
+                className="shrink-0 whitespace-nowrap text-xs font-semibold text-brand-kesari hover:underline flex items-center space-x-1"
+              >
+                <RotateCcw className="w-3 h-3 shrink-0" />
+                <span className="whitespace-nowrap">Reset All</span>
+              </button>
+            )}
+          </div>
+
+          {/* Filter Controls Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
+            
+            {/* 1. Gender */}
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">Gender / वधू-वर</label>
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="all">All Genders</option>
+                <option value="female">Brides (वधू / Female)</option>
+                <option value="male">Grooms (वर / Male)</option>
+              </select>
+            </div>
+
+            {/* 2. Marital Status */}
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">Marital Status / वैवाहिक स्थिती</label>
+              <select
+                value={selectedMaritalStatus}
+                onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="All">All Marital Statuses</option>
+                <option value="Unmarried">Unmarried (अविवाहित)</option>
+                <option value="Divorced">Divorced (घटस्फोटित)</option>
+                <option value="Widowed">Widowed (विधवा/विधुर)</option>
+              </select>
+            </div>
+
+            {/* 3. Age Range (From Age to To Age) */}
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">Age Range / वय (From - To)</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                <select
+                  value={minAge}
+                  onChange={(e) => setMinAge(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  {AGE_OPTIONS.map((a) => (
+                    <option key={`from-${a}`} value={a}>From {a}</option>
+                  ))}
+                </select>
+                <select
+                  value={maxAge}
+                  onChange={(e) => setMaxAge(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  {AGE_OPTIONS.map((a) => (
+                    <option key={`to-${a}`} value={a}>To {a}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 4. District */}
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">District / जिल्हा</label>
+              <select
+                value={selectedDistrict}
+                onChange={(e) => setSelectedDistrict(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="All">All Maharashtra Districts</option>
+                <option value="Ichalkaranji">Ichalkaranji</option>
+                {MAHARASHTRA_DISTRICTS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 5. Religion */}
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">Religion / धर्म</label>
+              <select
+                value={selectedReligion}
+                onChange={(e) => setSelectedReligion(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="All">All Religions</option>
+                {RELIGIONS.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 6. Caste / Community */}
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">Caste / जात-समाज</label>
+              <select
+                value={selectedCaste}
+                onChange={(e) => setSelectedCaste(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="All">All Communities / Castes</option>
+                {casteOptions.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 7. Education */}
+            <div className="sm:col-span-2 lg:col-span-2">
+              <label className="block text-[11px] text-gray-500 mb-1">Education / शिक्षण</label>
+              <select
+                value={selectedEducation}
+                onChange={(e) => setSelectedEducation(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="All">All Education Backgrounds</option>
+                {EDUCATION_LEVELS.map((edu) => (
+                  <option key={edu} value={edu}>{edu}</option>
+                ))}
+              </select>
+            </div>
+
+          </div>
+
+          {/* Bottom Checkbox Option */}
+          <div className="flex flex-wrap items-center justify-between pt-2 gap-3 border-t border-gray-100 text-xs">
+            <label className="flex items-center space-x-2 cursor-pointer font-semibold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={verifiedOnly}
+                onChange={(e) => setVerifiedOnly(e.target.checked)}
+                className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+              />
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Show 100% Verified Profiles Only</span>
+            </label>
+
+            {activeFiltersCount > 0 && (
+              <span className="text-[11px] text-gray-500 italic">
+                Showing candidates matching active filters
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Filtered Profiles Cards Display */}
+        {filteredProfiles.length === 0 ? (
+          <div className="bg-white p-12 rounded-3xl border border-brand-rose/20 text-center space-y-4 shadow-luxury">
+            <div className="w-14 h-14 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center mx-auto">
+              <Filter className="w-7 h-7 text-brand-plum/50" />
+            </div>
+            <div className="space-y-1 max-w-sm mx-auto">
+              <h3 className="font-serif font-bold text-lg text-brand-plum">No Matching Candidates Found</h3>
+              <p className="text-xs text-brand-gray">
+                Try relaxing your age range, district, or caste filters to view more candidate profiles.
+              </p>
+            </div>
+            <button
+              onClick={handleReset}
+              className="px-6 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all"
+            >
+              Reset All Filters
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProfiles.map((profile) => (
+            {filteredProfiles.map((profile) => (
               <ProfileCard
                 key={profile.id}
                 profile={profile}
                 onSelect={(id, action) => {
+                  if (!isAuthenticated) {
+                    setShowGuestAuthModal(true);
+                    return;
+                  }
                   if (action === 'chat') {
                     onNavigate('/messages');
                   } else {
@@ -245,7 +639,7 @@ export const HomePage = ({ onNavigate }) => {
             onClick={() => onNavigate('/discover')}
             className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-3.5 bg-gradient-to-r from-brand-plum via-brand-plumDark to-brand-plum text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all duration-300 border border-brand-gold/40 group"
           >
-            <span>See More Profiles</span>
+            <span>See More Profiles on Discover Page</span>
             <ArrowRight className="w-4 h-4 text-brand-gold group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
@@ -474,6 +868,224 @@ export const HomePage = ({ onNavigate }) => {
           </div>
         </div>
       </section>
+      {/* Mobile Filter Modal Sheet */}
+      {showMobileFilters && createPortal(
+        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex flex-col justify-end">
+          <div className="bg-white rounded-t-3xl p-6 space-y-5 animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-serif font-bold text-lg text-brand-plum">Filter Candidates</h3>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="p-1 rounded-full text-gray-400 hover:text-brand-plum"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-semibold">
+              {/* Gender */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Gender / वधू-वर</label>
+                <select
+                  value={genderFilter}
+                  onChange={(e) => setGenderFilter(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="all">All Genders</option>
+                  <option value="female">Brides (वधू / Female)</option>
+                  <option value="male">Grooms (वर / Male)</option>
+                </select>
+              </div>
+
+              {/* Marital Status */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Marital Status / वैवाहिक स्थिती</label>
+                <select
+                  value={selectedMaritalStatus}
+                  onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Marital Statuses</option>
+                  <option value="Unmarried">Unmarried (अविवाहित)</option>
+                  <option value="Divorced">Divorced (घटस्फोटित)</option>
+                  <option value="Widowed">Widowed (विधवा/विधुर)</option>
+                </select>
+              </div>
+
+              {/* Age Range */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Age Range / वय (From - To)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={minAge}
+                    onChange={(e) => setMinAge(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`m-hm-from-${a}`} value={a}>From {a}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={maxAge}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`m-hm-to-${a}`} value={a}>To {a}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* District */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">District / जिल्हा</label>
+                <select
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Maharashtra Districts</option>
+                  <option value="Ichalkaranji">Ichalkaranji</option>
+                  {MAHARASHTRA_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Religion */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Religion / धर्म</label>
+                <select
+                  value={selectedReligion}
+                  onChange={(e) => setSelectedReligion(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Religions</option>
+                  {RELIGIONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Caste */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
+                <select
+                  value={selectedCaste}
+                  onChange={(e) => setSelectedCaste(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Communities / Castes</option>
+                  {casteOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Education */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Education / शिक्षण</label>
+                <select
+                  value={selectedEducation}
+                  onChange={(e) => setSelectedEducation(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All Education Backgrounds</option>
+                  {EDUCATION_LEVELS.map((edu) => (
+                    <option key={edu} value={edu}>{edu}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Verified Only */}
+              <div className="pt-2">
+                <label className="flex items-center space-x-2.5 text-xs font-semibold text-brand-charcoal cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={verifiedOnly}
+                    onChange={(e) => setVerifiedOnly(e.target.checked)}
+                    className="rounded text-brand-plum focus:ring-brand-plum w-4 h-4"
+                  />
+                  <span>Show 100% Verified Profiles Only</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t">
+              <button
+                onClick={handleReset}
+                className="flex-1 py-3 bg-gray-100 text-brand-charcoal font-bold text-xs rounded-xl"
+              >
+                Reset
+              </button>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="flex-1 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Guest Access Modal for Non-Logged-In Users */}
+      {showGuestAuthModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative text-center border border-brand-rose/20 animate-in zoom-in-95 duration-200">
+            
+            <button
+              onClick={() => setShowGuestAuthModal(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-brand-plum p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center mx-auto border-2 border-brand-plum/20 shadow-inner">
+              <Lock className="w-8 h-8 text-brand-plum" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-serif font-bold text-2xl text-brand-plum">
+                Access Candidate Profile
+              </h3>
+              <p className="text-xs text-brand-gray leading-relaxed px-2">
+                Create an Account or Log In and Buy a Subscription to access full profile details, view verified contact information, and connect with candidates.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowGuestAuthModal(false);
+                  onNavigate('/signup');
+                }}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-xl transition-all border border-brand-gold/30 flex items-center justify-center space-x-2"
+              >
+                <span>Create an Account / Sign Up</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowGuestAuthModal(false);
+                  onNavigate('/login');
+                }}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-brand-lightBg text-brand-plum font-bold text-xs rounded-xl border border-brand-rose/30 transition-all flex items-center justify-center space-x-2"
+              >
+                <span>Log In to Existing Account</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-400 italic">
+              Sambodhi Sarang Marriage Bureau • Verified Maharashtrian Matrimony
+            </p>
+
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
