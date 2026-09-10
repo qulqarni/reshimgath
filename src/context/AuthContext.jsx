@@ -319,7 +319,8 @@ export const AuthProvider = ({ children }) => {
     const hasPlan = (sub.planId && total > 0) || remaining > 0;
 
     // Check if target user has sent an interest request to current user (Received Interest)
-    // If target user initiated an interest request to current user, viewing target profile is 100% FREE!
+    // Or if target user and current user have accepted connection (Connected Profiles)
+    // If target user initiated an interest request or is connected, viewing target profile is 100% FREE!
     const interestsSaved = (() => {
       try {
         return JSON.parse(localStorage.getItem('reshimgath_interests') || '{}');
@@ -327,6 +328,11 @@ export const AuthProvider = ({ children }) => {
         return {};
       }
     })();
+
+    const myIdStr = String(user.id).toLowerCase();
+    const myEmailStr = user.email ? String(user.email).toLowerCase() : '';
+    const myNameStr = user.name ? String(user.name).toLowerCase() : '';
+
     const receivedArray = interestsSaved.received || [];
     const isReceivedFromTarget = receivedArray.some(r => {
       if (!r) return false;
@@ -334,10 +340,32 @@ export const AuthProvider = ({ children }) => {
       const target = typeof r === 'string' ? user.id : (r.targetUserId || r.user2);
       const senderStr = String(sender).toLowerCase();
       const targetStr = String(target).toLowerCase();
-      return targetIdentifiers.includes(senderStr) && targetStr === String(user.id).toLowerCase();
+      return targetIdentifiers.includes(senderStr) && targetStr === myIdStr;
     });
 
-    if (isAlreadyUnlocked || isReceivedFromTarget) {
+    const acceptedArray = [...(interestsSaved.accepted || []), ...(interestsSaved.connected || [])];
+    const isConnectedWithTarget = acceptedArray.some(a => {
+      if (!a) return false;
+      let u1 = '';
+      let u2 = '';
+      if (typeof a === 'string') {
+        u1 = a.toLowerCase();
+        u2 = '';
+      } else {
+        u1 = String(a.user1 || a.senderId || '').toLowerCase();
+        u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
+      }
+
+      const u1IsMe = u1 === myIdStr || (myEmailStr && u1 === myEmailStr) || (myNameStr && u1 === myNameStr);
+      const u2IsMe = u2 === myIdStr || (myEmailStr && u2 === myEmailStr) || (myNameStr && u2 === myNameStr);
+
+      const u1IsTarget = targetIdentifiers.includes(u1);
+      const u2IsTarget = targetIdentifiers.includes(u2);
+
+      return (u1IsMe && u2IsTarget) || (u2IsMe && u1IsTarget);
+    });
+
+    if (isAlreadyUnlocked || isReceivedFromTarget || isConnectedWithTarget) {
       return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
     }
 
