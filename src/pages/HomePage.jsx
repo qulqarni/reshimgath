@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { PaithaniDivider } from '../components/common/PaithaniDivider';
+import { ProfileCard } from '../components/discovery/ProfileCard';
 import { 
   Heart, 
   Search, 
@@ -30,6 +31,21 @@ export const HomePage = ({ onNavigate }) => {
 
   const [selectedStory, setSelectedStory] = useState(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  const featuredProfiles = useMemo(() => {
+    let list = (profiles || []).filter(p => !p.blocked && !p.isAdmin && p.id !== 'admin_1' && (p.email ? !p.email.includes('admin') : true));
+    if (user && user.id) {
+      list = list.filter(p => String(p.id) !== String(user.id));
+      if (user.gender === 'male') {
+        const females = list.filter(p => (p.gender || '').toLowerCase().trim() === 'female');
+        if (females.length > 0) list = females;
+      } else if (user.gender === 'female') {
+        const males = list.filter(p => (p.gender || '').toLowerCase().trim() === 'male');
+        if (males.length > 0) list = males;
+      }
+    }
+    return list.slice(0, 4);
+  }, [profiles, user]);
 
   useEffect(() => {
     if (selectedStory) {
@@ -176,6 +192,64 @@ export const HomePage = ({ onNavigate }) => {
 
       {/* PAITHANI DIVIDER */}
       <PaithaniDivider />
+
+      {/* FEATURED CANDIDATE PROFILES SECTION BELOW HERO */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-brand-rose/15 pb-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 bg-brand-plum/10 text-brand-plum px-3 py-1 rounded-full text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-brand-kesari" />
+              <span>Verified Matrimonial Profiles</span>
+            </div>
+            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum">
+              Featured Candidate Profiles
+            </h2>
+            <p className="text-xs sm:text-sm text-brand-gray">
+              Explore active verified profiles looking for dignified Maharashtrian alliances
+            </p>
+          </div>
+
+          <button
+            onClick={() => onNavigate('/discover')}
+            className="hidden sm:inline-flex items-center space-x-1.5 px-5 py-2.5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow transition-all border border-brand-gold/30 shrink-0"
+          >
+            <span>See More Profiles</span>
+            <ArrowRight className="w-4 h-4 text-brand-gold" />
+          </button>
+        </div>
+
+        {featuredProfiles.length === 0 ? (
+          <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 text-center text-xs text-brand-gray">
+            No profiles available to display at the moment.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredProfiles.map((profile) => (
+              <ProfileCard
+                key={profile.id}
+                profile={profile}
+                onSelect={(id, action) => {
+                  if (action === 'chat') {
+                    onNavigate('/messages');
+                  } else {
+                    onNavigate(`/profile/${profile.id}`);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="text-center pt-2">
+          <button
+            onClick={() => onNavigate('/discover')}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-3.5 bg-gradient-to-r from-brand-plum via-brand-plumDark to-brand-plum text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all duration-300 border border-brand-gold/40 group"
+          >
+            <span>See More Profiles</span>
+            <ArrowRight className="w-4 h-4 text-brand-gold group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </section>
 
       {/* SUCCESS STORIES SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
