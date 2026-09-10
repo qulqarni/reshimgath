@@ -7,7 +7,8 @@ const AuthContext = createContext();
 export const ADMIN_USER = {
   id: 'admin_1',
   name: 'Bureau Administrator',
-  email: 'admin@sambodhisarang.com',
+  email: 'pk9823435404@gmail.com',
+  password: 'Ganesh@123',
   role: 'admin',
   isAdmin: true,
   gender: 'male',
@@ -122,16 +123,31 @@ export const AuthProvider = ({ children }) => {
 
   const login = (emailOrPhone, password) => {
     const input = (emailOrPhone || '').trim().toLowerCase();
+    const pass = (password || '').trim();
 
     if (!input) {
       return { success: false, message: 'Please enter your registered email or phone number.' };
     }
 
     // 1. Admin credentials check
-    if (input === ADMIN_USER.email || input === 'admin@reshimgath.com' || input === 'admin') {
-      const normAdmin = normalizeProfile(ADMIN_USER);
-      setUser(normAdmin);
-      return { success: true, user: normAdmin };
+    const isInputAdminEmail =
+      input === ADMIN_USER.email.toLowerCase() ||
+      input === 'pk9823435404@gmail.com' ||
+      input === 'admin@sambodhisarang.com' ||
+      input === 'admin@reshimgath.com' ||
+      input === 'admin';
+
+    if (isInputAdminEmail) {
+      if (pass === ADMIN_USER.password || pass === 'Ganesh@123') {
+        const normAdmin = normalizeProfile(ADMIN_USER);
+        setUser(normAdmin);
+        return { success: true, user: normAdmin };
+      } else {
+        return {
+          success: false,
+          message: 'Incorrect Admin Password. Access denied to admin panel.'
+        };
+      }
     }
 
     // 2. Demo Profiles credentials check
@@ -190,9 +206,10 @@ export const AuthProvider = ({ children }) => {
     setPrivacyAlert(false);
   };
 
-  const loginAsAdmin = () => {
-    setUser(normalizeProfile(ADMIN_USER));
-    setPrivacyAlert(false);
+  const loginAsAdmin = (email, password) => {
+    const inputEmail = (email || '').trim().toLowerCase();
+    const inputPass = (password || '').trim();
+    return login(inputEmail || ADMIN_USER.email, inputPass);
   };
 
   const signup = (signupData) => {

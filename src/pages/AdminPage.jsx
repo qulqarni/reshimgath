@@ -42,6 +42,7 @@ import {
   Crown,
   CreditCard,
   Eye,
+  EyeOff,
   Award,
   UploadCloud,
   Loader2
@@ -75,7 +76,7 @@ export const getSubscriptionDetails = (p) => {
 };
 
 export const AdminPage = ({ onNavigate }) => {
-  const { isAuthenticated, isAdmin, loginAsAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, loginAsAdmin, login } = useAuth();
   const { t } = useLanguage();
   const { 
     profiles, 
@@ -337,36 +338,97 @@ export const AdminPage = ({ onNavigate }) => {
     address: 'Sambodhi Sarang Marriage Bureau, Ichalkaranji, Maharashtra'
   });
 
+  // Admin Login States
+  const [adminEmailInput, setAdminEmailInput] = useState('');
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminLoginError, setAdminLoginError] = useState('');
+  const [showAdminPasswordInput, setShowAdminPasswordInput] = useState(false);
+
+  const handleAdminLoginSubmit = (e) => {
+    e.preventDefault();
+    setAdminLoginError('');
+    if (!adminEmailInput.trim() || !adminPasswordInput.trim()) {
+      setAdminLoginError('Please enter both Admin Email ID and Password.');
+      return;
+    }
+    const res = login(adminEmailInput, adminPasswordInput);
+    if (!res.success) {
+      setAdminLoginError(res.message || 'Invalid Admin Email ID or Password.');
+    }
+  };
+
   if (!isAdmin) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="w-16 h-16 bg-brand-plum/10 text-brand-plum rounded-3xl flex items-center justify-center mx-auto border border-brand-rose/30 shadow-md">
-          <Lock className="w-8 h-8 text-brand-plum" />
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="font-serif text-3xl font-bold text-brand-plum">Sambodhi Sarang Admin Portal</h1>
-          <p className="text-xs sm:text-sm text-brand-gray">
-            This area is restricted exclusively to Sambodhi Sarang Marriage Bureau administrators.
-          </p>
-        </div>
-
-        <div className="bg-amber-50 border border-amber-300 p-6 rounded-3xl space-y-4 max-w-md mx-auto text-left shadow-lg">
-          <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs">
-            <Sparkles className="w-4 h-4 text-brand-plum" />
-            <span>Administrator Quick Access</span>
+      <div className="max-w-md mx-auto px-4 py-12 sm:py-16 space-y-6">
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 bg-brand-plum/10 text-brand-plum rounded-3xl flex items-center justify-center mx-auto border border-brand-rose/30 shadow-md">
+            <Lock className="w-8 h-8 text-brand-plum" />
           </div>
-          <p className="text-xs text-amber-800">
-            Click below to instantly authenticate as <strong>Sambodhi Sarang Administrator</strong> for complete platform management testing.
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-brand-plum">
+            Sambodhi Sarang Admin Portal
+          </h1>
+          <p className="text-xs sm:text-sm text-brand-gray">
+            This area is restricted exclusively to Sambodhi Sarang Marriage Bureau administrators. Please authenticate to continue.
           </p>
-          <button
-            onClick={() => loginAsAdmin()}
-            className="w-full py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-2 border border-brand-rose/40"
-          >
-            <span>Login as Bureau Admin</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
         </div>
+
+        <form onSubmit={handleAdminLoginSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
+          {adminLoginError && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-2xl flex items-start space-x-2">
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span>{adminLoginError}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-brand-charcoal mb-1.5">
+              Admin Email ID / आयडी
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              <input
+                type="email"
+                required
+                value={adminEmailInput}
+                onChange={(e) => setAdminEmailInput(e.target.value)}
+                placeholder="pk9823435404@gmail.com"
+                className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-brand-charcoal focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-brand-charcoal mb-1.5">
+              Admin Password / पासवर्ड
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              <input
+                type={showAdminPasswordInput ? 'text' : 'password'}
+                required
+                value={adminPasswordInput}
+                onChange={(e) => setAdminPasswordInput(e.target.value)}
+                placeholder="Enter password"
+                className="w-full pl-10 pr-10 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-brand-charcoal focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPasswordInput(!showAdminPasswordInput)}
+                className="absolute right-3 top-3.5 text-gray-400 hover:text-brand-plum"
+              >
+                {showAdminPasswordInput ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3.5 bg-gradient-to-r from-brand-plum via-brand-plumDark to-brand-plum text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+          >
+            <ShieldCheck className="w-4 h-4 text-brand-gold" />
+            <span>Login to Admin Control Panel</span>
+          </button>
+        </form>
       </div>
     );
   }
