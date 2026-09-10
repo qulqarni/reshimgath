@@ -43,11 +43,11 @@ export const Footer = ({ onNavigate }) => {
           </div>
 
           {/* Col 2: Quick Links */}
-          <div className="hidden md:flex flex-col items-start">
+          <div className="flex flex-col items-center md:items-start">
             <h4 className="font-serif text-sm sm:text-lg font-bold text-brand-plum mb-2 sm:mb-4 border-b border-brand-rose/20 pb-1 w-full text-center md:text-left">
               Explore Sambodhi Sarang
             </h4>
-            <div className="flex flex-col items-center md:items-start gap-1.5 sm:space-y-2.5 text-xs text-brand-gray">
+            <div className="flex flex-wrap justify-center md:flex-col items-center md:items-start gap-x-4 gap-y-1.5 sm:gap-0 sm:space-y-2.5 text-xs text-brand-gray">
               <button onClick={() => onNavigate('/')} className="hover:text-brand-plum font-medium transition-colors">
                 {t('home')}
               </button>
@@ -95,7 +95,11 @@ export const Footer = ({ onNavigate }) => {
         {/* Bottom Bar */}
         <div className="mt-6 sm:mt-12 pt-4 sm:pt-6 border-t border-brand-rose/20 flex flex-col sm:flex-row items-center justify-between text-[11px] sm:text-xs text-brand-gray gap-2 sm:gap-4 text-center sm:text-left">
           <p>© 2026 Sambodhi Sarang Marriage Bureau. All rights reserved.</p>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center justify-center space-x-2 sm:space-x-4">
+            <button onClick={() => onNavigate('/about')} className="hover:text-brand-plum transition-colors">About Us</button>
+            <span>•</span>
+            <button onClick={() => onNavigate('/contact')} className="hover:text-brand-plum transition-colors">Contact Us</button>
+            <span>•</span>
             <button onClick={() => onNavigate('/privacy-policy')} className="hover:text-brand-plum transition-colors">Privacy Policy</button>
             <span>•</span>
             <button onClick={() => onNavigate('/terms-of-service')} className="hover:text-brand-plum transition-colors">Terms of Service</button>
