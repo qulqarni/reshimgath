@@ -52,6 +52,8 @@ export const HomePage = ({ onNavigate }) => {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PROFILES_PER_PAGE = 10;
 
   const casteOptions = useMemo(() => {
     const list = [...MAHARASHTRA_COMMUNITIES];
@@ -238,6 +240,17 @@ export const HomePage = ({ onNavigate }) => {
     return count;
   }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly]);
+
+  const totalPages = Math.ceil(filteredProfiles.length / PROFILES_PER_PAGE) || 1;
+
+  const paginatedProfiles = useMemo(() => {
+    const startIndex = (currentPage - 1) * PROFILES_PER_PAGE;
+    return filteredProfiles.slice(startIndex, startIndex + PROFILES_PER_PAGE);
+  }, [filteredProfiles, currentPage]);
+
   const handleReset = () => {
     setSearchQuery('');
     setSelectedDistrict('All');
@@ -250,6 +263,7 @@ export const HomePage = ({ onNavigate }) => {
     setMaxAge('60');
     setGenderFilter('all');
     setVerifiedOnly(false);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -385,7 +399,7 @@ export const HomePage = ({ onNavigate }) => {
       */}
 
       {/* CANDIDATE PROFILES SECTION WITH SMART SEARCH & FILTER */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <section id="candidate-profiles-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* Section Header & Keyword Search Input */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-brand-rose/15 pb-4">
@@ -641,24 +655,94 @@ export const HomePage = ({ onNavigate }) => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredProfiles.map((profile) => (
-              <ProfileCard
-                key={profile.id}
-                profile={profile}
-                onSelect={(id, action) => {
-                  if (!isAuthenticated) {
-                    setShowGuestAuthModal(true);
-                    return;
-                  }
-                  if (action === 'chat') {
-                    onNavigate('/messages');
-                  } else {
-                    onNavigate(`/profile/${profile.id}`);
-                  }
-                }}
-              />
-            ))}
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {paginatedProfiles.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onSelect={(id, action) => {
+                    if (!isAuthenticated) {
+                      setShowGuestAuthModal(true);
+                      return;
+                    }
+                    if (action === 'chat') {
+                      onNavigate('/messages');
+                    } else {
+                      onNavigate(`/profile/${profile.id}`);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-brand-rose/15">
+                <div className="text-xs text-brand-gray font-medium">
+                  Showing <span className="font-bold text-brand-plum">{(currentPage - 1) * PROFILES_PER_PAGE + 1}</span> to{' '}
+                  <span className="font-bold text-brand-plum">{Math.min(currentPage * PROFILES_PER_PAGE, filteredProfiles.length)}</span> of{' '}
+                  <span className="font-bold text-brand-plum">{filteredProfiles.length}</span> Candidates
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      if (currentPage > 1) {
+                        setCurrentPage((prev) => prev - 1);
+                        document.getElementById('candidate-profiles-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 border transition-all ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : 'bg-white text-brand-plum border-brand-plum/20 hover:bg-brand-plum hover:text-white shadow-sm'
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Previous</span>
+                  </button>
+
+                  <div className="flex items-center space-x-1.5 px-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => {
+                          setCurrentPage(pageNum);
+                          document.getElementById('candidate-profiles-section')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                          currentPage === pageNum
+                            ? 'bg-brand-plum text-white shadow-luxury font-black border border-brand-gold/40'
+                            : 'bg-white text-brand-plum border border-brand-rose/20 hover:bg-brand-plum/10'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (currentPage < totalPages) {
+                        setCurrentPage((prev) => prev + 1);
+                        document.getElementById('candidate-profiles-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 border transition-all ${
+                      currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : 'bg-white text-brand-plum border-brand-plum/20 hover:bg-brand-plum hover:text-white shadow-sm'
+                    }`}
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
