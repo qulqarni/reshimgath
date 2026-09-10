@@ -262,32 +262,120 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const getProfileIdentifiers = (profileId) => {
+    if (!profileId) return [];
+    const searchStr = String(profileId).toLowerCase().trim();
+
+    let allProfiles = DEMO_PROFILES || [];
+    try {
+      const stored = localStorage.getItem('reshimgath_profiles');
+      if (stored) {
+        allProfiles = [...allProfiles, ...JSON.parse(stored)];
+      }
+    } catch (e) {}
+
+    const found = allProfiles.find((p) => {
+      if (!p) return false;
+      if (String(p.id).toLowerCase() === searchStr) return true;
+      if (p.regId && String(p.regId).toLowerCase() === searchStr) return true;
+      if (p.registrationId && String(p.registrationId).toLowerCase() === searchStr) return true;
+      if (p.registrationId && String(`ss-${p.registrationId}`).toLowerCase() === searchStr) return true;
+      if (p.email && String(p.email).toLowerCase() === searchStr) return true;
+      return false;
+    });
+
+    const ids = new Set([searchStr]);
+    if (found) {
+      if (found.id) ids.add(String(found.id).toLowerCase());
+      if (found.registrationId) {
+        ids.add(String(found.registrationId).toLowerCase());
+        ids.add(String(`ss-${found.registrationId}`).toLowerCase());
+      }
+      if (found.regId) ids.add(String(found.regId).toLowerCase());
+      if (found.email) ids.add(String(found.email).toLowerCase());
+    }
+    return Array.from(ids);
+  };
+
+  const canViewProfile = (profileId) => {
+    if (!user) {
+      return { canView: false, alreadyUnlocked: false, remainingVisits: 0, totalVisits: 0, hasActivePlan: false };
+    }
+
+    const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
+    const targetIdentifiers = getProfileIdentifiers(profileId);
+    const isOwnProfile = targetIdentifiers.includes(String(user.id).toLowerCase());
+
+    if (isAdminUser || isOwnProfile) {
+      return { canView: true, alreadyUnlocked: true, remainingVisits: 999, totalVisits: 999, hasActivePlan: true };
+    }
+
+    const sub = user.subscription || {};
+    const unlockedList = (sub.unlockedProfiles || []).map(id => String(id).toLowerCase());
+
+    const isAlreadyUnlocked = unlockedList.some(id => targetIdentifiers.includes(id));
+    const remaining = sub.creditsRemaining || 0;
+    const total = sub.creditsTotal || 0;
+    const hasPlan = (sub.planId && total > 0) || remaining > 0;
+
+    // Check if target user has sent an interest request to current user (Received Interest)
+    // If target user initiated an interest request to current user, viewing target profile is 100% FREE!
+    const interestsSaved = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('reshimgath_interests') || '{}');
+      } catch (e) {
+        return {};
+      }
+    })();
+    const receivedArray = interestsSaved.received || [];
+    const isReceivedFromTarget = receivedArray.some(r => {
+      if (!r) return false;
+      const sender = typeof r === 'string' ? r : (r.senderId || r.profileId || r.user1);
+      const target = typeof r === 'string' ? user.id : (r.targetUserId || r.user2);
+      const senderStr = String(sender).toLowerCase();
+      const targetStr = String(target).toLowerCase();
+      return targetIdentifiers.includes(senderStr) && targetStr === String(user.id).toLowerCase();
+    });
+
+    if (isAlreadyUnlocked || isReceivedFromTarget) {
+      return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
+    }
+
+    return {
+      canView: false,
+      alreadyUnlocked: false,
+      remainingVisits: remaining,
+      totalVisits: total,
+      hasActivePlan: hasPlan
+    };
+  };
+
   const unlockProfileForUser = (profileId) => {
     if (!user || !profileId) return false;
 
-    const targetIdStr = String(profileId).toLowerCase();
-    const currentSub = user.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
-    const unlockedList = (currentSub.unlockedProfiles || []).map(id => String(id).toLowerCase());
-
-    if (unlockedList.includes(targetIdStr)) {
+    // First check if profile is ALREADY viewable / unlocked!
+    const viewStatus = canViewProfile(profileId);
+    if (viewStatus.alreadyUnlocked || viewStatus.canView) {
+      // Profile is already opened/unlocked! Return true without deducting any credit!
       return true;
     }
 
     const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
+    const currentSub = user.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
     if (!isAdminUser && (currentSub.creditsRemaining || 0) <= 0) {
       return false;
     }
 
+    const targetIdentifiers = getProfileIdentifiers(profileId);
+
     setUser((prev) => {
       if (!prev) return prev;
       const prevSub = prev.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
-      const prevUnlocked = prevSub.unlockedProfiles || [];
+      const prevUnlocked = (prevSub.unlockedProfiles || []).map(id => String(id).toLowerCase());
       const prevRemaining = prevSub.creditsRemaining || 0;
 
-      const newUnlocked = prevUnlocked.includes(String(profileId))
-        ? prevUnlocked
-        : [...prevUnlocked, String(profileId)];
-
+      // Store all variant identifiers so future views by ID, regId, or SS-XXXX are immediately recognized as unlocked
+      const newUnlocked = Array.from(new Set([...prevUnlocked, ...targetIdentifiers]));
       const newRemaining = isAdminUser ? prevRemaining : Math.max(0, prevRemaining - 1);
 
       const updatedSub = {
@@ -309,57 +397,6 @@ export const AuthProvider = ({ children }) => {
     });
 
     return true;
-  };
-
-  const canViewProfile = (profileId) => {
-    if (!user) {
-      return { canView: false, alreadyUnlocked: false, remainingVisits: 0, totalVisits: 0, hasActivePlan: false };
-    }
-
-    const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
-    const isOwnProfile = String(user.id) === String(profileId);
-
-    if (isAdminUser || isOwnProfile) {
-      return { canView: true, alreadyUnlocked: true, remainingVisits: 999, totalVisits: 999, hasActivePlan: true };
-    }
-
-    const sub = user.subscription || {};
-    const unlockedList = (sub.unlockedProfiles || []).map(id => String(id).toLowerCase());
-    const targetIdStr = String(profileId).toLowerCase();
-
-    const isAlreadyUnlocked = unlockedList.includes(targetIdStr);
-    const remaining = sub.creditsRemaining || 0;
-    const total = sub.creditsTotal || 0;
-    const hasPlan = (sub.planId && total > 0) || remaining > 0;
-
-    // Check if target user has sent an interest request to current user (Received Interest)
-    // If target user initiated an interest request to current user, viewing target profile is 100% FREE!
-    const interestsSaved = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('reshimgath_interests') || '{}');
-      } catch (e) {
-        return {};
-      }
-    })();
-    const receivedArray = interestsSaved.received || [];
-    const isReceivedFromTarget = receivedArray.some(r => {
-      if (!r) return false;
-      const sender = typeof r === 'string' ? r : (r.senderId || r.profileId || r.user1);
-      const target = typeof r === 'string' ? user.id : (r.targetUserId || r.user2);
-      return String(sender).toLowerCase() === targetIdStr && String(target).toLowerCase() === String(user.id).toLowerCase();
-    });
-
-    if (isAlreadyUnlocked || isReceivedFromTarget) {
-      return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
-    }
-
-    return {
-      canView: false,
-      alreadyUnlocked: false,
-      remainingVisits: remaining,
-      totalVisits: total,
-      hasActivePlan: hasPlan
-    };
   };
 
   const triggerPrivacyAlert = () => {

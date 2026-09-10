@@ -23,10 +23,93 @@ import { VerificationBadge } from '../components/common/VerificationBadge';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
 
+const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-rose/20', actions, onOpenProfile }) => {
+  const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
+  const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
+
+  return (
+    <div
+      className={`bg-white rounded-2xl sm:rounded-3xl border ${borderClass} p-4 sm:p-5 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}
+    >
+      {/* Left: Profile Photo & Basic Info */}
+      <div className="flex items-center space-x-4 flex-1 min-w-0 w-full sm:w-auto">
+        <div className="relative shrink-0 cursor-pointer" onClick={() => onOpenProfile(p)}>
+          {photo ? (
+            <img
+              src={photo}
+              alt={p.name}
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-brand-rose/20 shadow-sm hover:opacity-90 transition-opacity"
+            />
+          ) : (
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-brand-lightBg border-2 border-brand-rose/20 flex flex-col items-center justify-center text-brand-plum/50">
+              <User className="w-8 h-8 opacity-60" />
+              <span className="text-[10px] font-semibold mt-1 opacity-70">No Photo</span>
+            </div>
+          )}
+          {badge}
+        </div>
+
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="flex items-center flex-wrap gap-2">
+            <h3
+              onClick={() => onOpenProfile(p)}
+              className="font-serif text-base sm:text-lg font-bold text-brand-plum truncate cursor-pointer hover:text-brand-kesari transition-colors"
+            >
+              {p.name}
+            </h3>
+            {p.verified && <VerificationBadge size="small" />}
+            <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow-sm border border-brand-gold/30">
+              Profile No. {profileSlug}
+            </span>
+          </div>
+
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-brand-charcoal font-medium">
+            {p.age && <span>{p.age} Yrs</span>}
+            {p.height && <span>• {p.height}</span>}
+            {p.district && (
+              <span className="flex items-center space-x-1 text-brand-gray">
+                <span>•</span>
+                <MapPin className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                <span>{p.district}</span>
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-brand-gray pt-0.5">
+            {p.caste && (
+              <span className="flex items-center space-x-1">
+                <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                <span>Caste: <strong className="text-brand-charcoal font-semibold">{p.caste}</strong></span>
+              </span>
+            )}
+            {p.education && (
+              <span className="flex items-center space-x-1">
+                <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                <span className="truncate max-w-[180px] sm:max-w-[220px]">{p.education}</span>
+              </span>
+            )}
+            {p.occupation && (
+              <span className="flex items-center space-x-1">
+                <Briefcase className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+                <span className="truncate max-w-[180px] sm:max-w-[220px]">{p.occupation}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Actions */}
+      <div className="flex sm:flex-col items-center gap-2 w-full sm:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+        {actions}
+      </div>
+    </div>
+  );
+};
+
 export const InterestsPage = ({ onNavigate }) => {
   const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { profiles, interests, acceptInterest, declineInterest, withdrawInterest } = useProfiles();
+  const { profiles, interests, acceptInterest, declineInterest, withdrawInterest, toggleShortlist } = useProfiles();
 
   const [activeTab, setActiveTab] = useState('received');
   const [showUnlockModal, setShowUnlockModal] = useState(false);
@@ -265,117 +348,51 @@ export const InterestsPage = ({ onNavigate }) => {
               <p className="font-semibold">{t('noReceivedInterests')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {receivedList.map((p) => {
-                const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
-                const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
                 const viewStatus = canViewProfile(p.id);
                 const isUnlocked = viewStatus.alreadyUnlocked || viewStatus.canView;
 
                 return (
-                  <div
+                  <HorizontalProfileItem
                     key={p.id}
-                    className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col justify-between"
-                  >
-                    <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-brand-lightBg">
-                      {photo ? (
-                        <img
-                          src={photo}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-brand-lightBg text-brand-plum/40 p-4">
-                          <div className="w-16 h-16 rounded-full bg-brand-plum/10 border border-brand-plum/20 flex items-center justify-center mb-2">
-                            <User className="w-8 h-8 text-brand-plum/50" />
-                          </div>
-                          <span className="text-xs font-semibold text-brand-plum/60">No Profile Picture</span>
-                        </div>
-                      )}
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/85 via-transparent to-black/30" />
-
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <div className="flex items-center space-x-1.5 flex-wrap gap-1">
-                          {p.verified && <VerificationBadge size="small" />}
-                        </div>
-
-                        <span className="px-2.5 py-1 bg-white/90 backdrop-blur-md text-brand-plum text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
-                          <Clock className="w-3 h-3 text-brand-kesari" />
-                          <span>{p.time}</span>
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white space-y-1">
-                        <h3 className="font-serif text-lg font-bold text-white drop-shadow-sm truncate">
-                          {p.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-[11px] font-medium text-white/90 flex-wrap gap-y-1">
-                          {p.age && <span>{p.age} Yrs</span>}
-                          {p.height && <span>• {p.height}</span>}
-                          {p.district && (
-                            <span className="flex items-center space-x-0.5">
-                              <span>•</span>
-                              <MapPin className="w-3 h-3 text-brand-gold inline" />
-                              <span>{p.district}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
-                      <div className="space-y-2 border-b border-gray-100 pb-3">
-                        <div className="flex items-center justify-between pb-1">
-                          <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            {profileSlug}
-                          </span>
-                        </div>
-                        {p.caste && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">Caste: <strong>{p.caste}</strong></span>
-                          </div>
-                        )}
-                        {p.education && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">{p.education}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 pt-1">
+                    profile={p}
+                    onOpenProfile={handleOpenProfileClick}
+                    badge={
+                      <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-white/95 backdrop-blur-sm text-brand-plum border border-brand-rose/30 text-[9px] font-bold rounded-full shadow-sm flex items-center gap-0.5">
+                        <Clock className="w-2.5 h-2.5 text-brand-kesari" />
+                        <span>{p.time}</span>
+                      </span>
+                    }
+                    actions={
+                      <>
                         <button
                           onClick={() => handleOpenProfileClick(p)}
-                          className="w-full py-2.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark hover:from-brand-plumDark hover:to-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 border border-brand-gold/30"
+                          className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark hover:from-brand-plumDark hover:to-brand-plum text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
                         >
-                          <Eye className="w-4 h-4 text-brand-gold" />
-                          <span>Open Profile {isUnlocked ? '(Free / Unlocked)' : '(1 Credit)'}</span>
+                          <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                          <span>Open Profile {isUnlocked ? '(Free)' : '(1 Credit)'}</span>
                         </button>
-
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                           <button
                             onClick={() => acceptInterest(p.id)}
-                            className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-1.5"
+                            className="flex-1 py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                           >
                             <Check className="w-3.5 h-3.5 text-white" />
                             <span>{t('acceptInterest')}</span>
                           </button>
-
                           <button
                             onClick={() => declineInterest(p.id)}
-                            className="py-2 px-3 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 border border-rose-200"
+                            className="py-2 px-3 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 border border-rose-200 whitespace-nowrap"
                             title="Delete / Remove Interest Request"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Remove</span>
                           </button>
                         </div>
-                      </div>
-                    </div>
-                  </div>
+                      </>
+                    }
+                  />
                 );
               })}
             </div>
@@ -389,107 +406,39 @@ export const InterestsPage = ({ onNavigate }) => {
               <p className="font-semibold">{t('noSentInterests')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sentList.map((p) => {
-                const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
-                const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
-
-                return (
-                  <div
-                    key={p.id}
-                    className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col justify-between"
-                  >
-                    <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-brand-lightBg">
-                      {photo ? (
-                        <img
-                          src={photo}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-brand-lightBg text-brand-plum/40 p-4">
-                          <div className="w-16 h-16 rounded-full bg-brand-plum/10 border border-brand-plum/20 flex items-center justify-center mb-2">
-                            <User className="w-8 h-8 text-brand-plum/50" />
-                          </div>
-                          <span className="text-xs font-semibold text-brand-plum/60">No Profile Picture</span>
-                        </div>
-                      )}
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/85 via-transparent to-black/30" />
-
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <div className="flex items-center space-x-1.5 flex-wrap gap-1">
-                          {p.verified && <VerificationBadge size="small" />}
-                        </div>
-
-                        <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
-                          <Clock className="w-3 h-3 text-amber-600" />
-                          <span>Pending</span>
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white space-y-1">
-                        <h3 className="font-serif text-lg font-bold text-white drop-shadow-sm truncate">
-                          {p.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-[11px] font-medium text-white/90 flex-wrap gap-y-1">
-                          {p.age && <span>{p.age} Yrs</span>}
-                          {p.height && <span>• {p.height}</span>}
-                          {p.district && (
-                            <span className="flex items-center space-x-0.5">
-                              <span>•</span>
-                              <MapPin className="w-3 h-3 text-brand-gold inline" />
-                              <span>{p.district}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
-                      <div className="space-y-2 border-b border-gray-100 pb-3">
-                        <div className="flex items-center justify-between pb-1">
-                          <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            {profileSlug}
-                          </span>
-                        </div>
-                        {p.caste && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">Caste: <strong>{p.caste}</strong></span>
-                          </div>
-                        )}
-                        {p.education && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">{p.education}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          onClick={() => handleOpenProfileClick(p)}
-                          className="flex-1 py-2 px-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-brand-gold" />
-                          <span>Open Profile</span>
-                        </button>
-
-                        <button
-                          onClick={() => withdrawInterest(p.id)}
-                          className="py-2 px-3 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 border border-rose-200"
-                          title="Withdraw Interest Request"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Withdraw</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="space-y-4">
+              {sentList.map((p) => (
+                <HorizontalProfileItem
+                  key={p.id}
+                  profile={p}
+                  onOpenProfile={handleOpenProfileClick}
+                  badge={
+                    <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-300 text-[9px] font-bold rounded-full shadow-sm flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5 text-amber-600" />
+                      <span>Pending</span>
+                    </span>
+                  }
+                  actions={
+                    <>
+                      <button
+                        onClick={() => handleOpenProfileClick(p)}
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                        <span>Open Profile</span>
+                      </button>
+                      <button
+                        onClick={() => withdrawInterest(p.id)}
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2 px-3.5 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 border border-rose-200 whitespace-nowrap"
+                        title="Withdraw Interest Request"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Withdraw</span>
+                      </button>
+                    </>
+                  }
+                />
+              ))}
             </div>
           )
         )}
@@ -502,96 +451,37 @@ export const InterestsPage = ({ onNavigate }) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {connectedList.map((p) => {
-                const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
-                const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
-
-                return (
-                  <div
-                    key={p.id}
-                    className="bg-white rounded-2xl sm:rounded-3xl border border-emerald-200/80 p-4 sm:p-5 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                  >
-                    {/* Left: Profile Photo & Basic Info */}
-                    <div className="flex items-center space-x-4 flex-1 min-w-0">
-                      <div className="relative shrink-0">
-                        {photo ? (
-                          <img
-                            src={photo}
-                            alt={p.name}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-emerald-500/30 shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col items-center justify-center text-emerald-700">
-                            <User className="w-8 h-8 opacity-60" />
-                            <span className="text-[10px] font-bold mt-1 opacity-70">No Photo</span>
-                          </div>
-                        )}
-                        <span className="absolute -top-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow-sm" title="Connected">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </span>
-                      </div>
-
-                      <div className="space-y-1.5 flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-2">
-                          <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum truncate">
-                            {p.name}
-                          </h3>
-                          {p.verified && <VerificationBadge size="small" />}
-                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px] rounded-full">
-                            Profile No. {profileSlug}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-brand-charcoal font-medium">
-                          {p.age && <span>{p.age} Yrs</span>}
-                          {p.height && <span>• {p.height}</span>}
-                          {p.district && (
-                            <span className="flex items-center space-x-1 text-brand-gray">
-                              <span>•</span>
-                              <MapPin className="w-3.5 h-3.5 text-brand-gold shrink-0" />
-                              <span>{p.district}</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-brand-gray pt-0.5">
-                          {p.caste && (
-                            <span className="flex items-center space-x-1">
-                              <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                              <span>Caste: <strong className="text-brand-charcoal font-semibold">{p.caste}</strong></span>
-                            </span>
-                          )}
-                          {p.education && (
-                            <span className="flex items-center space-x-1">
-                              <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                              <span className="truncate max-w-[200px]">{p.education}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex sm:flex-col items-center gap-2 w-full sm:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+              {connectedList.map((p) => (
+                <HorizontalProfileItem
+                  key={p.id}
+                  profile={p}
+                  borderClass="border-emerald-200/80"
+                  onOpenProfile={() => onNavigate(`/profile/${p.id}`)}
+                  badge={
+                    <span className="absolute -top-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow-sm" title="Connected">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </span>
+                  }
+                  actions={
+                    <>
                       <button
                         onClick={() => onNavigate('/messages')}
-                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-3 sm:px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                       >
-                        <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-200 shrink-0" />
-                        <span className="whitespace-nowrap">{t('sendMessage')}</span>
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
+                        <span>{t('sendMessage')}</span>
                       </button>
-
                       <button
                         onClick={() => onNavigate(`/profile/${p.id}`)}
-                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-3 sm:px-5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-[11px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
                       >
-                        <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-gold shrink-0" />
-                        <span className="whitespace-nowrap">Open Profile</span>
+                        <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                        <span>Open Profile</span>
                       </button>
-                    </div>
-                  </div>
-                );
-              })}
+                    </>
+                  }
+                />
+              ))}
             </div>
           )
         )}
@@ -603,95 +493,38 @@ export const InterestsPage = ({ onNavigate }) => {
               <p className="font-semibold">{t('noShortlisted')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {shortlistedList.map((p) => {
-                const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
-                const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
-
-                return (
-                  <div
-                    key={p.id}
-                    className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col justify-between"
-                  >
-                    <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-brand-lightBg">
-                      {photo ? (
-                        <img
-                          src={photo}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-brand-lightBg text-brand-plum/40 p-4">
-                          <div className="w-16 h-16 rounded-full bg-brand-plum/10 border border-brand-plum/20 flex items-center justify-center mb-2">
-                            <User className="w-8 h-8 text-brand-plum/50" />
-                          </div>
-                          <span className="text-xs font-semibold text-brand-plum/60">No Profile Picture</span>
-                        </div>
-                      )}
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/85 via-transparent to-black/30" />
-
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <div className="flex items-center space-x-1.5 flex-wrap gap-1">
-                          {p.verified && <VerificationBadge size="small" />}
-                        </div>
-                        <span className="px-2.5 py-1 bg-amber-500 text-white text-[10px] font-bold rounded-full shadow flex items-center space-x-1">
-                          <Bookmark className="w-3 h-3 text-amber-100 fill-amber-100" />
-                          <span>Saved</span>
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white space-y-1">
-                        <h3 className="font-serif text-lg font-bold text-white drop-shadow-sm truncate">
-                          {p.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-[11px] font-medium text-white/90 flex-wrap gap-y-1">
-                          {p.age && <span>{p.age} Yrs</span>}
-                          {p.height && <span>• {p.height}</span>}
-                          {p.district && (
-                            <span className="flex items-center space-x-0.5">
-                              <span>•</span>
-                              <MapPin className="w-3 h-3 text-brand-gold inline" />
-                              <span>{p.district}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-3 text-xs bg-white flex-1 flex flex-col justify-between">
-                      <div className="space-y-2 border-b border-gray-100 pb-3">
-                        <div className="flex items-center justify-between pb-1">
-                          <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile No.</span>
-                          <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[10px] rounded-full shadow border border-brand-gold/30">
-                            {profileSlug}
-                          </span>
-                        </div>
-                        {p.caste && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">Caste: <strong>{p.caste}</strong></span>
-                          </div>
-                        )}
-                        {p.education && (
-                          <div className="flex items-center space-x-2 text-brand-charcoal font-medium">
-                            <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                            <span className="truncate">{p.education}</span>
-                          </div>
-                        )}
-                      </div>
-
+            <div className="space-y-4">
+              {shortlistedList.map((p) => (
+                <HorizontalProfileItem
+                  key={p.id}
+                  profile={p}
+                  onOpenProfile={handleOpenProfileClick}
+                  badge={
+                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white p-1 rounded-full shadow-sm" title="Saved">
+                      <Bookmark className="w-3.5 h-3.5 fill-white" />
+                    </span>
+                  }
+                  actions={
+                    <>
                       <button
                         onClick={() => handleOpenProfileClick(p)}
-                        className="w-full py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 border border-brand-gold/30"
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
                       >
-                        <Eye className="w-4 h-4 text-brand-gold" />
+                        <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
                         <span>Open Profile</span>
                       </button>
-                    </div>
-                  </div>
-                );
-              })}
+                      <button
+                        onClick={() => toggleShortlist(p.id)}
+                        className="flex-1 sm:flex-none w-full sm:w-auto py-2 px-3.5 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 border border-rose-200 whitespace-nowrap"
+                        title="Remove from Saved Profiles"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove</span>
+                      </button>
+                    </>
+                  }
+                />
+              ))}
             </div>
           )
         )}
