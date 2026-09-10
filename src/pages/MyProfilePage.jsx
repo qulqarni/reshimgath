@@ -170,6 +170,7 @@ export const MyProfilePage = ({ onNavigate }) => {
     college: user?.college || 'COEP Pune',
     occupation: initOcc,
     customOccupation: initCustomOcc,
+    isGovtEmployee: user?.isGovtEmployee || '',
     income: user?.income || '₹ 12 - 18 Lakhs per annum',
     fatherOccupation: user?.fatherOccupation || 'Government Servant / Business Owner',
     motherOccupation: user?.motherOccupation || 'Homemaker',
@@ -204,6 +205,7 @@ export const MyProfilePage = ({ onNavigate }) => {
         college: user.college || '',
         occupation: OCCUPATIONS.includes(user.occupation) ? (user.occupation || 'Software Engineer / IT Professional') : 'Other',
         customOccupation: OCCUPATIONS.includes(user.occupation) ? '' : (user.occupation || ''),
+        isGovtEmployee: user.isGovtEmployee || '',
         income: user.income || '₹ 12 - 18 Lakhs per annum',
         fatherOccupation: user.fatherOccupation || '',
         motherOccupation: user.motherOccupation || '',
@@ -312,6 +314,7 @@ export const MyProfilePage = ({ onNavigate }) => {
       college: user?.college || 'COEP Pune',
       occupation: oSel,
       customOccupation: oCust,
+      isGovtEmployee: user?.isGovtEmployee || '',
       income: user?.income || '₹ 12 - 18 Lakhs per annum',
       fatherOccupation: user?.fatherOccupation || 'Government Servant / Business Owner',
       motherOccupation: user?.motherOccupation || 'Homemaker',
@@ -1170,6 +1173,20 @@ export const MyProfilePage = ({ onNavigate }) => {
                         className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
                       />
                     )}
+                  </div>
+
+                  {/* Government Employee */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Are you Government Employee ?</label>
+                    <select
+                      value={editFormData.isGovtEmployee || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, isGovtEmployee: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="">Select Option</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
                   </div>
 
                   {/* Annual Income */}

@@ -49,6 +49,27 @@ export const EditProfilePage = ({ onNavigate }) => {
   const [showViewerModal, setShowViewerModal] = useState(false);
 
   useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        gender: user.gender || 'female',
+        district: user.district || '',
+        city: user.city || '',
+        nativePlace: user.nativePlace || '',
+        education: user.education || '',
+        occupation: user.occupation || '',
+        isGovtEmployee: user.isGovtEmployee || '',
+        company: user.company || '',
+        income: user.income || '',
+        caste: user.caste || '',
+        aboutMe: user.aboutMe || '',
+        fatherOccupation: user.fatherOccupation || '',
+        motherOccupation: user.motherOccupation || ''
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (showViewerModal) {
       document.body.style.overflow = 'hidden';
     } else {
