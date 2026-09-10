@@ -494,7 +494,7 @@ export const HomePage = ({ onNavigate }) => {
                   className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
                 >
                   {AGE_OPTIONS.map((a) => (
-                    <option key={`from-${a}`} value={a}>From {a}</option>
+                    <option key={`from-${a}`} value={a}>{a}</option>
                   ))}
                 </select>
                 <select
@@ -503,7 +503,7 @@ export const HomePage = ({ onNavigate }) => {
                   className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
                 >
                   {AGE_OPTIONS.map((a) => (
-                    <option key={`to-${a}`} value={a}>To {a}</option>
+                    <option key={`to-${a}`} value={a}>{a}</option>
                   ))}
                 </select>
               </div>
@@ -922,7 +922,7 @@ export const HomePage = ({ onNavigate }) => {
                     className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                   >
                     {AGE_OPTIONS.map((a) => (
-                      <option key={`m-hm-from-${a}`} value={a}>From {a}</option>
+                      <option key={`m-hm-from-${a}`} value={a}>{a}</option>
                     ))}
                   </select>
                   <select
@@ -931,7 +931,7 @@ export const HomePage = ({ onNavigate }) => {
                     className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                   >
                     {AGE_OPTIONS.map((a) => (
-                      <option key={`m-hm-to-${a}`} value={a}>To {a}</option>
+                      <option key={`m-hm-to-${a}`} value={a}>{a}</option>
                     ))}
                   </select>
                 </div>

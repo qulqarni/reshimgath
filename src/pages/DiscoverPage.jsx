@@ -425,7 +425,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                 className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
               >
                 {AGE_OPTIONS.map((a) => (
-                  <option key={`disc-from-${a}`} value={a}>From {a}</option>
+                  <option key={`disc-from-${a}`} value={a}>{a}</option>
                 ))}
               </select>
               <select
@@ -434,7 +434,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                 className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
               >
                 {AGE_OPTIONS.map((a) => (
-                  <option key={`disc-to-${a}`} value={a}>To {a}</option>
+                  <option key={`disc-to-${a}`} value={a}>{a}</option>
                 ))}
               </select>
             </div>
@@ -621,7 +621,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                     className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                   >
                     {AGE_OPTIONS.map((a) => (
-                      <option key={`m-from-${a}`} value={a}>From {a}</option>
+                      <option key={`m-from-${a}`} value={a}>{a}</option>
                     ))}
                   </select>
                   <select
@@ -630,7 +630,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                     className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                   >
                     {AGE_OPTIONS.map((a) => (
-                      <option key={`m-to-${a}`} value={a}>To {a}</option>
+                      <option key={`m-to-${a}`} value={a}>{a}</option>
                     ))}
                   </select>
                 </div>
