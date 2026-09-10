@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   UserCheck
 } from 'lucide-react';
+import { WatermarkOverlay } from '../common/WatermarkOverlay';
 
 export const UnlockConfirmationModal = ({ 
   isOpen, 
@@ -50,7 +51,7 @@ export const UnlockConfirmationModal = ({
 
         {/* Candidate Photo & Info */}
         <div className="space-y-3 pt-2">
-          <div className="relative w-20 h-20 mx-auto">
+          <div className="relative w-20 h-20 mx-auto rounded-full overflow-hidden">
             {candidatePhoto ? (
               <img
                 src={candidatePhoto}
@@ -62,7 +63,8 @@ export const UnlockConfirmationModal = ({
                 {firstName[0]}
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white p-1 rounded-full shadow border-2 border-white">
+            <WatermarkOverlay size="small" />
+            <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white p-1 rounded-full shadow border-2 border-white z-20">
               <Eye className="w-3.5 h-3.5" />
             </div>
           </div>

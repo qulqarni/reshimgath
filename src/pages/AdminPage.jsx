@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { VerificationBadge } from '../components/common/VerificationBadge';
+import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { useProfiles } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
@@ -1034,11 +1036,14 @@ export const AdminPage = ({ onNavigate }) => {
                       
                       <td className="p-4">
                         <div className="flex items-center space-x-3">
-                          <img
-                            src={p.avatar || (Array.isArray(p.photos) && p.photos[0]) || '/default-avatar.png'}
-                            alt={p.name}
-                            className="w-10 h-10 rounded-full object-cover border border-brand-rose/30"
-                          />
+                          <div className="relative rounded-full overflow-hidden w-10 h-10 shrink-0">
+                            <img
+                              src={p.avatar || (Array.isArray(p.photos) && p.photos[0]) || '/default-avatar.png'}
+                              alt={p.name}
+                              className="w-10 h-10 rounded-full object-cover border border-brand-rose/30"
+                            />
+                            <WatermarkOverlay size="small" />
+                          </div>
                           <div>
                             <div className="flex items-center space-x-1.5">
                               <p className="font-bold text-brand-plum">{p.name}</p>
@@ -1814,14 +1819,15 @@ export const AdminPage = ({ onNavigate }) => {
                 </h4>
 
                 <div className="flex flex-col sm:flex-row items-center gap-6">
-                  <div className="relative">
+                  <div className="relative rounded-2xl overflow-hidden">
                     <img
                       src={editingProfile.avatar || (Array.isArray(editingProfile.photos) && editingProfile.photos[0]) || '/default-avatar.png'}
                       alt={editingProfile.name || 'Profile'}
                       className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-brand-rose/30 shadow-md bg-white"
                     />
+                    <WatermarkOverlay size="medium" />
                     {editingProfile.verified && (
-                      <span className="absolute -top-2 -right-2 bg-emerald-500 text-white p-1 rounded-full shadow z-10">
+                      <span className="absolute -top-2 -right-2 bg-emerald-500 text-white p-1 rounded-full shadow z-20">
                         <CheckCircle2 className="w-4 h-4" />
                       </span>
                     )}

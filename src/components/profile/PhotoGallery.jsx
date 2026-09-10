@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Maximize2, X, ChevronLeft, ChevronRight, Image as ImageIcon, User, Camera } from 'lucide-react';
+import { WatermarkOverlay } from '../common/WatermarkOverlay';
 
 export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -51,17 +52,19 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
           className="w-full h-full object-cover"
         />
 
+        <WatermarkOverlay size="medium" />
+
         {/* Expand Lightbox Overlay Button */}
         <button
           onClick={() => setLightboxOpen(true)}
-          className="absolute top-4 right-4 p-2.5 rounded-full bg-black/40 text-white backdrop-blur-md hover:bg-brand-plum transition-all"
+          className="absolute top-4 right-4 p-2.5 rounded-full bg-black/40 text-white backdrop-blur-md hover:bg-brand-plum transition-all z-20"
           title="View Fullsize Photo"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
 
         {/* Counter Tag */}
-        <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1 rounded-full">
+        <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1 rounded-full z-20">
           {activeIndex + 1} / {validPhotos.length}
         </div>
       </div>
@@ -80,6 +83,7 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
               }`}
             >
               <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+              <WatermarkOverlay size="small" />
             </button>
           ))}
         </div>
@@ -99,25 +103,26 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
           {validPhotos.length > 1 && (
             <button
               onClick={() => setActiveIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1))}
-              className="absolute left-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+              className="absolute left-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
           )}
 
-          <div className="max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden">
+          <div className="relative max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden">
             <img
               src={currentPhoto}
               alt="Full view"
               className="w-full h-full object-contain max-h-[85vh]"
             />
+            <WatermarkOverlay size="large" />
           </div>
 
           {/* Next Arrow */}
           {validPhotos.length > 1 && (
             <button
               onClick={() => setActiveIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1))}
-              className="absolute right-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+              className="absolute right-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
             >
               <ChevronRight className="w-6 h-6" />
             </button>

@@ -22,6 +22,7 @@ import {
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
+import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 
 const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-rose/20', actions, onOpenProfile }) => {
   const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
@@ -33,7 +34,7 @@ const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-
     >
       {/* Left: Profile Photo & Basic Info */}
       <div className="flex items-center space-x-4 flex-1 min-w-0 w-full sm:w-auto">
-        <div className="relative shrink-0 cursor-pointer" onClick={() => onOpenProfile(p)}>
+        <div className="relative shrink-0 cursor-pointer rounded-2xl overflow-hidden w-20 h-20 sm:w-24 sm:h-24" onClick={() => onOpenProfile(p)}>
           {photo ? (
             <img
               src={photo}
@@ -46,6 +47,7 @@ const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-
               <span className="text-[10px] font-semibold mt-1 opacity-70">No Photo</span>
             </div>
           )}
+          <WatermarkOverlay size="small" />
           {badge}
         </div>
 

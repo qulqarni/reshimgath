@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useProfiles } from '../../context/ProfileContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { VerificationBadge } from '../common/VerificationBadge';
+import { WatermarkOverlay } from '../common/WatermarkOverlay';
 import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler } from 'lucide-react';
 
 export const ProfileCard = ({ profile, onSelect }) => {
@@ -90,6 +91,9 @@ export const ProfileCard = ({ profile, onSelect }) => {
           alt={profile.name}
           className="w-full h-full object-cover object-[center_top] group-hover:scale-105 transition-transform duration-500"
         />
+
+        {/* Centered Watermark Logo */}
+        <WatermarkOverlay size="medium" />
 
         {/* Gradient Overlay for Badges & Bottom Text */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />

@@ -7,6 +7,7 @@ import { VerificationBadge } from '../components/common/VerificationBadge';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
+import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { compressImage } from '../utils/imageCompressor';
 import { uploadPhotoToFirebase } from '../services/firebaseService';
 import { 
@@ -802,6 +803,8 @@ export const MyProfilePage = ({ onNavigate }) => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
+                <WatermarkOverlay size="medium" />
+
                 {/* Lightbox Expand Button (Top Right) */}
                 <button
                   onClick={() => {
@@ -862,12 +865,13 @@ export const MyProfilePage = ({ onNavigate }) => {
             </button>
           )}
 
-          <div className="max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden">
+          <div className="relative max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden">
             <img
               src={currentPhoto}
               alt="Full size view"
               className="w-full h-full object-contain max-h-[85vh]"
             />
+            <WatermarkOverlay size="large" />
           </div>
 
           {photos.length > 1 && (

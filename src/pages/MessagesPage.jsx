@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { VerificationBadge } from '../components/common/VerificationBadge';
+import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { useProfiles } from '../context/ProfileContext';
 import { 
   MessageSquare, 
@@ -231,13 +233,14 @@ export const MessagesPage = ({ onNavigate }) => {
                     isSelected ? 'bg-white shadow-sm border-l-4 border-brand-plum' : 'hover:bg-white/60'
                   }`}
                 >
-                  <div className="relative shrink-0">
+                  <div className="relative shrink-0 rounded-full overflow-hidden w-11 h-11 sm:w-12 sm:h-12">
                     <img
                       src={p.avatar || p.photos?.[0] || '/default-avatar.png'}
                       alt={p.name}
                       className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-brand-gold/60"
                     />
-                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
+                    <WatermarkOverlay size="small" />
+                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full z-20" />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -272,11 +275,14 @@ export const MessagesPage = ({ onNavigate }) => {
                 onClick={() => onNavigate(`/profile/${currentPartner.id}`)}
                 className="flex items-center space-x-2 sm:space-x-3 cursor-pointer"
               >
-                <img
-                  src={currentPartner.avatar || currentPartner.photos?.[0] || '/default-avatar.png'}
-                  alt={currentPartner.name}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-brand-gold"
-                />
+                <div className="relative rounded-full overflow-hidden w-9 h-9 sm:w-10 sm:h-10 shrink-0">
+                  <img
+                    src={currentPartner.avatar || currentPartner.photos?.[0] || '/default-avatar.png'}
+                    alt={currentPartner.name}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-brand-gold"
+                  />
+                  <WatermarkOverlay size="small" />
+                </div>
                 <div>
                   <div className="flex items-center space-x-1.5">
                     <h3 className="font-serif font-bold text-xs sm:text-sm text-brand-plum">{currentPartner.name}</h3>
