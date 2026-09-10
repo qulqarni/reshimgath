@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useProfiles } from '../../context/ProfileContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { VerificationBadge } from '../common/VerificationBadge';
-import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall } from 'lucide-react';
+import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler } from 'lucide-react';
 
 export const ProfileCard = ({ profile, onSelect }) => {
   const { isAuthenticated, triggerPrivacyAlert } = useAuth();
@@ -126,44 +126,46 @@ export const ProfileCard = ({ profile, onSelect }) => {
       {/* Card Info Body (White Box Below Photo) */}
       <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
         
-        {/* Name & 4 Inline Items Section */}
-        <div className="space-y-2">
+        {/* Name & Structured Specs Section */}
+        <div className="space-y-2 text-xs">
           
           {/* Top Line: Candidate Name ONLY (Nothing in front of name) */}
           <h3 className="font-serif font-bold text-xl sm:text-2xl text-slate-900 tracking-wide truncate">
             {profile.name ? profile.name.trim().split(' ')[0] : ''}
           </h3>
 
-          {/* Below Name: 4 Things in front of each other (Age, Education, Work, Location) */}
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-slate-900 font-bold">
+          {/* Clean 2-Column Specs Grid: Uniformly aligned across all profile cards */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-0.5 text-xs text-slate-900 font-bold">
             
-            {/* 1. Age */}
-            <span className="text-brand-rose font-extrabold shrink-0">
-              {profile.age} yrs
-            </span>
-
-            <span className="text-gray-300 font-normal select-none">•</span>
-
-            {/* 2. Education */}
-            <div className="flex items-center space-x-1 min-w-0">
-              <GraduationCap className="w-4 h-4 text-brand-plum shrink-0" />
-              <span className="truncate" title={profile.education}>{profile.education}</span>
+            {/* Col 1, Row 1: Age & Height */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <span className="text-brand-rose font-extrabold shrink-0">
+                {profile.age} yrs
+              </span>
+              {profile.height && (
+                <>
+                  <span className="text-gray-300 font-normal select-none">•</span>
+                  <span className="text-slate-700 font-bold truncate">{profile.height}</span>
+                </>
+              )}
             </div>
 
-            <span className="text-gray-300 font-normal select-none">•</span>
-
-            {/* 3. Work / Occupation */}
-            <div className="flex items-center space-x-1 min-w-0">
-              <Briefcase className="w-4 h-4 text-brand-kesari shrink-0" />
-              <span className="truncate" title={profile.occupation}>{profile.occupation || '-'}</span>
-            </div>
-
-            <span className="text-gray-300 font-normal select-none">•</span>
-
-            {/* 4. Location */}
-            <div className="flex items-center space-x-1 min-w-0">
-              <MapPin className="w-4 h-4 text-brand-kesari shrink-0" />
+            {/* Col 2, Row 1: Location */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
               <span className="truncate">{profile.district || 'Maharashtra'}</span>
+            </div>
+
+            {/* Col 1, Row 2: Education */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+              <span className="truncate" title={profile.education}>{profile.education || '-'}</span>
+            </div>
+
+            {/* Col 2, Row 2: Work / Occupation */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <Briefcase className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
+              <span className="truncate" title={profile.occupation}>{profile.occupation || '-'}</span>
             </div>
 
           </div>
