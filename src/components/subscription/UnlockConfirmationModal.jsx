@@ -34,7 +34,7 @@ export const UnlockConfirmationModal = ({
   const firstName = profile.name ? profile.name.split(' ')[0] : 'Candidate';
   const candidatePhoto = (profile.photos && profile.photos.length > 0) 
     ? profile.photos[0] 
-    : (profile.avatar || null);
+    : (profile.avatar || '/default-avatar.png');
 
   return createPortal(
     <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/80 backdrop-blur-md p-4 flex items-center justify-center">

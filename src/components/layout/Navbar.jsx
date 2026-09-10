@@ -248,16 +248,12 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                       <div className="w-7 h-7 rounded-full bg-brand-plum text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                         <ShieldCheck className="w-4 h-4 text-brand-gold" />
                       </div>
-                    ) : (user?.avatar || user?.photos?.[0]) ? (
+                    ) : (
                       <img
-                        src={user.avatar || user.photos[0]}
+                        src={user?.avatar || user?.photos?.[0] || '/default-avatar.png'}
                         alt={user?.name}
                         className="w-7 h-7 rounded-full object-cover border border-gray-100"
                       />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-brand-plum text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
                     )}
                     <span className="hidden lg:block text-xs font-bold text-brand-charcoal max-w-[100px] truncate">
                       {isAdmin ? 'Bureau Admin' : user?.name?.split(' ')[0]}

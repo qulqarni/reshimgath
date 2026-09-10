@@ -476,7 +476,7 @@ export const AdminPage = ({ onNavigate }) => {
   };
 
   const handleRemoveAvatar = () => {
-    setEditingProfile((prev) => ({ ...prev, avatar: null, photos: [] }));
+    setEditingProfile((prev) => ({ ...prev, avatar: '/default-avatar.png', photos: [] }));
   };
 
   const handleAddGalleryPhoto = async (e) => {
@@ -1027,17 +1027,11 @@ export const AdminPage = ({ onNavigate }) => {
                       
                       <td className="p-4">
                         <div className="flex items-center space-x-3">
-                          {p.avatar || (Array.isArray(p.photos) && p.photos[0]) ? (
-                            <img
-                              src={p.avatar || p.photos[0]}
-                              alt={p.name}
-                              className="w-10 h-10 rounded-full object-cover border border-brand-rose/30"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-brand-lightBg border border-brand-rose/30 flex items-center justify-center text-brand-plum font-bold shrink-0">
-                              <User className="w-5 h-5 text-brand-plum/50" />
-                            </div>
-                          )}
+                          <img
+                            src={p.avatar || (Array.isArray(p.photos) && p.photos[0]) || '/default-avatar.png'}
+                            alt={p.name}
+                            className="w-10 h-10 rounded-full object-cover border border-brand-rose/30"
+                          />
                           <div>
                             <div className="flex items-center space-x-1.5">
                               <p className="font-bold text-brand-plum">{p.name}</p>
@@ -1814,18 +1808,11 @@ export const AdminPage = ({ onNavigate }) => {
 
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="relative">
-                    {editingProfile.avatar || (Array.isArray(editingProfile.photos) && editingProfile.photos.length > 0) ? (
-                      <img
-                        src={editingProfile.avatar || editingProfile.photos[0]}
-                        alt={editingProfile.name || 'Profile'}
-                        className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-brand-rose/30 shadow-md bg-white"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-brand-lightBg border-2 border-dashed border-brand-rose/30 flex flex-col items-center justify-center text-brand-plum shadow-inner">
-                        <User className="w-10 h-10 text-brand-plum/40" />
-                        <span className="text-[10px] text-gray-400 font-semibold mt-1">No Profile Photo</span>
-                      </div>
-                    )}
+                    <img
+                      src={editingProfile.avatar || (Array.isArray(editingProfile.photos) && editingProfile.photos[0]) || '/default-avatar.png'}
+                      alt={editingProfile.name || 'Profile'}
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-brand-rose/30 shadow-md bg-white"
+                    />
                     {editingProfile.verified && (
                       <span className="absolute -top-2 -right-2 bg-emerald-500 text-white p-1 rounded-full shadow z-10">
                         <CheckCircle2 className="w-4 h-4" />

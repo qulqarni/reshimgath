@@ -36,19 +36,7 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
   });
 
   if (validPhotos.length === 0) {
-    return (
-      <div className="w-full h-96 sm:h-[480px] rounded-3xl bg-white border-2 border-dashed border-brand-rose/30 p-8 flex flex-col items-center justify-center text-center space-y-4 shadow-luxury">
-        <div className="w-20 h-20 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center border-2 border-brand-plum/20">
-          <User className="w-10 h-10 text-brand-plum" />
-        </div>
-        <div className="space-y-1 max-w-xs">
-          <h4 className="font-serif font-bold text-lg text-brand-plum">No Profile Photo Uploaded</h4>
-          <p className="text-xs text-brand-gray leading-relaxed">
-            Upload your genuine profile photo to build trust and receive 3x more responses from verified Maharashtrian families.
-          </p>
-        </div>
-      </div>
-    );
+    validPhotos.push('/default-avatar.png');
   }
 
   const currentPhoto = validPhotos[activeIndex] || validPhotos[0];

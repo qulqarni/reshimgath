@@ -155,7 +155,7 @@ export const DashboardPage = ({ onNavigate }) => {
                 (p.email && visitor.visitorId === p.email)
             );
 
-            const displayAvatar = visitorProfile?.avatar || (Array.isArray(visitorProfile?.photos) && visitorProfile.photos[0]) || visitor.avatar;
+            const displayAvatar = visitorProfile?.avatar || (Array.isArray(visitorProfile?.photos) && visitorProfile.photos[0]) || visitor.avatar || '/default-avatar.png';
             const displayName = visitorProfile?.name || visitor.visitorName;
             const displayOccupation = visitorProfile?.occupation || visitor.occupation || 'Professional';
             const displayLocation = visitorProfile?.district || visitor.location || 'Maharashtra';

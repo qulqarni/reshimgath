@@ -25,7 +25,7 @@ import { UnlockConfirmationModal } from '../components/subscription/UnlockConfir
 
 const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-rose/20', actions, onOpenProfile }) => {
   const profileSlug = p.regId || (p.registrationId ? `SS-${p.registrationId}` : p.id);
-  const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || null;
+  const photo = p.avatar || (Array.isArray(p.photos) && p.photos[0]) || '/default-avatar.png';
 
   return (
     <div

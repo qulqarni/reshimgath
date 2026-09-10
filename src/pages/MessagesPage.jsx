@@ -233,7 +233,7 @@ export const MessagesPage = ({ onNavigate }) => {
                 >
                   <div className="relative shrink-0">
                     <img
-                      src={p.avatar || p.photos?.[0]}
+                      src={p.avatar || p.photos?.[0] || '/default-avatar.png'}
                       alt={p.name}
                       className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-brand-gold/60"
                     />
@@ -273,7 +273,7 @@ export const MessagesPage = ({ onNavigate }) => {
                 className="flex items-center space-x-2 sm:space-x-3 cursor-pointer"
               >
                 <img
-                  src={currentPartner.avatar || currentPartner.photos?.[0]}
+                  src={currentPartner.avatar || currentPartner.photos?.[0] || '/default-avatar.png'}
                   alt={currentPartner.name}
                   className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-brand-gold"
                 />

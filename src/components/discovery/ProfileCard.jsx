@@ -85,20 +85,11 @@ export const ProfileCard = ({ profile, onSelect }) => {
     >
       {/* Top Image Container */}
       <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-brand-lightBg">
-        {profile.avatar || (Array.isArray(profile.photos) && profile.photos[0]) ? (
-          <img
-            src={profile.avatar || profile.photos[0]}
-            alt={profile.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-brand-lightBg text-brand-plum/40 p-4">
-            <div className="w-16 h-16 rounded-full bg-brand-plum/10 border border-brand-plum/20 flex items-center justify-center mb-2">
-              <User className="w-8 h-8 text-brand-plum/50" />
-            </div>
-            <span className="text-xs font-semibold text-brand-plum/60">No Profile Picture</span>
-          </div>
-        )}
+        <img
+          src={profile.avatar || (Array.isArray(profile.photos) && profile.photos[0]) || '/default-avatar.png'}
+          alt={profile.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/80 via-transparent to-black/20" />

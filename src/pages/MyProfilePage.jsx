@@ -223,7 +223,7 @@ export const MyProfilePage = ({ onNavigate }) => {
   const modalFileInputRef = useRef(null);
 
   const photos = user?.photos || [];
-  const currentAvatar = user?.avatar || null;
+  const currentAvatar = user?.avatar || '/default-avatar.png';
 
   // Avatar Handlers
   const handleAvatarFileUpload = async (e) => {
@@ -246,7 +246,7 @@ export const MyProfilePage = ({ onNavigate }) => {
   };
 
   const handleRemoveAvatar = () => {
-    updateProfile({ avatar: null });
+    updateProfile({ avatar: '/default-avatar.png' });
     setShowAvatarMenu(false);
   };
 
@@ -408,7 +408,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                 </button>
 
                 {/* Option 2: Remove Photo */}
-                {currentAvatar && (
+                {user?.avatar && user?.avatar !== '/default-avatar.png' && (
                   <button
                     onClick={handleRemoveAvatar}
                     className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center space-x-2 transition-colors border-t border-gray-50"
