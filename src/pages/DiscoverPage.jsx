@@ -56,6 +56,7 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [selectedCaste, setSelectedCaste] = useState(() => defaultCaste);
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('All');
   const [selectedEducation, setSelectedEducation] = useState('All');
+  const [govtEmployeeFilter, setGovtEmployeeFilter] = useState('All');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('60');
   const [genderFilter, setGenderFilter] = useState(() => defaultGender);
@@ -205,10 +206,21 @@ export const DiscoverPage = ({ onNavigate }) => {
         }
       }
 
-      // 11. Verified Only Filter
+      // 11. Government Employee Filter
+      if (govtEmployeeFilter !== 'All') {
+        const isGovtField = (p.isGovtEmployee || '').toLowerCase().trim() === 'yes';
+        const occ = (p.occupation || '').toLowerCase();
+        const isGovtOcc = occ.includes('govt') || occ.includes('government') || occ.includes('शासकीय') || occ.includes('सरकारी');
+        const isGovt = isGovtField || isGovtOcc;
+
+        if (govtEmployeeFilter === 'Yes' && !isGovt) return false;
+        if (govtEmployeeFilter === 'No' && isGovt) return false;
+      }
+
+      // 12. Verified Only Filter
       if (verifiedOnly && !p.verified) return false;
 
-      // 12. Search Query Text & Profile No.
+      // 13. Search Query Text & Profile No.
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim();
         const digitsQ = q.replace(/[^0-9]/g, '');
@@ -239,7 +251,7 @@ export const DiscoverPage = ({ onNavigate }) => {
 
       return true;
     });
-  }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, verifiedOnly, searchQuery]);
+  }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   const handleReset = () => {
     setSelectedDistrict('All');
@@ -247,6 +259,7 @@ export const DiscoverPage = ({ onNavigate }) => {
     setSelectedCaste(defaultCaste);
     setSelectedMaritalStatus('All');
     setSelectedEducation('All');
+    setGovtEmployeeFilter('All');
     setMinAge('18');
     setMaxAge('60');
     setGenderFilter(defaultGender);
@@ -300,10 +313,11 @@ export const DiscoverPage = ({ onNavigate }) => {
     if (selectedReligion !== 'All') count++;
     if (selectedCaste !== 'All') count++;
     if (selectedEducation !== 'All') count++;
+    if (govtEmployeeFilter !== 'All') count++;
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [genderFilter, defaultGender, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, verifiedOnly, searchQuery]);
+  }, [genderFilter, defaultGender, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -487,7 +501,7 @@ export const DiscoverPage = ({ onNavigate }) => {
           </div>
 
           {/* 7. Education */}
-          <div className="sm:col-span-2 lg:col-span-2">
+          <div>
             <label className="block text-[11px] text-gray-500 mb-1">Education / शिक्षण</label>
             <select
               value={selectedEducation}
@@ -498,6 +512,20 @@ export const DiscoverPage = ({ onNavigate }) => {
               {EDUCATION_LEVELS.map((edu) => (
                 <option key={edu} value={edu}>{edu}</option>
               ))}
+            </select>
+          </div>
+
+          {/* 8. Government Employee */}
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-1">Govt Employee / शासकीय कर्मचारी</label>
+            <select
+              value={govtEmployeeFilter}
+              onChange={(e) => setGovtEmployeeFilter(e.target.value)}
+              className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+            >
+              <option value="All">All (सर्व)</option>
+              <option value="Yes">Yes (होय)</option>
+              <option value="No">No (नाही)</option>
             </select>
           </div>
 
@@ -694,6 +722,20 @@ export const DiscoverPage = ({ onNavigate }) => {
                   {EDUCATION_LEVELS.map((edu) => (
                     <option key={edu} value={edu}>{edu}</option>
                   ))}
+                </select>
+              </div>
+
+              {/* Government Employee */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Government Employee / शासकीय कर्मचारी</label>
+                <select
+                  value={govtEmployeeFilter}
+                  onChange={(e) => setGovtEmployeeFilter(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                >
+                  <option value="All">All (सर्व)</option>
+                  <option value="Yes">Yes (होय)</option>
+                  <option value="No">No (नाही)</option>
                 </select>
               </div>
 
