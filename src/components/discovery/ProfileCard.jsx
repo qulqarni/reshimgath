@@ -129,25 +129,23 @@ export const ProfileCard = ({ profile, onSelect }) => {
         {/* Name & Structured Specs Section */}
         <div className="space-y-2 text-xs">
           
-          {/* Top Line: Candidate Name ONLY (Nothing in front of name) */}
-          <h3 className="font-serif font-bold text-xl sm:text-2xl text-slate-900 tracking-wide truncate">
-            {profile.name ? profile.name.trim().split(' ')[0] : ''}
-          </h3>
+          {/* Top Line: Candidate Name & Age (Age in front of name) */}
+          <div className="flex items-baseline space-x-2 min-w-0">
+            <h3 className="font-serif font-bold text-xl sm:text-2xl text-slate-900 tracking-wide truncate">
+              {profile.name ? profile.name.trim().split(' ')[0] : ''}
+            </h3>
+            <span className="text-xs font-bold text-brand-rose shrink-0">
+              {profile.age} yrs
+            </span>
+          </div>
 
-          {/* Clean 2-Column Specs Grid: Uniformly aligned across all profile cards */}
+          {/* Clean 2-Column Specs Grid: Height, Location, Education, Work */}
           <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-0.5 text-xs text-slate-900 font-bold">
             
-            {/* Col 1, Row 1: Age & Height */}
+            {/* Col 1, Row 1: Height */}
             <div className="flex items-center space-x-1.5 min-w-0">
-              <span className="text-brand-rose font-extrabold shrink-0">
-                {profile.age} yrs
-              </span>
-              {profile.height && (
-                <>
-                  <span className="text-gray-300 font-normal select-none">•</span>
-                  <span className="text-slate-700 font-bold truncate">{profile.height}</span>
-                </>
-              )}
+              <Ruler className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+              <span className="truncate">{profile.height || '-'}</span>
             </div>
 
             {/* Col 2, Row 1: Location */}
