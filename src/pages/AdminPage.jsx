@@ -45,7 +45,9 @@ import {
   EyeOff,
   Award,
   UploadCloud,
-  Loader2
+  Loader2,
+  Key,
+  RefreshCw
 } from 'lucide-react';
 
 export const getSubscriptionDetails = (p) => {
@@ -112,6 +114,40 @@ export const AdminPage = ({ onNavigate }) => {
   const [editingProfile, setEditingProfile] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  
+  // Reset User Password Modal State
+  const [showResetPassModal, setShowResetPassModal] = useState(false);
+  const [resetPassTarget, setResetPassTarget] = useState(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+  const [showResetPasswordText, setShowResetPasswordText] = useState(false);
+
+  const handleOpenResetPassword = (profile) => {
+    setResetPassTarget(profile);
+    setNewPasswordVal(profile.password || '123456');
+    setShowResetPasswordText(false);
+    setShowResetPassModal(true);
+  };
+
+  const handleSaveResetPassword = (e) => {
+    e.preventDefault();
+    if (!resetPassTarget) return;
+
+    const trimmedPass = newPasswordVal.trim();
+    if (!trimmedPass) {
+      alert('Please enter a valid password.');
+      return;
+    }
+    if (trimmedPass.length < 4) {
+      alert('Password must be at least 4 characters long.');
+      return;
+    }
+
+    updateAdminProfile(resetPassTarget.id, { password: trimmedPass });
+    addToast(`Password for ${resetPassTarget.name} (SS-${resetPassTarget.registrationId || resetPassTarget.regId}) updated to: "${trimmedPass}"`, 'success');
+    setShowResetPassModal(false);
+    setResetPassTarget(null);
+    setNewPasswordVal('');
+  };
 
   const INITIAL_NEW_PROFILE = {
     name: '',
@@ -303,7 +339,7 @@ export const AdminPage = ({ onNavigate }) => {
   const [showEditStoryModal, setShowEditStoryModal] = useState(false);
   const [editingStory, setEditingStory] = useState(null);
 
-  const isAnyModalOpen = showAddStoryModal || showEditStoryModal || showEditModal || showCreateModal;
+  const isAnyModalOpen = showAddStoryModal || showEditStoryModal || showEditModal || showCreateModal || showResetPassModal;
   useEffect(() => {
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -1228,6 +1264,13 @@ export const AdminPage = ({ onNavigate }) => {
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            onClick={() => handleOpenResetPassword(p)}
+                            className="p-2 bg-amber-100 text-amber-900 hover:bg-amber-200 rounded-xl transition-all border border-amber-300"
+                            title="Reset Account Password (पासवर्ड रिसेट करा)"
+                          >
+                            <Key className="w-3.5 h-3.5 text-amber-700" />
+                          </button>
+                          <button
                             onClick={() => {
                               if (window.confirm(`Are you sure you want to delete profile for ${p.name}?`)) {
                                 deleteProfile(p.id);
@@ -1938,6 +1981,31 @@ export const AdminPage = ({ onNavigate }) => {
                       onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700 flex items-center justify-between">
+                      <span className="flex items-center space-x-1">
+                        <Lock className="w-3.5 h-3.5 text-brand-plum" />
+                        <span>Account Password (पासवर्ड)</span>
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={editingProfile.password || ''}
+                        onChange={(e) => setEditingProfile({ ...editingProfile, password: e.target.value })}
+                        placeholder="Default: 123456"
+                        className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-mono font-bold text-brand-plum"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-brand-plum"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -3181,6 +3249,133 @@ export const AdminPage = ({ onNavigate }) => {
                 >
                   <Save className="w-4 h-4 text-brand-gold" />
                   <span>Create Candidate Profile</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL: RESET MEMBER PASSWORD */}
+      {showResetPassModal && resetPassTarget && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 border border-brand-rose/30 shadow-2xl">
+            
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold shrink-0">
+                  <Key className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-brand-plum">Reset Member Password</h3>
+                  <p className="text-[11px] text-gray-500">Set new login password for candidate profile</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowResetPassModal(false);
+                  setResetPassTarget(null);
+                }} 
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Candidate Summary Card */}
+            <div className="bg-brand-lightBg/60 p-4 rounded-2xl border border-brand-rose/20 flex items-center space-x-3">
+              <img
+                src={resetPassTarget.avatar || (Array.isArray(resetPassTarget.photos) && resetPassTarget.photos[0]) || '/default-avatar.png'}
+                alt={resetPassTarget.name}
+                className="w-12 h-12 rounded-full object-cover border border-brand-rose/30 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <h4 className="font-bold text-brand-plum text-sm truncate">{resetPassTarget.name}</h4>
+                <p className="text-[11px] font-semibold text-brand-kesari">
+                  Profile No. {resetPassTarget.regId || `SS-${resetPassTarget.registrationId || 1001}`}
+                </p>
+                <p className="text-[10px] text-gray-500 truncate">
+                  {resetPassTarget.email || resetPassTarget.phone || 'No email/phone'}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveResetPassword} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-brand-charcoal mb-1.5">
+                  New Password for {resetPassTarget.name} *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type={showResetPasswordText ? 'text' : 'password'}
+                    required
+                    minLength={4}
+                    value={newPasswordVal}
+                    onChange={(e) => setNewPasswordVal(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full pl-10 pr-10 py-3 rounded-2xl border border-gray-200 font-mono text-xs font-bold text-brand-plum focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPasswordText(!showResetPasswordText)}
+                    className="absolute right-3 top-3.5 text-gray-400 hover:text-brand-plum"
+                  >
+                    {showResetPasswordText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Helpers */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewPasswordVal('123456');
+                    setShowResetPasswordText(true);
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-[11px] border border-slate-300 transition-all"
+                >
+                  Set Default (123456)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const randomPass = 'Pass@' + Math.floor(1000 + Math.random() * 9000);
+                    setNewPasswordVal(randomPass);
+                    setShowResetPasswordText(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold rounded-xl text-[11px] border border-amber-300 transition-all flex items-center space-x-1"
+                >
+                  <RefreshCw className="w-3 h-3 text-amber-700" />
+                  <span>Generate Quick Password</span>
+                </button>
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 leading-relaxed font-medium">
+                💡 <strong>Info:</strong> Once updated, candidate can log into their account using this new password immediately.
+              </div>
+
+              <div className="pt-3 flex items-center justify-end space-x-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetPassModal(false);
+                    setResetPassTarget(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold shadow-md hover:shadow-lg transition-all flex items-center space-x-1.5 border border-brand-gold/30"
+                >
+                  <Key className="w-4 h-4 text-brand-gold" />
+                  <span>Update Password</span>
                 </button>
               </div>
             </form>
