@@ -156,6 +156,13 @@ export const AuthProvider = ({ children }) => {
     );
 
     if (matchedDemo) {
+      const expectedPass = matchedDemo.password || '123456';
+      if (pass !== expectedPass) {
+        return {
+          success: false,
+          message: 'Incorrect password. Please check your password and try again.'
+        };
+      }
       const normDemo = normalizeProfile(matchedDemo);
       setUser(normDemo);
       return { success: true, user: normDemo };
@@ -185,6 +192,13 @@ export const AuthProvider = ({ children }) => {
         return {
           success: false,
           message: 'Your account has been suspended/blocked by bureau administration. Please contact bureau support.'
+        };
+      }
+      const expectedPass = matchedProfile.password || '123456';
+      if (pass !== expectedPass) {
+        return {
+          success: false,
+          message: 'Incorrect password. Please check your password and try again.'
         };
       }
       const normMatched = normalizeProfile(matchedProfile);
@@ -228,6 +242,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     setUser(newUser);
+    try {
+      const stored = localStorage.getItem('reshimgath_profiles');
+      const profiles = stored ? JSON.parse(stored) : [];
+      const updated = [newUser, ...profiles.filter(p => p.id !== newUser.id)];
+      localStorage.setItem('reshimgath_profiles', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('localStorage quota or write error:', e);
+    }
     // Push newly created user profile directly to Firebase Firestore Database!
     saveProfileToFirestore(newUser.id, newUser);
     return { success: true, user: newUser };

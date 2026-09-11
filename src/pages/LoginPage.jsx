@@ -58,16 +58,16 @@ export const LoginPage = ({ onNavigate }) => {
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div>
             <label className="block text-xs font-semibold text-brand-charcoal mb-1">
-              Email / Mobile Number
+              Email / Mobile Number / Registration ID
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="aditya.kulkarni@reshimgath.com"
+                placeholder="Email, Mobile, or Reg ID (e.g., SS-1001)"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs transition-all"
               />
             </div>
