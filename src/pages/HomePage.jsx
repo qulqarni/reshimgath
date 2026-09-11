@@ -899,8 +899,8 @@ export const HomePage = ({ onNavigate }) => {
       </section>
       {/* Mobile Filter Modal Sheet */}
       {showMobileFilters && createPortal(
-        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex flex-col justify-end">
-          <div className="bg-white rounded-t-3xl p-6 space-y-5 animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
+        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 space-y-5 max-w-md w-full my-auto max-h-[85vh] overflow-y-auto shadow-2xl border border-brand-rose/20 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-serif font-bold text-lg text-brand-plum">Filter Candidates</h3>
               <button
