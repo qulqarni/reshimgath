@@ -7,6 +7,7 @@ import { Navbar } from './components/layout/Navbar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { Footer } from './components/layout/Footer';
 import { ToastContainer } from './components/common/ToastContainer';
+import { SplashScreen } from './components/common/SplashScreen';
 
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -135,6 +136,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-brand-lightBg flex flex-col font-sans text-brand-charcoal selection:bg-brand-plum selection:text-white">
+      <SplashScreen />
       <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
 
       <main className="flex-1 pb-16 md:pb-0">
