@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sambodhi Sarang</string>
+    <string name="title_activity_main">Sambodhi Sarang</string>
+    <string name="package_name">com.qulqarni.reshimgath</string>
+    <string name="custom_url_scheme">com.qulqarni.reshimgath</string>
+</resources>

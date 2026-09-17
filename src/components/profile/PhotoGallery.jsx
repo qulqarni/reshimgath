@@ -1,0 +1,135 @@
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Maximize2, X, ChevronLeft, ChevronRight, Image as ImageIcon, User, Camera } from 'lucide-react';
+import { WatermarkOverlay } from '../common/WatermarkOverlay';
+
+export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [lightboxOpen]);
+
+  // Extract all valid image URLs from avatar & photos props
+  const validPhotos = [];
+
+  if (avatar && typeof avatar === 'string' && avatar.trim()) {
+    validPhotos.push(avatar.trim());
+  }
+
+  const rawList = Array.isArray(photos) ? photos : (photos ? [photos] : []);
+  rawList.forEach((p) => {
+    if (typeof p === 'string' && p.trim() && !validPhotos.includes(p.trim())) {
+      validPhotos.push(p.trim());
+    } else if (p && typeof p === 'object' && p.url && typeof p.url === 'string' && p.url.trim()) {
+      if (!validPhotos.includes(p.url.trim())) {
+        validPhotos.push(p.url.trim());
+      }
+    }
+  });
+
+  if (validPhotos.length === 0) {
+    validPhotos.push('/default-avatar.png');
+  }
+
+  const currentPhoto = validPhotos[activeIndex] || validPhotos[0];
+
+  return (
+    <div className="space-y-4">
+      {/* Main Feature Photo */}
+      <div className="relative h-96 sm:h-[480px] w-full rounded-3xl overflow-hidden bg-brand-charcoal group shadow-luxury">
+        <img
+          src={currentPhoto}
+          alt={`${name} photo ${activeIndex + 1}`}
+          className="w-full h-full object-cover"
+        />
+
+        <WatermarkOverlay size="medium" />
+
+        {/* Expand Lightbox Overlay Button */}
+        <button
+          onClick={() => setLightboxOpen(true)}
+          className="absolute top-4 right-4 p-2.5 rounded-full bg-black/40 text-white backdrop-blur-md hover:bg-brand-plum transition-all z-20"
+          title="View Fullsize Photo"
+        >
+          <Maximize2 className="w-4 h-4" />
+        </button>
+
+        {/* Counter Tag */}
+        <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1 rounded-full z-20">
+          {activeIndex + 1} / {validPhotos.length}
+        </div>
+      </div>
+
+      {/* Thumbnails Row */}
+      {validPhotos.length > 1 && (
+        <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-none">
+          {validPhotos.map((img, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              className={`relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all ${
+                activeIndex === idx
+                  ? 'border-brand-plum ring-2 ring-brand-gold shadow-md scale-105'
+                  : 'border-transparent opacity-70 hover:opacity-100'
+              }`}
+            >
+              <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+              <WatermarkOverlay size="small" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Previous Arrow */}
+          {validPhotos.length > 1 && (
+            <button
+              onClick={() => setActiveIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1))}
+              className="absolute left-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
+
+          <div className="relative max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden">
+            <img
+              src={currentPhoto}
+              alt="Full view"
+              className="w-full h-full object-contain max-h-[85vh]"
+            />
+            <WatermarkOverlay size="large" />
+          </div>
+
+          {/* Next Arrow */}
+          {validPhotos.length > 1 && (
+            <button
+              onClick={() => setActiveIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1))}
+              className="absolute right-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};

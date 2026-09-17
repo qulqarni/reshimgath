@@ -1,0 +1,142 @@
+export const MAHARASHTRA_DISTRICTS = [
+  'Pune',
+  'Mumbai City',
+  'Mumbai Suburban',
+  'Kolhapur',
+  'Sangli',
+  'Satara',
+  'Solapur',
+  'Nashik',
+  'Chhatrapati Sambhajinagar (Aurangabad)',
+  'Ahilyanagar (Ahmednagar)',
+  'Thane',
+  'Raigad',
+  'Ratnagiri',
+  'Sindhudurg',
+  'Nagpur',
+  'Amravati',
+  'Latur',
+  'Nanded',
+  'Jalgaon',
+  'Dhule',
+  'Beed',
+  'Dharashiv (Osmanabad)',
+  'Parbhani',
+  'Buldhana',
+  'Yavatmal',
+  'Akola',
+  'Chandrapur',
+  'Bhandara',
+  'Gondia',
+  'Gadchiroli',
+  'Hingoli',
+  'Palghar',
+  'Nandurbar',
+  'Washim',
+  'Wardha',
+  'Jalna'
+];
+
+export const MAHARASHTRA_COMMUNITIES = [
+  'Maratha',
+  'Brahmin (Deshastha / Kokanastha)',
+  'Bauddha',
+  'Matang',
+  'Lingayat',
+  'Jain (Digambar / Shwetambar)',
+  'Dhangar',
+  'Mali',
+  'Chambhar',
+  'Agri / Koli',
+  'Sonar (Daivadnya)',
+  'CKP (Chandraseniya Kayastha Prabhu)',
+  'Banjara',
+  'Vani / Vaishya',
+  'Sutar / Vishwakarma',
+  'Gowari',
+  'Other'
+];
+
+export const RELIGIONS = [
+  'Hindu',
+  'Jain',
+  'Buddhist',
+  'Christian',
+  'Other'
+];
+
+export const EDUCATION_LEVELS = [
+  'B.E. / B.Tech',
+  'M.E. / M.Tech',
+  'MBA / PGDM',
+  'MBBS / MD / MS',
+  'BDS / MDS',
+  'B.Pharm / M.Pharm',
+  'CA / CS / CFA',
+  'B.Com / M.Com',
+  'B.Sc / M.Sc',
+  'B.Arch / M.Arch',
+  'LL.B / LL.M',
+  'Ph.D / Doctorate',
+  'Diploma / Technical',
+  'Other'
+];
+
+export const OCCUPATIONS = [
+  'Software Engineer / IT Professional',
+  'Doctor / Healthcare Specialist',
+  'Civil Servant / Govt Officer (MPSC / UPSC)',
+  'Chartered Accountant / Financial Analyst',
+  'Business Owner / Entrepreneur',
+  'Architect / Interior Designer',
+  'Professor / Lecturer',
+  'Banker / Financial Manager',
+  'Mechanical / Civil Engineer',
+  'Lawyer / Legal Advocate',
+  'Pharmacist / Biotech Researcher',
+  'Corporate Manager',
+  'Agriculture Specialist / Farmer',
+  'Other'
+];
+
+export const INCOME_RANGES = [
+  'Disclose later',
+  'Under ₹ 3 Lakhs per annum',
+  '₹ 3 - 5 Lakhs per annum',
+  '₹ 5 - 8 Lakhs per annum',
+  '₹ 8 - 12 Lakhs per annum',
+  '₹ 12 - 18 Lakhs per annum',
+  '₹ 18 - 25 Lakhs per annum',
+  '₹ 25 - 40 Lakhs per annum',
+  '₹ 40+ Lakhs per annum'
+];
+
+export const HEIGHT_OPTIONS = [
+  '4\' 0" (121 cm)',
+  '4\' 1" (124 cm)',
+  '4\' 2" (127 cm)',
+  '4\' 3" (129 cm)',
+  '4\' 4" (132 cm)',
+  '4\' 5" (134 cm)',
+  '4\' 6" (137 cm)',
+  '4\' 7" (139 cm)',
+  '4\' 8" (142 cm)',
+  '4\' 9" (144 cm)',
+  '4\' 10" (147 cm)',
+  '4\' 11" (149 cm)',
+  '5\' 0" (152 cm)',
+  '5\' 1" (154 cm)',
+  '5\' 2" (157 cm)',
+  '5\' 3" (160 cm)',
+  '5\' 4" (162 cm)',
+  '5\' 5" (165 cm)',
+  '5\' 6" (168 cm)',
+  '5\' 7" (170 cm)',
+  '5\' 8" (172 cm)',
+  '5\' 9" (175 cm)',
+  '5\' 10" (178 cm)',
+  '5\' 11" (180 cm)',
+  '6\' 0" (183 cm)',
+  '6\' 1" (185 cm)',
+  '6\' 2" (187 cm)'
+];

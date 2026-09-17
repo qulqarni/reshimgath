@@ -1,0 +1,1440 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useProfiles } from '../context/ProfileContext';
+import { VerificationBadge } from '../components/common/VerificationBadge';
+import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
+import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
+import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
+import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
+import { compressImage } from '../utils/imageCompressor';
+import { uploadPhotoToFirebase } from '../services/firebaseService';
+import { 
+  User, 
+  MapPin, 
+  GraduationCap, 
+  Briefcase, 
+  Edit3, 
+  Camera, 
+  Trash2, 
+  Plus, 
+  CheckCircle2,
+  X,
+  LogOut,
+  Upload,
+  Image as ImageIcon,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Save,
+  FileText,
+  Heart,
+  UserCheck,
+  CheckCircle,
+  Eye,
+  Clock,
+  Crown,
+  Sparkles,
+  Lock,
+  CreditCard
+} from 'lucide-react';
+
+export const MyProfilePage = ({ onNavigate }) => {
+  const { user, updateProfile, logout } = useAuth();
+  const { t } = useLanguage();
+  const { profiles, interests, profileViews } = useProfiles();
+
+  useEffect(() => {
+    if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
+      onNavigate('/admin');
+    }
+  }, [user, onNavigate]);
+
+  if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
+    return null;
+  }
+
+  const [showPhotoManager, setShowPhotoManager] = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [showAllVisitors, setShowAllVisitors] = useState(false);
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const isAnyModalOpen = lightboxOpen || showEditModal || showPhotoManager;
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isAnyModalOpen]);
+
+  const sub = user?.subscription || {};
+  const activePlanName = sub.planName 
+    ? (sub.planName.toLowerCase().includes('plan') ? sub.planName : `${sub.planName} Plan`) 
+    : 'Free Tier / No Active Plan';
+  const remainingVisits = sub.creditsRemaining || 0;
+  const totalVisits = sub.creditsTotal || 0;
+  const unlockedCount = (sub.unlockedProfiles || []).length;
+  const progressPercent = totalVisits > 0 ? Math.min(100, Math.round((remainingVisits / totalVisits) * 100)) : 0;
+
+  const visitorsRef = useRef(null);
+  const scrollToVisitors = () => {
+    if (visitorsRef.current) {
+      visitorsRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const myProfileViews = (profileViews || []).filter((v) => {
+    if (!user) return false;
+    if (String(v.visitorId) === String(user.id) || (user.email && v.visitorId === user.email)) return false;
+    if (v.targetId && String(v.targetId) !== String(user.id) && (user.email ? v.targetId !== user.email : true)) return false;
+    return true;
+  });
+
+  const myReceivedInterests = (interests?.received || []).filter((r) => {
+    if (!user) return false;
+    if (r.targetUserId) {
+      return String(r.targetUserId) === String(user.id) || r.targetUserId === user.email;
+    }
+    return String(r.profileId) !== String(user.id);
+  });
+
+  const mySentInterests = (interests?.sent || []).filter((s) => {
+    if (!user) return false;
+    if (typeof s === 'object' && s !== null && s.senderId) {
+      return String(s.senderId) === String(user.id) || s.senderId === user.email;
+    }
+    return false;
+  });
+
+  const myAcceptedInterests = (interests?.accepted || []).filter((a) => {
+    if (!user) return false;
+    if (typeof a === 'object' && a !== null) {
+      const u1 = String(a.user1);
+      const u2 = String(a.user2);
+      const pid = String(a.profileId);
+      const me = String(user.id);
+
+      return (
+        (u1 === me) ||
+        (u2 === me) ||
+        (pid === me && a.targetUserId === me)
+      );
+    }
+    return false;
+  });
+
+  const receivedCount = myReceivedInterests.length;
+  const sentCount = mySentInterests.length;
+  const acceptedCount = myAcceptedInterests.length;
+  const visitsCount = myProfileViews.length;
+
+  const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
+  const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
+
+  const initCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
+  const initCustomCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+
+  const initEdu = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
+  const initCustomEdu = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
+
+  const initOcc = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
+  const initCustomOcc = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
+
+  const [editFormData, setEditFormData] = useState({
+    name: user?.name || '',
+    gender: user?.gender || 'female',
+    age: user?.age || '24',
+    dob: user?.dob || '1998-06-15',
+    height: user?.height || '5\' 6" (168 cm)',
+    maritalStatus: user?.maritalStatus || 'Never Married',
+    religion: initReligion,
+    customReligion: initCustomReligion,
+    caste: initCaste,
+    customCaste: initCustomCaste,
+    motherTongue: user?.motherTongue || 'Marathi',
+    district: user?.district || 'Pune',
+    nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
+    city: user?.city || 'Kothrud, Pune',
+    pincode: user?.pincode || '411038',
+    education: initEdu,
+    customEducation: initCustomEdu,
+    college: user?.college || 'COEP Pune',
+    occupation: initOcc,
+    customOccupation: initCustomOcc,
+    isGovtEmployee: user?.isGovtEmployee || '',
+    income: user?.income || '₹ 12 - 18 Lakhs per annum',
+    fatherOccupation: user?.fatherOccupation || 'Government Servant / Business Owner',
+    motherOccupation: user?.motherOccupation || 'Homemaker',
+    siblings: user?.siblings || '1 Brother',
+    familyType: user?.familyType || 'Nuclear Family',
+    diet: user?.diet || 'Vegetarian',
+    smoking: user?.smoking || 'No',
+    drinking: user?.drinking || 'No',
+    aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.',
+    expectations: user?.expectations || ''
+  });
+
+  useEffect(() => {
+    if (user) {
+      setEditFormData({
+        name: user.name || '',
+        gender: user.gender || 'female',
+        age: user.age || '24',
+        dob: user.dob || '1998-06-15',
+        height: user.height || '5\' 6" (168 cm)',
+        maritalStatus: user.maritalStatus || 'Never Married',
+        religion: RELIGIONS.includes(user.religion) ? (user.religion || 'Hindu') : 'Other',
+        customReligion: RELIGIONS.includes(user.religion) ? '' : (user.religion || ''),
+        caste: MAHARASHTRA_COMMUNITIES.includes(user.caste) ? (user.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other',
+        customCaste: MAHARASHTRA_COMMUNITIES.includes(user.caste) ? '' : (user.caste || ''),
+        motherTongue: user.motherTongue || 'Marathi',
+        district: user.district || 'Pune',
+        nativePlace: user.nativePlace || 'Ichalkaranji / Sangli',
+        city: user.city || 'Kothrud, Pune',
+        pincode: user.pincode || '411038',
+        education: EDUCATION_LEVELS.includes(user.education) ? (user.education || 'B.E. / B.Tech') : 'Other',
+        customEducation: EDUCATION_LEVELS.includes(user.education) ? '' : (user.education || ''),
+        college: user.college || '',
+        occupation: OCCUPATIONS.includes(user.occupation) ? (user.occupation || 'Software Engineer / IT Professional') : 'Other',
+        customOccupation: OCCUPATIONS.includes(user.occupation) ? '' : (user.occupation || ''),
+        isGovtEmployee: user.isGovtEmployee || '',
+        income: user.income || '₹ 12 - 18 Lakhs per annum',
+        fatherOccupation: user.fatherOccupation || '',
+        motherOccupation: user.motherOccupation || '',
+        siblings: user.siblings || '1 Brother',
+        familyType: user.familyType || 'Nuclear Family',
+        diet: user.diet || 'Vegetarian',
+        smoking: user.smoking || 'No',
+        drinking: user.drinking || 'No',
+        aboutMe: user.aboutMe || '',
+        expectations: user.expectations || ''
+      });
+    }
+  }, [user]);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const avatarFileInputRef = useRef(null);
+  const galleryFileInputRef = useRef(null);
+  const modalFileInputRef = useRef(null);
+
+  const photos = user?.photos || [];
+  const currentAvatar = user?.avatar || '/default-avatar.png';
+
+  // Avatar Handlers
+  const handleAvatarFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      // Upload avatar to Firebase Storage (avatars/{userId}/...)
+      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'avatars');
+      await updateProfile({ avatar: storageUrl });
+    } catch (err) {
+      console.error('Error uploading avatar image to Firebase Storage:', err);
+      alert('Failed to upload profile picture to Firebase Storage.');
+    } finally {
+      setShowAvatarMenu(false);
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    updateProfile({ avatar: '/default-avatar.png' });
+    setShowAvatarMenu(false);
+  };
+
+  // Gallery Photo Handlers
+  const handleGalleryFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+    try {
+      // Upload gallery photo to Firebase Storage (photos/{userId}/...)
+      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'photos');
+      const updated = [...photos, storageUrl];
+      await updateProfile({ photos: updated });
+      setActivePhotoIdx(updated.length - 1);
+    } catch (err) {
+      console.error('Error uploading gallery photo to Firebase Storage:', err);
+      alert('Failed to upload gallery photo to Firebase Storage.');
+    }
+  };
+
+  const handleDeletePhoto = (index) => {
+    const updated = photos.filter((_, i) => i !== index);
+    updateProfile({ photos: updated });
+    if (activePhotoIdx >= updated.length) {
+      setActivePhotoIdx(Math.max(0, updated.length - 1));
+    }
+  };
+
+  const handleOpenEditModal = () => {
+    const rSel = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
+    const rCust = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
+
+    const cSel = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
+    const cCust = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+
+    const eSel = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
+    const eCust = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
+
+    const oSel = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
+    const oCust = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
+
+    setEditFormData({
+      name: user?.name || '',
+      gender: user?.gender || 'female',
+      age: user?.age || '24',
+      dob: user?.dob || '1998-06-15',
+      height: user?.height || '5\' 6" (168 cm)',
+      maritalStatus: user?.maritalStatus || 'Never Married',
+      religion: rSel,
+      customReligion: rCust,
+      caste: cSel,
+      customCaste: cCust,
+      motherTongue: user?.motherTongue || 'Marathi',
+      district: user?.district || 'Pune',
+      nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
+      city: user?.city || 'Kothrud, Pune',
+      pincode: user?.pincode || '411038',
+      education: eSel,
+      customEducation: eCust,
+      college: user?.college || 'COEP Pune',
+      occupation: oSel,
+      customOccupation: oCust,
+      isGovtEmployee: user?.isGovtEmployee || '',
+      income: user?.income || '₹ 12 - 18 Lakhs per annum',
+      fatherOccupation: user?.fatherOccupation || 'Government Servant / Business Owner',
+      motherOccupation: user?.motherOccupation || 'Homemaker',
+      siblings: user?.siblings || '1 Brother',
+      familyType: user?.familyType || 'Nuclear Family',
+      diet: user?.diet || 'Vegetarian',
+      smoking: user?.smoking || 'No',
+      drinking: user?.drinking || 'No',
+      aboutMe: user?.aboutMe || 'I am a family-oriented Maharashtrian professional based in Pune.'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEditProfile = (e) => {
+    e.preventDefault();
+    const finalData = {
+      ...editFormData,
+      religion: editFormData.religion === 'Other' ? (editFormData.customReligion || 'Other') : editFormData.religion,
+      caste: editFormData.caste === 'Other' ? (editFormData.customCaste || 'Other') : editFormData.caste,
+      education: editFormData.education === 'Other' ? (editFormData.customEducation || 'Other') : editFormData.education,
+      occupation: editFormData.occupation === 'Other' ? (editFormData.customOccupation || 'Other') : editFormData.occupation
+    };
+    delete finalData.customReligion;
+    delete finalData.customCaste;
+    delete finalData.customEducation;
+    delete finalData.customOccupation;
+
+    updateProfile(finalData);
+    setSavedSuccess(true);
+    setTimeout(() => {
+      setSavedSuccess(false);
+      setShowEditModal(false);
+    }, 1000);
+  };
+
+  const currentPhoto = photos[activePhotoIdx] || photos[0];
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-24 md:pb-12">
+      
+      {/* 1. TOP HEADER BANNER */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury">
+        <div className="flex items-center space-x-4">
+          
+          {/* Avatar with Independent Upload & Remove Options */}
+          <div className="relative">
+            <div 
+              onClick={() => setShowAvatarMenu(!showAvatarMenu)}
+              className="relative cursor-pointer group"
+              title="Click to upload or remove profile picture"
+            >
+              {currentAvatar ? (
+                <img
+                  src={currentAvatar}
+                  alt={user?.name}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-brand-gold shadow-md shrink-0 transition-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-plum text-white flex items-center justify-center border-2 border-white shadow-md shrink-0 font-serif font-bold text-2xl transition-transform group-hover:scale-105">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-8 h-8 text-white" />}
+                </div>
+              )}
+
+              {/* Camera Badge Icon */}
+              <button
+                type="button"
+                className="absolute bottom-0 right-0 p-1.5 bg-brand-plum text-white border-2 border-white rounded-full shadow-md hover:bg-brand-plumDark transition-all"
+                title="Edit profile photo"
+              >
+                <Camera className="w-3.5 h-3.5 text-white" />
+              </button>
+            </div>
+
+            {/* Profile Picture Actions Dropdown */}
+            {showAvatarMenu && (
+              <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-brand-rose/30 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="px-3 py-1.5 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-brand-plum uppercase tracking-wider">Profile Photo</span>
+                  <button 
+                    onClick={() => setShowAvatarMenu(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Option 1: Upload Photo */}
+                <button
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum flex items-center space-x-2 transition-colors"
+                >
+                  <Upload className="w-4 h-4 text-brand-plum shrink-0" />
+                  <span>Upload Profile Picture</span>
+                </button>
+
+                {/* Option 2: Remove Photo */}
+                {user?.avatar && user?.avatar !== '/default-avatar.png' && (
+                  <button
+                    onClick={handleRemoveAvatar}
+                    className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center space-x-2 transition-colors border-t border-gray-50"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Remove Profile Picture</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            <input
+              type="file"
+              ref={avatarFileInputRef}
+              onChange={handleAvatarFileUpload}
+              accept="image/*"
+              className="hidden"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center space-x-2 flex-wrap gap-1.5">
+              <h1 className="font-serif text-xl sm:text-2xl font-bold text-brand-plum">{user?.name}</h1>
+              <VerificationBadge size="small" />
+              <span className="px-2.5 py-0.5 bg-brand-plum text-white font-bold text-[11px] rounded-full shadow-sm border border-brand-gold/30">
+                Profile No. {user?.registrationId || (user?.regId ? String(user.regId).replace(/^SS-?/i, '') : '1001')}
+              </span>
+            </div>
+            <p className="text-xs text-brand-gray mt-0.5">
+              {user?.district || 'Pune'}, Maharashtra • {user?.religion || 'Hindu'} ({user?.caste || 'Brahmin'})
+            </p>
+          </div>
+        </div>
+
+        {/* Action Buttons Grid */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto pt-2 sm:pt-0 flex-wrap sm:flex-nowrap">
+          {/* Upgrade Plan Button */}
+          <button
+            onClick={() => setShowSubModal(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-1.5 border border-amber-300"
+          >
+            <Crown className="w-4 h-4 text-slate-950 fill-slate-950 shrink-0" />
+            <span>Upgrade Plan</span>
+          </button>
+
+          {/* Edit Profile Modal Trigger */}
+          <button
+            onClick={handleOpenEditModal}
+            className="px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
+          >
+            <Edit3 className="w-4 h-4 shrink-0" />
+            <span>{t('editProfile')}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              logout();
+              onNavigate('/');
+            }}
+            className="px-4 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl hover:bg-rose-100 transition-all flex items-center justify-center space-x-1.5"
+          >
+            <LogOut className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. MEMBERSHIP & SUBSCRIPTION STATUS CARD */}
+      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
+        
+        {/* Card Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+          <div className="flex items-start sm:items-center space-x-3 w-full sm:w-auto">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold border border-amber-200 shrink-0 mt-0.5 sm:mt-0">
+              <Crown className="w-5 h-5 text-amber-700" />
+            </div>
+            <div className="space-y-1 flex-1 min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
+                <h2 className="font-serif text-lg sm:text-2xl font-bold text-brand-plum leading-tight">
+                  Membership & Subscription Status
+                </h2>
+                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] sm:text-xs font-bold rounded-full whitespace-nowrap">
+                  {sub.planName ? `${activePlanName} Active` : 'Free Member'}
+                </span>
+              </div>
+              <p className="text-xs text-brand-gray font-medium leading-normal">
+                सदस्यत्व योजना व प्रोफाईल पाहण्याची उर्वरित संख्या
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowSubModal(true)}
+            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 shrink-0 border border-brand-gold/40"
+          >
+            <Sparkles className="w-4 h-4 text-brand-gold shrink-0" />
+            <span>{sub.planName ? 'Upgrade Membership Plan' : 'Purchase Membership Plan'}</span>
+          </button>
+        </div>
+
+        {/* 3 Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          
+          {/* Metric 1: Active Subscription Plan */}
+          <div className="bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 p-5 rounded-2xl border border-amber-200 space-y-2 shadow-sm">
+            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider block">
+              Active Subscription Plan
+            </span>
+            <div className="font-serif font-extrabold text-xl sm:text-2xl text-brand-plum">
+              {activePlanName}
+            </div>
+            <p className="text-xs text-brand-gray leading-relaxed font-medium">
+              {sub.activatedAt 
+                ? `Activated on ${sub.activatedAt.split('T')[0]}` 
+                : 'Activate a plan to start viewing candidate contact details'}
+            </p>
+          </div>
+
+          {/* Metric 2: Visited / Unlocked Candidate Profiles */}
+          <div className="bg-gradient-to-br from-rose-50/80 via-white to-rose-50/40 p-5 rounded-2xl border border-rose-200 space-y-2 shadow-sm">
+            <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider block">
+              Visited / Unlocked Profiles
+            </span>
+            <div className="font-serif font-extrabold text-xl sm:text-2xl text-brand-plum flex items-baseline space-x-2">
+              <span>{unlockedCount}</span>
+              <span className="text-xs font-normal text-brand-gray">Candidates</span>
+            </div>
+            <p className="text-xs text-brand-gray leading-relaxed font-medium">
+              Full candidate profile contact details opened
+            </p>
+          </div>
+
+          {/* Metric 3: Remaining Profile Visits */}
+          <div className="bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/40 p-5 rounded-2xl border border-emerald-200 space-y-2 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider block">
+                Remaining Profile Visits
+              </span>
+              <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                {remainingVisits} / {totalVisits} Left
+              </span>
+            </div>
+
+            {/* Visual Credit Progress Bar */}
+            <div className="w-full bg-emerald-200/80 h-2.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-emerald-600 h-full transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            <p className="text-xs text-emerald-800 leading-relaxed font-semibold pt-0.5">
+              {remainingVisits > 0 
+                ? `${remainingVisits} profile openings available` 
+                : '0 visits remaining — Upgrade plan to unlock more profiles'}
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 3. ACTIVITY STATS CARDS (INTERESTS RECEIVED, SENT, ACCEPTED, VISITS) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div 
+          onClick={() => onNavigate('/interests')}
+          className="bg-white p-5 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer space-y-2"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-brand-rose/20 text-brand-rose flex items-center justify-center">
+            <Heart className="w-5 h-5 fill-brand-rose" />
+          </div>
+          <div className="text-2xl font-bold font-serif text-brand-plum">{receivedCount}</div>
+          <div className="text-xs text-brand-gray font-semibold">{t('statInterestsReceived')}</div>
+        </div>
+
+        <div 
+          onClick={() => onNavigate('/interests')}
+          className="bg-white p-5 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer space-y-2"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-brand-kesari flex items-center justify-center">
+            <UserCheck className="w-5 h-5" />
+          </div>
+          <div className="text-2xl font-bold font-serif text-brand-plum">{sentCount}</div>
+          <div className="text-xs text-brand-gray font-semibold">{t('statInterestsSent')}</div>
+        </div>
+
+        <div 
+          onClick={() => onNavigate('/messages')}
+          className="bg-white p-5 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer space-y-2"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <div className="text-2xl font-bold font-serif text-brand-plum">{acceptedCount}</div>
+          <div className="text-xs text-brand-gray font-semibold">{t('statAcceptedConnections')}</div>
+        </div>
+
+        <div 
+          onClick={scrollToVisitors}
+          className="bg-white p-5 rounded-3xl border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all cursor-pointer space-y-2 group"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Eye className="w-5 h-5" />
+          </div>
+          <div className="text-2xl font-bold font-serif text-brand-plum">{visitsCount}</div>
+          <div className="text-xs text-brand-gray font-semibold">{t('statProfileViews')}</div>
+        </div>
+
+      </div>
+
+      {/* 3. RECENT PROFILE VISITORS SECTION */}
+      <div ref={visitorsRef} className="space-y-4 bg-white p-5 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury">
+        
+        {/* Responsive Section Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-brand-rose/10 pb-4">
+          <div className="flex items-start sm:items-center space-x-3 flex-1 min-w-0 w-full">
+            <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold shrink-0 mt-0.5 sm:mt-0 border border-indigo-100">
+              <Eye className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-plum leading-tight">
+                {t('recentVisitorsTitle')}
+              </h2>
+              <p className="text-xs text-brand-gray font-medium leading-normal">
+                {t('recentVisitorsSubtitle')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto space-x-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-50">
+            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 whitespace-nowrap">
+              {visitsCount} Visitors
+            </span>
+            {myProfileViews.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllVisitors(!showAllVisitors)}
+                className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 sm:bg-transparent px-3 py-1 sm:px-0 sm:py-0 rounded-full sm:rounded-none border sm:border-0 border-indigo-200 hover:underline flex items-center space-x-1 transition-all"
+              >
+                <span>{showAllVisitors ? 'Show Less' : 'View All'}</span>
+                {showAllVisitors ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {myProfileViews.length === 0 ? (
+          <div className="text-center py-8 text-xs font-medium text-brand-gray bg-brand-lightBg/50 rounded-2xl border border-dashed border-brand-rose/20 space-y-1">
+            <p className="font-semibold text-brand-plum">No Profile Visitors Yet</p>
+            <p className="text-[11px]">As verified members view your profile, they will appear here automatically.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+              {(showAllVisitors ? myProfileViews : myProfileViews.slice(0, 3)).map((visitor) => {
+                const visitorProfile = (profiles || []).find(
+                  (p) =>
+                    String(p.id) === String(visitor.visitorId) ||
+                    String(p.regId) === String(visitor.visitorId) ||
+                    (p.registrationId && `SS-${p.registrationId}` === String(visitor.visitorId)) ||
+                    (p.email && visitor.visitorId === p.email)
+                );
+
+                const displayAvatar = visitorProfile?.avatar || (Array.isArray(visitorProfile?.photos) && visitorProfile.photos[0]) || visitor.avatar;
+                const displayName = visitorProfile?.name || visitor.visitorName;
+                const displayOccupation = visitorProfile?.occupation || visitor.occupation || 'Professional';
+                const displayLocation = visitorProfile?.district || visitor.location || 'Maharashtra';
+                const targetProfileId = visitorProfile?.regId || visitorProfile?.id || visitor.visitorId;
+
+                return (
+                  <div
+                    key={visitor.id}
+                    onClick={() => onNavigate(`/profile/${targetProfileId}`)}
+                    className="bg-brand-lightBg/60 p-3.5 sm:p-4 rounded-2xl border border-brand-rose/15 hover:border-brand-plum/40 hover:shadow-md transition-all cursor-pointer flex items-center space-x-3 group"
+                  >
+                    {displayAvatar ? (
+                      <img
+                        src={displayAvatar}
+                        alt={displayName}
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-white shadow shrink-0 group-hover:scale-105 transition-transform bg-white"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-brand-plum/10 border-2 border-white shadow shrink-0 flex items-center justify-center text-brand-plum group-hover:scale-105 transition-transform">
+                        <User className="w-6 h-6 sm:w-7 sm:h-7 text-brand-plum/60" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-serif font-bold text-xs sm:text-sm text-brand-plum group-hover:text-brand-kesari transition-colors truncate">
+                        {displayName}
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-brand-gray truncate">{displayOccupation} • {displayLocation}</p>
+                      <div className="flex items-center space-x-1 text-[10px] text-indigo-700 font-semibold mt-0.5">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>Viewed {visitor.timestamp}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Expand Toggle Button */}
+            {myProfileViews.length > 3 && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAllVisitors(!showAllVisitors)}
+                  className="px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition-all inline-flex items-center justify-center space-x-1.5 border border-indigo-200 shadow-sm"
+                >
+                  <span>{showAllVisitors ? 'Show Less' : `View All Visitors (${myProfileViews.length})`}</span>
+                  {showAllVisitors ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 4. INDEPENDENT IMAGE GALLERY SECTION */}
+      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
+        
+        {/* Header & Upload Controls */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-brand-rose/10 pb-4">
+          <div>
+            <h3 className="font-serif font-bold text-xl text-brand-plum flex items-center space-x-2">
+              <Camera className="w-5 h-5 text-brand-kesari" />
+              <span>My Image Gallery (फोटो गॅलरी - {photos.length})</span>
+            </h3>
+            <p className="text-xs text-brand-gray mt-0.5">
+              Add or remove photos of yourself to share with prospective matches.
+            </p>
+          </div>
+
+          {/* Add Photo Button */}
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <button
+              onClick={() => galleryFileInputRef.current?.click()}
+              className="flex-1 sm:flex-initial px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
+            >
+              <Upload className="w-4 h-4 text-brand-gold shrink-0" />
+              <span>Upload Photo</span>
+            </button>
+            <input
+              type="file"
+              ref={galleryFileInputRef}
+              onChange={handleGalleryFileUpload}
+              accept="image/*"
+              className="hidden"
+            />
+          </div>
+        </div>
+
+        {/* Gallery Content - Clean Responsive Photo Grid */}
+        {photos.length === 0 ? (
+          /* Empty Gallery Dropzone */
+          <div className="w-full py-12 rounded-2xl border-2 border-dashed border-brand-rose/30 bg-brand-ivory/50 flex flex-col items-center justify-center text-center p-6 space-y-3">
+            <div className="w-16 h-16 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center">
+              <Camera className="w-8 h-8 text-brand-plum" />
+            </div>
+            <div className="space-y-1 max-w-sm">
+              <h4 className="font-serif font-bold text-base text-brand-plum">No Gallery Photos Yet</h4>
+              <p className="text-xs text-brand-gray">
+                Upload photos of yourself to make your profile stand out and receive 3x more interest requests.
+              </p>
+            </div>
+            <button
+              onClick={() => galleryFileInputRef.current?.click()}
+              className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-1.5"
+            >
+              <Plus className="w-4 h-4 text-brand-gold" />
+              <span>Add Your First Photo</span>
+            </button>
+          </div>
+        ) : (
+          /* Normal Responsive Photo Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {photos.map((img, idx) => (
+              <div
+                key={idx}
+                className="group relative h-64 sm:h-72 rounded-2xl overflow-hidden border border-brand-rose/20 bg-slate-900 shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              >
+                {/* Photo Image */}
+                <img
+                  src={img}
+                  alt={`Gallery photo ${idx + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+
+                <WatermarkOverlay size="medium" />
+
+                {/* Lightbox Expand Button (Top Right) */}
+                <button
+                  onClick={() => {
+                    setActivePhotoIdx(idx);
+                    setLightboxOpen(true);
+                  }}
+                  className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 hover:bg-brand-plum transition-all shadow-md z-10"
+                  title="Expand Photo"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+
+                {/* Action Overlay Controls (On Hover) */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4 z-10">
+                  <button
+                    onClick={() => handleDeletePhoto(idx)}
+                    className="px-3.5 py-2 bg-rose-600 text-white font-bold text-xs rounded-xl shadow hover:bg-rose-700 transition-all flex items-center space-x-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove Photo</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Add Photo Card in Grid */}
+            <div
+              onClick={() => galleryFileInputRef.current?.click()}
+              className="h-64 sm:h-72 rounded-2xl border-2 border-dashed border-brand-rose/40 hover:border-brand-plum bg-brand-ivory/60 hover:bg-brand-ivory cursor-pointer flex flex-col items-center justify-center p-6 text-center transition-all group shadow-sm hover:shadow-md"
+            >
+              <div className="w-12 h-12 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <Plus className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold text-brand-plum">Upload New Photo</span>
+              <span className="text-xs text-brand-gray mt-1">Add another photo of yourself</span>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && photos.length > 0 && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {photos.length > 1 && (
+            <button
+              onClick={() => setActivePhotoIdx((prev) => (prev === 0 ? photos.length - 1 : prev - 1))}
+              className="absolute left-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
+
+          <div className="relative max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden">
+            <img
+              src={currentPhoto}
+              alt="Full size view"
+              className="w-full h-full object-contain max-h-[85vh]"
+            />
+            <WatermarkOverlay size="large" />
+          </div>
+
+          {photos.length > 1 && (
+            <button
+              onClick={() => setActivePhotoIdx((prev) => (prev === photos.length - 1 ? 0 : prev + 1))}
+              className="absolute right-4 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
+
+      {/* EDIT PROFILE INLINE MODAL WITH ALL REGISTRATION & SETUP FIELDS */}
+      {showEditModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white max-w-3xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            
+            <button
+              onClick={() => setShowEditModal(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-brand-plum"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-serif font-bold text-xl text-brand-plum">{t('editProfile')}</h3>
+              {savedSuccess && (
+                <span className="flex items-center space-x-1 text-xs text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Saved!</span>
+                </span>
+              )}
+            </div>
+
+            <form onSubmit={handleSaveEditProfile} className="space-y-6 text-xs">
+              
+              {/* SECTION 1: BASIC INFORMATION */}
+              <div className="space-y-3">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  1. Basic Details (प्राथमिक माहिती)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Full Name (संपूर्ण नाव)</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFormData.name}
+                      onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Gender (लिंग)</label>
+                    <select
+                      value={editFormData.gender}
+                      onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="female">Female (स्त्री)</option>
+                      <option value="male">Male (पुरुष)</option>
+                    </select>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={editFormData.dob}
+                      onChange={(e) => setEditFormData({ ...editFormData, dob: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Age */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Age (वय)</label>
+                    <input
+                      type="number"
+                      value={editFormData.age}
+                      onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Height */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Height</label>
+                    <select
+                      value={editFormData.height}
+                      onChange={(e) => setEditFormData({ ...editFormData, height: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {HEIGHT_OPTIONS.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Marital Status */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Marital Status</label>
+                    <select
+                      value={editFormData.maritalStatus}
+                      onChange={(e) => setEditFormData({ ...editFormData, maritalStatus: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Never Married">Never Married</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Widowed">Widowed</option>
+                    </select>
+                  </div>
+
+                  {/* Religion */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Religion (धर्म)</label>
+                    <select
+                      value={editFormData.religion}
+                      onChange={(e) => setEditFormData({ ...editFormData, religion: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {RELIGIONS.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.religion === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Religion (धर्म सांगा)"
+                        value={editFormData.customReligion}
+                        onChange={(e) => setEditFormData({ ...editFormData, customReligion: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* Community / Caste */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Community / Caste (जात)</label>
+                    <select
+                      value={editFormData.caste}
+                      onChange={(e) => setEditFormData({ ...editFormData, caste: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {MAHARASHTRA_COMMUNITIES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.caste === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Caste / Community (जात सांगा)"
+                        value={editFormData.customCaste}
+                        onChange={(e) => setEditFormData({ ...editFormData, customCaste: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* Mother Tongue */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Mother Tongue</label>
+                    <input
+                      type="text"
+                      value={editFormData.motherTongue}
+                      onChange={(e) => setEditFormData({ ...editFormData, motherTongue: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: LOCATION & NATIVE PLACE */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  2. Location & Address Details (पत्ता व मूळ गाव)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Maharashtra District */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District (जिल्हा)</label>
+                    <select
+                      value={editFormData.district}
+                      onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {MAHARASHTRA_DISTRICTS.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Native Place */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Native Place (मूळ गाव)</label>
+                    <input
+                      type="text"
+                      value={editFormData.nativePlace}
+                      onChange={(e) => setEditFormData({ ...editFormData, nativePlace: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Current City / Area */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Current City / Area</label>
+                    <input
+                      type="text"
+                      value={editFormData.city}
+                      onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                      placeholder="e.g. Kothrud, Pune"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Pincode */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Pincode</label>
+                    <input
+                      type="text"
+                      value={editFormData.pincode}
+                      onChange={(e) => setEditFormData({ ...editFormData, pincode: e.target.value })}
+                      placeholder="e.g. 411038"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: EDUCATION & CAREER */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  3. Education & Profession (शिक्षण व नोकरी)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Education */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Highest Education (शिक्षण)</label>
+                    <select
+                      value={editFormData.education}
+                      onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {EDUCATION_LEVELS.map(ed => (
+                        <option key={ed} value={ed}>{ed}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.education === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Highest Education (शिक्षण सांगा)"
+                        value={editFormData.customEducation}
+                        onChange={(e) => setEditFormData({ ...editFormData, customEducation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* College / University */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">College / University</label>
+                    <input
+                      type="text"
+                      value={editFormData.college}
+                      onChange={(e) => setEditFormData({ ...editFormData, college: e.target.value })}
+                      placeholder="e.g. COEP Pune"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Occupation */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Occupation (नोकरी / व्यवसाय)</label>
+                    <select
+                      value={editFormData.occupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, occupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {OCCUPATIONS.map(occ => (
+                        <option key={occ} value={occ}>{occ}</option>
+                      ))}
+                    </select>
+
+                    {editFormData.occupation === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify Occupation (नोकरी / व्यवसाय सांगा)"
+                        value={editFormData.customOccupation}
+                        onChange={(e) => setEditFormData({ ...editFormData, customOccupation: e.target.value })}
+                        className="w-full mt-2 p-2.5 rounded-xl border border-brand-plum/40 bg-brand-ivory text-xs focus:ring-2 focus:ring-brand-plum/20"
+                      />
+                    )}
+                  </div>
+
+                  {/* Government Employee */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Are you Government Employee ?</label>
+                    <select
+                      value={editFormData.isGovtEmployee || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, isGovtEmployee: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="">Select Option</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  {/* Annual Income */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Annual Income Range</label>
+                    <select
+                      value={editFormData.income}
+                      onChange={(e) => setEditFormData({ ...editFormData, income: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      {INCOME_RANGES.map(inc => (
+                        <option key={inc} value={inc}>{inc}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: FAMILY DETAILS */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  4. Family Details (कौटुंबिक माहिती)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Father's Occupation */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Father's Occupation</label>
+                    <input
+                      type="text"
+                      value={editFormData.fatherOccupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, fatherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Mother's Occupation */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Mother's Occupation</label>
+                    <input
+                      type="text"
+                      value={editFormData.motherOccupation}
+                      onChange={(e) => setEditFormData({ ...editFormData, motherOccupation: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Siblings */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Siblings</label>
+                    <input
+                      type="text"
+                      value={editFormData.siblings}
+                      onChange={(e) => setEditFormData({ ...editFormData, siblings: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  {/* Family Type */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Family Type</label>
+                    <select
+                      value={editFormData.familyType}
+                      onChange={(e) => setEditFormData({ ...editFormData, familyType: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Nuclear Family">Nuclear Family</option>
+                      <option value="Joint Family">Joint Family</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: LIFESTYLE & BIO */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-serif font-bold text-sm text-brand-plum border-b pb-1 uppercase tracking-wider">
+                  5. Lifestyle & Bio (जीवनशैली व परिच्छेद)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Diet Preferences */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Diet Preference</label>
+                    <select
+                      value={editFormData.diet}
+                      onChange={(e) => setEditFormData({ ...editFormData, diet: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="Vegetarian">Vegetarian</option>
+                      <option value="Non-Vegetarian">Non-Vegetarian</option>
+                      <option value="Eggetarian">Eggetarian</option>
+                    </select>
+                  </div>
+
+                  {/* Smoking */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Smoking</label>
+                    <select
+                      value={editFormData.smoking}
+                      onChange={(e) => setEditFormData({ ...editFormData, smoking: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="No">No</option>
+                      <option value="Occasionally">Occasionally</option>
+                    </select>
+                  </div>
+
+                  {/* Drinking */}
+                  <div>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">Drinking</label>
+                    <select
+                      value={editFormData.drinking}
+                      onChange={(e) => setEditFormData({ ...editFormData, drinking: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                    >
+                      <option value="No">No</option>
+                      <option value="Socially">Socially</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* About Me (Bio) */}
+                <div className="pt-2">
+                  <label className="block font-semibold mb-1 text-brand-charcoal">About Me (Bio / परिच्छेद)</label>
+                  <textarea
+                    rows={3}
+                    value={editFormData.aboutMe}
+                    onChange={(e) => setEditFormData({ ...editFormData, aboutMe: e.target.value })}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                </div>
+
+                {/* Partner Expectations */}
+                <div className="pt-2">
+                  <label className="block font-semibold mb-1 text-brand-plum">
+                    Partner Expectations (अपेक्षा - भागीदाराकडून अपेक्षा)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editFormData.expectations}
+                    onChange={(e) => setEditFormData({ ...editFormData, expectations: e.target.value })}
+                    placeholder="अपेक्षा सांगा: Write your partner expectations (e.g. Education, Profession, Family background, Location, Height, Diet...)"
+                    className="w-full p-3 rounded-xl border border-brand-plum/30 bg-amber-50/20 text-xs focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 6: BIODATA */}
+              <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                <label className="block font-semibold text-slate-800 flex items-center space-x-1.5 text-xs">
+                  <FileText className="w-4 h-4 text-amber-600" />
+                  <span>Biodata Document / Photo (बायोडेटा PDF / फोटो)</span>
+                </label>
+                <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md hover:bg-slate-800 transition-all flex items-center justify-center space-x-2 border border-slate-700 mt-4"
+              >
+                <Save className="w-4 h-4 text-amber-400" />
+                <span>Save Profile Changes</span>
+              </button>
+
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Interactive Photo Manager Modal */}
+      {showPhotoManager && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white max-w-xl w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            
+            <button
+              onClick={() => setShowPhotoManager(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-brand-plum"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <h3 className="font-serif font-bold text-xl text-brand-plum">{t('photoManagerTitle')}</h3>
+              <p className="text-xs text-brand-gray">{t('maxPhotosNotice')}</p>
+            </div>
+
+            {/* Current Photos Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              {photos.map((img, idx) => (
+                <div key={idx} className="relative group h-32 rounded-2xl overflow-hidden border-2 border-gray-200">
+                  <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  
+                  {/* Actions overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                    <button
+                      onClick={() => handleDeletePhoto(idx)}
+                      className="p-2 bg-rose-600 text-white rounded-full hover:scale-110 flex items-center space-x-1"
+                      title="Remove photo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Upload Photo Button */}
+            <div className="space-y-3 border-t border-gray-100 pt-4">
+              <button
+                type="button"
+                onClick={() => modalFileInputRef.current?.click()}
+                className="w-full py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
+              >
+                <Upload className="w-4 h-4 text-brand-gold" />
+                <span>Upload New Photo</span>
+              </button>
+              <input
+                type="file"
+                ref={modalFileInputRef}
+                onChange={handleGalleryFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+
+            <button
+              onClick={() => setShowPhotoManager(false)}
+              className="w-full py-2.5 bg-gray-100 text-brand-charcoal font-bold text-xs rounded-xl hover:bg-gray-200"
+            >
+              Done
+            </button>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Subscription Modal Popup */}
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+      />
+
+    </div>
+  );
+};

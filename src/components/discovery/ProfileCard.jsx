@@ -1,0 +1,306 @@
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useProfiles } from '../../context/ProfileContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { VerificationBadge } from '../common/VerificationBadge';
+import { WatermarkOverlay } from '../common/WatermarkOverlay';
+import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+
+export const ProfileCard = ({ profile, onSelect }) => {
+  const { isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist } = useProfiles();
+  const { t } = useLanguage();
+
+  const { user } = useAuth();
+
+  const myId = user?.id ? String(user.id).toLowerCase() : '';
+  const targetId = profile?.id ? String(profile.id).toLowerCase() : '';
+
+  // Extract all available candidate photos into a slideshow list
+  const photosList = useMemo(() => {
+    const list = [];
+    if (profile?.avatar) list.push(profile.avatar);
+    if (Array.isArray(profile?.photos)) {
+      profile.photos.forEach(p => {
+        const url = typeof p === 'string' ? p : p?.url;
+        if (url && !list.includes(url)) list.push(url);
+      });
+    }
+    return list.length > 0 ? list : ['/default-avatar.png'];
+  }, [profile?.avatar, profile?.photos]);
+
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  const handlePrevPhoto = (e) => {
+    e.stopPropagation();
+    setCurrentPhotoIndex(prev => (prev - 1 + photosList.length) % photosList.length);
+  };
+
+  const handleNextPhoto = (e) => {
+    e.stopPropagation();
+    setCurrentPhotoIndex(prev => (prev + 1) % photosList.length);
+  };
+
+  const isSent = Boolean(myId && targetId) && (interests.sent || []).some(s => {
+    if (typeof s !== 'object' || !s) return false;
+    const sender = String(s.senderId || s.user1 || '').toLowerCase();
+    const target = String(s.profileId || s.targetUserId || s.user2 || '').toLowerCase();
+    return sender === myId && target === targetId;
+  });
+
+  const isReceived = Boolean(myId && targetId) && (interests.received || []).some(r => {
+    if (typeof r !== 'object' || !r) return false;
+    const sender = String(r.senderId || r.user1 || '').toLowerCase();
+    const target = String(r.targetUserId || r.profileId || r.user2 || '').toLowerCase();
+    return sender === targetId && target === myId;
+  });
+
+  const isAccepted = Boolean(myId && targetId) && (interests.accepted || []).some(a => {
+    if (typeof a !== 'object' || !a) return false;
+    const u1 = String(a.user1 || a.senderId || '').toLowerCase();
+    const u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
+    return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
+  });
+
+  const isDeclined = Boolean(myId && targetId) && (interests.declined || []).some(d => {
+    if (typeof d !== 'object' || !d) return false;
+    const u1 = String(d.user1 || d.senderId || '').toLowerCase();
+    const u2 = String(d.user2 || d.targetUserId || d.profileId || '').toLowerCase();
+    return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
+  });
+
+  const isShortlisted = (interests.shortlisted || []).includes(profile.id);
+
+  const handleAction = (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      onSelect(profileSlug, 'sendInterest');
+      return;
+    }
+
+    if (isAccepted) {
+      onSelect(profile.id, 'chat');
+      return;
+    }
+
+    if (isReceived) {
+      acceptInterest(profile.id);
+      return;
+    }
+
+    if (!isSent && !isDeclined) {
+      sendInterest(profile.id);
+    }
+  };
+
+  const handleBookmark = (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      triggerPrivacyAlert();
+      return;
+    }
+    toggleShortlist(profile.id);
+  };
+
+  const profileSlug = profile.regId || (profile.registrationId ? `SS-${profile.registrationId}` : profile.id);
+
+  return (
+    <div
+      onClick={() => onSelect(profileSlug)}
+      className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
+    >
+      {/* Top Image Container with Slideshow */}
+      <div className="relative h-96 sm:h-[420px] w-full overflow-hidden bg-brand-lightBg">
+        <img
+          src={photosList[currentPhotoIndex] || photosList[0]}
+          alt={profile.name}
+          className="w-full h-full object-cover object-[center_top] transition-all duration-500"
+        />
+
+        {/* Centered Watermark Logo */}
+        <WatermarkOverlay size="medium" />
+
+        {/* Gradient Overlay for Badges & Bottom Text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
+
+        {/* Left & Right Slideshow Arrows */}
+        {photosList.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevPhoto}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-brand-plum text-white backdrop-blur-md transition-all z-20 shadow-md border border-white/20 opacity-90 hover:opacity-100 hover:scale-110"
+              title="Previous Photo"
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </button>
+            <button
+              onClick={handleNextPhoto}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-brand-plum text-white backdrop-blur-md transition-all z-20 shadow-md border border-white/20 opacity-90 hover:opacity-100 hover:scale-110"
+              title="Next Photo"
+            >
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </button>
+
+            {/* Slideshow Pagination Indicator Dots */}
+            <div className="absolute bottom-3 right-3 flex items-center space-x-1.5 z-20 bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10">
+              {photosList.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentPhotoIndex(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === currentPhotoIndex ? 'bg-white w-4' : 'bg-white/50 w-1.5 hover:bg-white/80'
+                  }`}
+                  title={`Photo ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Top Badges */}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
+          <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+            {profile.verified && <VerificationBadge size="small" />}
+          </div>
+
+          {/* Shortlist Bookmark Button */}
+          <button
+            onClick={handleBookmark}
+            className={`p-2 rounded-full backdrop-blur-md transition-all ${
+              isShortlisted
+                ? 'bg-brand-plum text-brand-gold shadow-md'
+                : 'bg-white/80 text-brand-charcoal hover:bg-white hover:text-brand-plum'
+            }`}
+            title={t('shortlist')}
+          >
+            <Bookmark className={`w-4 h-4 ${isShortlisted ? 'fill-brand-gold' : ''}`} />
+          </button>
+        </div>
+
+        {/* Profile Number on Image Bottom Left */}
+        <div className="absolute bottom-3 left-3 text-white font-medium text-xs drop-shadow-md flex items-center space-x-1 z-10">
+          <span className="text-gray-200">Profile No.</span>
+          <span className="font-bold text-white">
+            {profile.registrationId ? String(profile.registrationId) : (profile.regId ? (String(profile.regId).replace(/[^0-9]/g, '') || profile.regId) : (String(profile.id).replace(/[^0-9]/g, '') || profile.id))}
+          </span>
+        </div>
+      </div>
+
+      {/* Card Info Body (White Box Below Photo) */}
+      <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
+        
+        {/* Name & Structured Specs Section */}
+        <div className="space-y-2 text-xs">
+          
+          {/* Top Line: Candidate Name & Age (Age in front of name) */}
+          <div className="flex items-baseline space-x-2 min-w-0">
+            <h3 className="font-serif font-bold text-xl sm:text-2xl text-slate-900 tracking-wide truncate">
+              {profile.name ? profile.name.trim().split(' ')[0] : ''}
+            </h3>
+            <span className="text-xs font-bold text-brand-rose shrink-0">
+              {profile.age} yrs
+            </span>
+          </div>
+
+          {/* Clean 2-Column Specs Grid: Height, Location, Education, Work */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-0.5 text-xs text-slate-900 font-bold">
+            
+            {/* Col 1, Row 1: Height */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <Ruler className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+              <span className="truncate">{profile.height || '-'}</span>
+            </div>
+
+            {/* Col 2, Row 1: Location */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
+              <span className="truncate">{profile.district || 'Maharashtra'}</span>
+            </div>
+
+            {/* Col 1, Row 2: Education */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <GraduationCap className="w-3.5 h-3.5 text-brand-plum shrink-0" />
+              <span className="truncate" title={profile.education}>{profile.education || '-'}</span>
+            </div>
+
+            {/* Col 2, Row 2: Work / Occupation */}
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <Briefcase className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
+              <span className="truncate" title={profile.occupation}>{profile.occupation || '-'}</span>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Action Button Section */}
+        <div className="pt-2 space-y-2">
+          {/* View Details Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(profileSlug);
+            }}
+            className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all border border-emerald-400/30"
+          >
+            <Eye className="w-4 h-4 text-amber-300 shrink-0" />
+            <span>View Details</span>
+          </button>
+
+          {isAccepted ? (
+            <button
+              onClick={handleAction}
+              className="w-full py-2.5 px-4 rounded-2xl bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:bg-emerald-800 transition-all"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>{t('sendMessage')}</span>
+            </button>
+          ) : isReceived ? (
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); acceptInterest(profile.id); }}
+                className="flex-1 py-2 px-3 rounded-xl bg-brand-plum text-white font-bold text-xs flex items-center justify-center space-x-1 shadow hover:bg-brand-plumDark transition-all"
+              >
+                <Check className="w-3.5 h-3.5 text-brand-gold" />
+                <span>{t('acceptInterest')}</span>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); declineInterest(profile.id); }}
+                className="py-2 px-3 rounded-xl bg-gray-100 text-gray-700 font-semibold text-xs hover:bg-rose-50 hover:text-rose-700 transition-all"
+              >
+                {t('declineInterest')}
+              </button>
+            </div>
+          ) : isSent ? (
+            <div className="flex gap-2">
+              <span className="flex-1 py-2 px-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs flex items-center justify-center space-x-1">
+                <UserCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{t('interestSent')}</span>
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); withdrawInterest(profile.id); }}
+                className="py-2 px-3 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 shrink-0"
+                title="Withdraw Interest Request"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Withdraw</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAction}
+              className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all group-hover:from-brand-plumDark group-hover:to-brand-plum border border-brand-gold/30"
+            >
+              <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+              <span>{t('sendInterest')}</span>
+            </button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
