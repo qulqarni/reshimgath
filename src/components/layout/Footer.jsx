@@ -1,9 +1,14 @@
 import React from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Heart, ShieldCheck, Phone, Mail, MapPin, Lock } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 export const Footer = ({ onNavigate }) => {
   const { t } = useLanguage();
+  
+  if (Capacitor.isNativePlatform()) {
+    return null;
+  }
 
   return (
     <footer className="bg-brand-ivory text-brand-charcoal pt-8 sm:pt-16 pb-20 md:pb-12 border-t-2 sm:border-t-4 border-brand-plum relative overflow-hidden">
