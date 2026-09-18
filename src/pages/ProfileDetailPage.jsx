@@ -318,26 +318,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
         {/* DIGITAL MAHARASHTRIAN BIODATA DOCUMENT (Mobile View Main Card) */}
         <div className="bg-white rounded-3xl p-5 sm:p-7 border border-amber-300 shadow-luxury space-y-6">
-          
-          {/* Candidate Banner Box */}
-          <div className="flex items-center space-x-4 bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80">
-            {profile.avatar || (Array.isArray(profile.photos) && profile.photos[0]) ? (
-              <img
-                src={profile.avatar || profile.photos[0]}
-                alt={profile.name}
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-brand-plum shadow-sm shrink-0"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl bg-brand-plum/10 text-brand-plum font-serif font-bold text-2xl flex items-center justify-center border-2 border-brand-plum shrink-0">
-                {firstName[0]}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h3 className="font-serif text-lg font-bold text-brand-plum leading-snug break-words">
-                {profile.name}
-              </h3>
-            </div>
-          </div>
 
           {/* 1. वैयक्तिक माहिती (PERSONAL DETAILS) */}
           <div className="space-y-3">
