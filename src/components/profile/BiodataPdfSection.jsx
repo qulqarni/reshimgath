@@ -384,9 +384,6 @@ export const BiodataPdfSection = ({
                 
                 {/* Traditional Header */}
                 <div className="text-center space-y-1 border-b-2 border-brand-plum/20 pb-5">
-                  <div className="text-amber-700 font-bold font-serif-marathi text-sm tracking-widest">
-                    ॥ श्री गणेशाय नमः ॥
-                  </div>
                   <h1 className="font-serif text-2xl sm:text-3xl font-bold text-brand-plum">
                     संबोधी सारंग विवाह बायोडेटा
                   </h1>
