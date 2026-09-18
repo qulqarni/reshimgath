@@ -122,9 +122,12 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
   const accessStatus = canViewProfile(profile?.id);
   const isContactUnlocked = accessStatus.canView || accessStatus.alreadyUnlocked;
+  const isMeAdmin = user?.isAdmin === true || user?.role === 'admin' || user?.id === 'admin_1';
+  const remainingCredits = user?.subscription?.creditsRemaining || 0;
+  const hasCreditsToUnlock = isMeAdmin || remainingCredits > 0;
 
   const isSubscribed = isAuthenticated && (hasActiveSubscription ? hasActiveSubscription() : Boolean(
-    user?.isAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
+    isMeAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
   ));
 
   const handleUnlockContactClick = () => {
@@ -233,7 +236,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
 
     if (!isSent && !isDeclined) {
-      if (!isSubscribed) {
+      if (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) {
         setSubModalReason('send_interest');
         setShowSubModal(true);
         return;
@@ -648,15 +651,29 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               <button
                 onClick={handleAction}
                 className={`w-full py-3.5 font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border ${
-                  isAuthenticated && !isSubscribed
+                  isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock))
                     ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 hover:from-brand-plum hover:to-amber-600'
                     : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/40'
                 }`}
+                title={
+                  isAuthenticated
+                    ? isContactUnlocked
+                      ? 'Send interest to this candidate (Contact & Biodata already unlocked - 0 credits)'
+                      : hasCreditsToUnlock
+                      ? 'Uses 1 profile credit to send interest & automatically unlock contact details & biodata'
+                      : 'Membership subscription or credits required'
+                    : 'Send Interest'
+                }
               >
-                {isAuthenticated && !isSubscribed ? (
+                {isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) ? (
                   <>
                     <Crown className="w-4 h-4 text-amber-300" />
                     <span>{t('sendInterest')} (Subscribe)</span>
+                  </>
+                ) : isAuthenticated && !isContactUnlocked && hasCreditsToUnlock ? (
+                  <>
+                    <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                    <span>{t('sendInterest')} (1 Credit - Unlocks Contact & Biodata)</span>
                   </>
                 ) : (
                   <>
@@ -1207,15 +1224,20 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           <button
             onClick={handleAction}
             className={`w-full py-3 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-2 ${
-              isAuthenticated && !isSubscribed
+              isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock))
                 ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark border border-amber-400/40'
                 : 'bg-brand-plum'
             }`}
           >
-            {isAuthenticated && !isSubscribed ? (
+            {isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) ? (
               <>
                 <Crown className="w-4 h-4 text-amber-300" />
                 <span>{t('sendInterest')} (Subscribe)</span>
+              </>
+            ) : isAuthenticated && !isContactUnlocked && hasCreditsToUnlock ? (
+              <>
+                <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                <span>{t('sendInterest')} (1 Credit)</span>
               </>
             ) : (
               <>

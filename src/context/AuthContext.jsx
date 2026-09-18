@@ -471,7 +471,17 @@ export const AuthProvider = ({ children }) => {
       return (u1IsMe && u2IsTarget) || (u2IsMe && u1IsTarget);
     });
 
-    if (isAlreadyUnlocked || isReceivedFromTarget || isConnectedWithTarget) {
+    const sentArray = interestsSaved.sent || [];
+    const isSentToTarget = sentArray.some(s => {
+      if (!s) return false;
+      const sender = typeof s === 'string' ? user.id : (s.senderId || s.user1);
+      const target = typeof s === 'string' ? s : (s.profileId || s.targetUserId || s.user2);
+      const senderStr = String(sender).toLowerCase();
+      const targetStr = String(target).toLowerCase();
+      return senderStr === myIdStr && targetIdentifiers.includes(targetStr);
+    });
+
+    if (isAlreadyUnlocked || isReceivedFromTarget || isConnectedWithTarget || isSentToTarget) {
       return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
     }
 
