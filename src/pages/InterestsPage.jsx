@@ -109,7 +109,7 @@ const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-
 };
 
 export const InterestsPage = ({ onNavigate }) => {
-  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, hasActiveSubscription, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, acceptInterest, declineInterest, withdrawInterest, toggleShortlist } = useProfiles();
 
@@ -118,6 +118,11 @@ export const InterestsPage = ({ onNavigate }) => {
   const [selectedProfileForUnlock, setSelectedProfileForUnlock] = useState(null);
   const [showSubModal, setShowSubModal] = useState(false);
   const [selectedProfileForSub, setSelectedProfileForSub] = useState(null);
+  const [subModalReason, setSubModalReason] = useState(null);
+
+  const isSubscribed = isAuthenticated && (hasActiveSubscription ? hasActiveSubscription() : Boolean(
+    user?.isAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
+  ));
 
   if (!isAuthenticated) {
     triggerPrivacyAlert();
@@ -377,7 +382,15 @@ export const InterestsPage = ({ onNavigate }) => {
                         </button>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <button
-                            onClick={() => acceptInterest(p.id)}
+                            onClick={() => {
+                              if (!isSubscribed) {
+                                setSelectedProfileForSub(p);
+                                setSubModalReason('connect');
+                                setShowSubModal(true);
+                                return;
+                              }
+                              acceptInterest(p.id);
+                            }}
                             className="flex-1 py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                           >
                             <Check className="w-3.5 h-3.5 text-white" />
@@ -537,6 +550,7 @@ export const InterestsPage = ({ onNavigate }) => {
         isOpen={showSubModal}
         onClose={() => setShowSubModal(false)}
         targetProfileName={selectedProfileForSub?.name}
+        reason={subModalReason}
       />
 
       <UnlockConfirmationModal

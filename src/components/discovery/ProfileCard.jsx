@@ -4,14 +4,12 @@ import { useProfiles } from '../../context/ProfileContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { VerificationBadge } from '../common/VerificationBadge';
 import { WatermarkOverlay } from '../common/WatermarkOverlay';
-import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler, Eye, ChevronLeft, ChevronRight, Crown, Lock } from 'lucide-react';
 
 export const ProfileCard = ({ profile, onSelect }) => {
-  const { isAuthenticated, triggerPrivacyAlert } = useAuth();
-  const { interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist } = useProfiles();
+  const { user, isAuthenticated, hasActiveSubscription, triggerPrivacyAlert } = useAuth();
+  const { interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, openSubscriptionModal } = useProfiles();
   const { t } = useLanguage();
-
-  const { user } = useAuth();
 
   const myId = user?.id ? String(user.id).toLowerCase() : '';
   const targetId = profile?.id ? String(profile.id).toLowerCase() : '';
@@ -71,6 +69,10 @@ export const ProfileCard = ({ profile, onSelect }) => {
 
   const isShortlisted = (interests.shortlisted || []).includes(profile.id);
 
+  const isSubscribed = isAuthenticated && (hasActiveSubscription ? hasActiveSubscription() : Boolean(
+    user?.isAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
+  ));
+
   const handleAction = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) {
@@ -84,11 +86,19 @@ export const ProfileCard = ({ profile, onSelect }) => {
     }
 
     if (isReceived) {
+      if (!isSubscribed) {
+        if (openSubscriptionModal) openSubscriptionModal(profile.name, 'connect');
+        return;
+      }
       acceptInterest(profile.id);
       return;
     }
 
     if (!isSent && !isDeclined) {
+      if (!isSubscribed) {
+        if (openSubscriptionModal) openSubscriptionModal(profile.name, 'send_interest');
+        return;
+      }
       sendInterest(profile.id);
     }
   };
@@ -261,7 +271,14 @@ export const ProfileCard = ({ profile, onSelect }) => {
           ) : isReceived ? (
             <div className="flex gap-2">
               <button
-                onClick={(e) => { e.stopPropagation(); acceptInterest(profile.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isSubscribed) {
+                    if (openSubscriptionModal) openSubscriptionModal(profile.name, 'connect');
+                    return;
+                  }
+                  acceptInterest(profile.id);
+                }}
                 className="flex-1 py-2 px-3 rounded-xl bg-brand-plum text-white font-bold text-xs flex items-center justify-center space-x-1 shadow hover:bg-brand-plumDark transition-all"
               >
                 <Check className="w-3.5 h-3.5 text-brand-gold" />
@@ -292,10 +309,23 @@ export const ProfileCard = ({ profile, onSelect }) => {
           ) : (
             <button
               onClick={handleAction}
-              className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all group-hover:from-brand-plumDark group-hover:to-brand-plum border border-brand-gold/30"
+              className={`w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all border ${
+                isAuthenticated && !isSubscribed
+                  ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 group-hover:from-brand-plum group-hover:to-amber-600'
+                  : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/30 group-hover:from-brand-plumDark group-hover:to-brand-plum'
+              }`}
             >
-              <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-              <span>{t('sendInterest')}</span>
+              {isAuthenticated && !isSubscribed ? (
+                <>
+                  <Crown className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{t('sendInterest')} (Subscribe)</span>
+                </>
+              ) : (
+                <>
+                  <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                  <span>{t('sendInterest')}</span>
+                </>
+              )}
             </button>
           )}
         </div>

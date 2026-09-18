@@ -158,7 +158,30 @@ export const ProfileProvider = ({ children }) => {
     return DEFAULT_SUBSCRIPTION_PLANS;
   });
 
-  const { user } = useAuth();
+  const { user, hasActiveSubscription } = useAuth();
+
+  // Global subscription modal control for actions that require membership (Send Interest, Connect, Unlock)
+  const [subModalConfig, setSubModalConfig] = useState({
+    isOpen: false,
+    targetProfileName: null,
+    reason: null
+  });
+
+  const openSubscriptionModal = (targetProfileName = null, reason = 'send_interest') => {
+    setSubModalConfig({
+      isOpen: true,
+      targetProfileName,
+      reason
+    });
+  };
+
+  const closeSubscriptionModal = () => {
+    setSubModalConfig({
+      isOpen: false,
+      targetProfileName: null,
+      reason: null
+    });
+  };
 
   // Sync logged-in candidate user profile changes into profiles array in real-time (Excludes Admin)
   useEffect(() => {
@@ -478,7 +501,23 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const sendInterest = (profileId) => {
-    if (!user) return;
+    if (!user) {
+      addToast('Please log in to send an interest.', 'warning');
+      return false;
+    }
+
+    const isSubscribed = hasActiveSubscription ? hasActiveSubscription() : (
+      user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1' || Boolean(
+        user.subscription?.planId && user.subscription.planId !== 'none' && user.subscription.planId !== 'free'
+      )
+    );
+
+    if (!isSubscribed) {
+      const targetProfile = profiles.find(p => String(p.id).toLowerCase() === String(profileId).toLowerCase() || (p.regId && String(p.regId).toLowerCase() === String(profileId).toLowerCase()));
+      addToast('A membership subscription is required to send interest and connect with profiles.', 'warning');
+      openSubscriptionModal(targetProfile?.name || null, 'send_interest');
+      return false;
+    }
 
     // Check if already sent
     const alreadySent = (interests.sent || []).some((item) =>
@@ -543,10 +582,27 @@ export const ProfileProvider = ({ children }) => {
     saveNotificationToFirestore(interestNotif);
 
     addToast('Interest sent successfully! Communication will unlock once accepted.', 'success');
+    return true;
   };
 
   const acceptInterest = (profileId) => {
-    if (!user) return;
+    if (!user) {
+      addToast('Please log in to accept an interest.', 'warning');
+      return false;
+    }
+
+    const isSubscribed = hasActiveSubscription ? hasActiveSubscription() : (
+      user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1' || Boolean(
+        user.subscription?.planId && user.subscription.planId !== 'none' && user.subscription.planId !== 'free'
+      )
+    );
+
+    if (!isSubscribed) {
+      const targetProfile = profiles.find(p => String(p.id).toLowerCase() === String(profileId).toLowerCase() || (p.regId && String(p.regId).toLowerCase() === String(profileId).toLowerCase()));
+      addToast('A membership subscription is required to connect and chat with profiles.', 'warning');
+      openSubscriptionModal(targetProfile?.name || null, 'connect');
+      return false;
+    }
 
     const acceptedEntry = { user1: user.id, user2: profileId, profileId: profileId, timestamp: 'Just now' };
 
@@ -1117,7 +1173,10 @@ export const ProfileProvider = ({ children }) => {
         updateSubscriptionPlans,
         addSuccessStory,
         updateSuccessStory,
-        deleteSuccessStory
+        deleteSuccessStory,
+        subModalConfig,
+        openSubscriptionModal,
+        closeSubscriptionModal
       }}
     >
       {children}

@@ -538,6 +538,17 @@ export const AuthProvider = ({ children }) => {
     setTimeout(() => setPrivacyAlert(false), 5000);
   };
 
+  const hasActiveSubscription = () => {
+    if (!user) return false;
+    if (user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1') return true;
+    const sub = user.subscription || {};
+    const planId = (sub.planId || user.subPlanId || 'none').toLowerCase();
+    const planName = sub.planName || '';
+    const remaining = sub.creditsRemaining || 0;
+    const total = sub.creditsTotal || 0;
+    return (planId !== 'none' && planId !== 'free' && planName !== 'Free / Inactive') || remaining > 0 || total > 0;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -554,6 +565,7 @@ export const AuthProvider = ({ children }) => {
         subscribeUserToPlan,
         unlockProfileForUser,
         canViewProfile,
+        hasActiveSubscription,
         privacyAlert,
         triggerPrivacyAlert
       }}

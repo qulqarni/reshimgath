@@ -22,7 +22,7 @@ const PLAN_RANKS = {
   premium: 3
 };
 
-export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null }) => {
+export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null, reason = null }) => {
   const { user, subscribeUserToPlan } = useAuth();
   const { subscriptionPlans } = useProfiles();
   const plansToRender = subscriptionPlans && subscriptionPlans.length > 0 ? subscriptionPlans : SUBSCRIPTION_PLANS;
@@ -91,6 +91,29 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
     });
   };
 
+  const getHeaderTitle = () => {
+    if (reason === 'send_interest') {
+      return targetProfileName 
+        ? `Subscribe to Send Interest to ${targetProfileName}`
+        : 'MEMBERSHIP REQUIRED TO SEND INTEREST';
+    }
+    if (reason === 'connect') {
+      return targetProfileName
+        ? `Subscribe to Connect with ${targetProfileName}`
+        : 'MEMBERSHIP REQUIRED TO CONNECT';
+    }
+    return targetProfileName 
+      ? `Unlock Full Profile Access for ${targetProfileName}` 
+      : 'CHOOSE A MATRIMONIAL MEMBERSHIP PLAN';
+  };
+
+  const getHeaderSubtitle = () => {
+    if (reason === 'send_interest' || reason === 'connect') {
+      return 'An active membership plan is required to send interest, connect with candidate profiles, and view contact numbers.';
+    }
+    return 'Select a plan to start opening candidate profiles and viewing direct contact details.';
+  };
+
   return createPortal(
     <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
       <div className="bg-white max-w-5xl w-full max-h-[85vh] sm:max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-200 my-auto animate-in zoom-in-95 duration-200">
@@ -103,12 +126,10 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
               <span>संबोधी सारंग वधूवर सुचक केंद्र</span>
             </div>
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {targetProfileName 
-                ? `Unlock Full Profile Access for ${targetProfileName}` 
-                : 'CHOOSE A MATRIMONIAL MEMBERSHIP PLAN'}
+              {getHeaderTitle()}
             </h2>
             <p className="text-xs text-white/90 font-medium">
-              Select a plan to start opening candidate profiles and viewing direct contact details.
+              {getHeaderSubtitle()}
             </p>
           </div>
 
@@ -128,7 +149,11 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null })
               <Lock className="w-5 h-5 text-amber-700 shrink-0" />
               <div>
                 <span className="font-bold">Subscription Required: </span>
-                To view complete details, contact number, and biodata of <strong className="underline">{targetProfileName}</strong>, please activate any plan below.
+                {reason === 'send_interest'
+                  ? <>To express interest and connect with <strong className="underline">{targetProfileName}</strong>, please activate any membership plan below.</>
+                  : reason === 'connect'
+                  ? <>To accept interest and connect with <strong className="underline">{targetProfileName}</strong>, please activate any membership plan below.</>
+                  : <>To view complete details, contact number, and biodata of <strong className="underline">{targetProfileName}</strong>, please activate any plan below.</>}
               </div>
             </div>
           )}

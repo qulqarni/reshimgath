@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { ProfileProvider } from './context/ProfileContext';
+import { ProfileProvider, useProfiles } from './context/ProfileContext';
 
 import { Navbar } from './components/layout/Navbar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { Footer } from './components/layout/Footer';
 import { ToastContainer } from './components/common/ToastContainer';
+import { SubscriptionModal } from './components/subscription/SubscriptionModal';
 
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -29,6 +30,8 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 
 function AppContent() {
+  const { subModalConfig, closeSubscriptionModal } = useProfiles();
+
   // Helper to determine initial path & profile id from browser address bar URL slug
   const getInitialRoute = () => {
     const pathname = window.location.pathname;
@@ -144,6 +147,12 @@ function AppContent() {
       <Footer onNavigate={handleNavigate} />
       <MobileBottomNav currentPath={currentPath} onNavigate={handleNavigate} />
       <ToastContainer />
+      <SubscriptionModal
+        isOpen={Boolean(subModalConfig?.isOpen)}
+        onClose={closeSubscriptionModal}
+        targetProfileName={subModalConfig?.targetProfileName}
+        reason={subModalConfig?.reason}
+      />
     </div>
   );
 }

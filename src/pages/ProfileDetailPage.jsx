@@ -101,11 +101,12 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
 );
 
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
-  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, hasActiveSubscription, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, recordProfileView } = useProfiles();
 
   const [showSubModal, setShowSubModal] = useState(false);
+  const [subModalReason, setSubModalReason] = useState(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
@@ -122,12 +123,17 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const accessStatus = canViewProfile(profile?.id);
   const isContactUnlocked = accessStatus.canView || accessStatus.alreadyUnlocked;
 
+  const isSubscribed = isAuthenticated && (hasActiveSubscription ? hasActiveSubscription() : Boolean(
+    user?.isAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
+  ));
+
   const handleUnlockContactClick = () => {
     if (!isAuthenticated) {
       setShowGuestAuthModal(true);
     } else if (accessStatus.hasActivePlan && accessStatus.remainingVisits > 0) {
       setShowUnlockModal(true);
     } else {
+      setSubModalReason('view_contact');
       setShowSubModal(true);
     }
   };
@@ -207,6 +213,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const handleAction = () => {
     if (!isAuthenticated) {
       if (triggerPrivacyAlert) triggerPrivacyAlert();
+      setShowGuestAuthModal(true);
       return;
     }
 
@@ -216,11 +223,21 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
 
     if (isReceived) {
+      if (!isSubscribed) {
+        setSubModalReason('connect');
+        setShowSubModal(true);
+        return;
+      }
       acceptInterest(profile.id);
       return;
     }
 
     if (!isSent && !isDeclined) {
+      if (!isSubscribed) {
+        setSubModalReason('send_interest');
+        setShowSubModal(true);
+        return;
+      }
       sendInterest(profile.id);
     }
   };
@@ -593,7 +610,14 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             ) : isReceived ? (
               <div className="flex gap-2">
                 <button
-                  onClick={() => acceptInterest(profile.id)}
+                  onClick={() => {
+                    if (!isSubscribed) {
+                      setSubModalReason('connect');
+                      setShowSubModal(true);
+                      return;
+                    }
+                    acceptInterest(profile.id);
+                  }}
                   className="flex-1 py-3.5 bg-brand-plum text-white font-bold text-xs rounded-2xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/40"
                 >
                   <Check className="w-4 h-4 text-brand-gold" />
@@ -623,10 +647,23 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             ) : (
               <button
                 onClick={handleAction}
-                className="w-full py-3.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+                className={`w-full py-3.5 font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border ${
+                  isAuthenticated && !isSubscribed
+                    ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 hover:from-brand-plum hover:to-amber-600'
+                    : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/40'
+                }`}
               >
-                <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                <span>{t('sendInterest')}</span>
+                {isAuthenticated && !isSubscribed ? (
+                  <>
+                    <Crown className="w-4 h-4 text-amber-300" />
+                    <span>{t('sendInterest')} (Subscribe)</span>
+                  </>
+                ) : (
+                  <>
+                    <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                    <span>{t('sendInterest')}</span>
+                  </>
+                )}
               </button>
             )}
 
@@ -1142,7 +1179,14 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         ) : isReceived ? (
           <div className="flex gap-2">
             <button
-              onClick={() => acceptInterest(profile.id)}
+              onClick={() => {
+                if (!isSubscribed) {
+                  setSubModalReason('connect');
+                  setShowSubModal(true);
+                  return;
+                }
+                acceptInterest(profile.id);
+              }}
               className="flex-1 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-1"
             >
               <Check className="w-4 h-4 text-brand-gold" />
@@ -1162,10 +1206,23 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         ) : (
           <button
             onClick={handleAction}
-            className="w-full py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-2"
+            className={`w-full py-3 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-2 ${
+              isAuthenticated && !isSubscribed
+                ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark border border-amber-400/40'
+                : 'bg-brand-plum'
+            }`}
           >
-            <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-            <span>{t('sendInterest')}</span>
+            {isAuthenticated && !isSubscribed ? (
+              <>
+                <Crown className="w-4 h-4 text-amber-300" />
+                <span>{t('sendInterest')} (Subscribe)</span>
+              </>
+            ) : (
+              <>
+                <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                <span>{t('sendInterest')}</span>
+              </>
+            )}
           </button>
         )}
       </div>
@@ -1174,6 +1231,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         isOpen={showSubModal}
         onClose={() => setShowSubModal(false)}
         targetProfileName={profile.name}
+        reason={subModalReason}
       />
 
       <UnlockConfirmationModal
