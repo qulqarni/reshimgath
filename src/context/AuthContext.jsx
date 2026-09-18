@@ -39,6 +39,79 @@ export const getNextRegistrationId = () => {
   }
 };
 
+export const getProfileCreationTime = (p) => {
+  if (!p) return 0;
+  
+  if (p.createdAt) {
+    if (typeof p.createdAt === 'object' && p.createdAt.seconds) {
+      return p.createdAt.seconds * 1000;
+    }
+    const t = new Date(p.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+
+  const alt = p.registeredAt || p.timestamp;
+  if (alt) {
+    if (typeof alt === 'object' && alt.seconds) {
+      return alt.seconds * 1000;
+    }
+    const t = new Date(alt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+
+  if (p.id && (String(p.id).startsWith('u_') || String(p.id).startsWith('p_'))) {
+    const digits = String(p.id).replace(/[^0-9]/g, '');
+    const num = Number(digits);
+    if (!isNaN(num) && num > 1577836800000) {
+      return num;
+    }
+  }
+
+  return 0;
+};
+
+export const getProfileRegNumber = (p) => {
+  if (!p) return 0;
+  if (p.registrationId && !isNaN(Number(p.registrationId))) {
+    return Number(p.registrationId);
+  }
+  const rawId = String(p.regId || p.id || '').replace(/[^0-9]/g, '');
+  const num = parseInt(rawId, 10);
+  return !isNaN(num) ? num : 0;
+};
+
+export const sortProfilesByLatest = (profilesList) => {
+  if (!Array.isArray(profilesList)) return [];
+  return [...profilesList].sort((a, b) => {
+    // 1. Compare registration timestamps if both have valid creation dates
+    const timeA = getProfileCreationTime(a);
+    const timeB = getProfileCreationTime(b);
+    if (timeA > 0 && timeB > 0 && timeA !== timeB) {
+      return timeB - timeA;
+    }
+
+    // 2. Compare Profile Registration numbers (e.g., Profile 1033 > 1032 > 1001)
+    const regA = getProfileRegNumber(a);
+    const regB = getProfileRegNumber(b);
+    if (regA !== regB) {
+      return regB - regA;
+    }
+
+    // 3. If only one has timestamp
+    if (timeA > 0 && timeB === 0) return -1;
+    if (timeB > 0 && timeA === 0) return 1;
+
+    // 4. Compare timestamp embedded in ID
+    const idA = Number(String(a?.id || '').replace(/[^0-9]/g, '')) || 0;
+    const idB = Number(String(b?.id || '').replace(/[^0-9]/g, '')) || 0;
+    if (idA !== idB) {
+      return idB - idA;
+    }
+
+    return 0;
+  });
+};
+
 export const normalizeProfile = (p, defaultIndex = 0) => {
   if (!p) return p;
 
@@ -308,7 +381,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const stored = localStorage.getItem('reshimgath_profiles');
       const profiles = stored ? JSON.parse(stored) : [];
-      const updated = [newUser, ...profiles.filter(p => p.id !== newUser.id)];
+      const updated = sortProfilesByLatest([newUser, ...profiles.filter(p => p.id !== newUser.id)]);
       localStorage.setItem('reshimgath_profiles', JSON.stringify(updated));
     } catch (e) {
       console.warn('localStorage quota or write error:', e);

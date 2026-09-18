@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth, normalizeProfile } from './AuthContext';
+import { useAuth, normalizeProfile, sortProfilesByLatest } from './AuthContext';
+export { sortProfilesByLatest } from './AuthContext';
 import { MOCK_PROFILES } from '../data/mockProfiles';
 import { DEFAULT_SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { 
@@ -120,9 +121,9 @@ export const ProfileProvider = ({ children }) => {
         const norm = normalizeProfile(p, idx);
         if (!allExcluded.includes(String(norm.id))) map.set(String(norm.id), norm);
       });
-      return Array.from(map.values());
+      return sortProfilesByLatest(Array.from(map.values()));
     }
-    return MOCK_PROFILES.map((p, idx) => normalizeProfile(p, idx)).filter(p => !allExcluded.includes(String(p.id)));
+    return sortProfilesByLatest(MOCK_PROFILES.map((p, idx) => normalizeProfile(p, idx)).filter(p => !allExcluded.includes(String(p.id))));
   });
 
   const [homeContent, setHomeContent] = useState(() => {
@@ -192,9 +193,9 @@ export const ProfileProvider = ({ children }) => {
         if (index !== -1) {
           const updated = [...prev];
           updated[index] = { ...updated[index], ...normUser };
-          return updated;
+          return sortProfilesByLatest(updated);
         } else {
-          return [normUser, ...prev];
+          return sortProfilesByLatest([normUser, ...prev]);
         }
       });
     }
@@ -243,10 +244,11 @@ export const ProfileProvider = ({ children }) => {
         }
 
         const updatedList = Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
+        const sortedList = sortProfilesByLatest(updatedList);
         try {
-          localStorage.setItem('reshimgath_profiles', JSON.stringify(updatedList));
+          localStorage.setItem('reshimgath_profiles', JSON.stringify(sortedList));
         } catch (e) {}
-        return updatedList;
+        return sortedList;
       });
     });
 
@@ -910,6 +912,7 @@ export const ProfileProvider = ({ children }) => {
     const id = 'p_' + Date.now();
     const createdProfile = normalizeProfile({
       id,
+      createdAt: new Date().toISOString(),
       verified: true,
       photos: newProfileData.photos || [],
       avatar: newProfileData.avatar || null,
@@ -927,7 +930,7 @@ export const ProfileProvider = ({ children }) => {
     });
 
     setProfiles((prev) => {
-      const next = [createdProfile, ...prev];
+      const next = sortProfilesByLatest([createdProfile, ...prev]);
       try {
         localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
       } catch (e) {}
@@ -958,10 +961,11 @@ export const ProfileProvider = ({ children }) => {
         }
         return p;
       });
+      const sortedNext = sortProfilesByLatest(next);
       try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(sortedNext));
       } catch (e) {}
-      return next;
+      return sortedNext;
     });
 
     try {
@@ -1015,7 +1019,7 @@ export const ProfileProvider = ({ children }) => {
     const normalized = normalizeProfile(rawProfile);
 
     setProfiles((prev) => {
-      const updatedList = [normalized, ...prev];
+      const updatedList = sortProfilesByLatest([normalized, ...prev]);
       try {
         localStorage.setItem('reshimgath_profiles', JSON.stringify(updatedList));
       } catch (e) {}
@@ -1199,7 +1203,8 @@ export const ProfileProvider = ({ children }) => {
         deleteSuccessStory,
         subModalConfig,
         openSubscriptionModal,
-        closeSubscriptionModal
+        closeSubscriptionModal,
+        sortProfilesByLatest
       }}
     >
       {children}

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useProfiles } from '../context/ProfileContext';
+import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { ProfileCard } from '../components/discovery/ProfileCard';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
@@ -88,7 +88,7 @@ export const DiscoverPage = ({ onNavigate }) => {
   }, [isAnyModalOpen]);
 
   const filteredProfiles = useMemo(() => {
-    return profiles.filter((p) => {
+    const list = profiles.filter((p) => {
       // 1. Exclude logged-in user's own profile
       if (user && (String(p.id) === String(user.id) || (user.email && p.email === user.email))) {
         return false;
@@ -251,6 +251,7 @@ export const DiscoverPage = ({ onNavigate }) => {
 
       return true;
     });
+    return sortProfilesByLatest(list);
   }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   const handleReset = () => {

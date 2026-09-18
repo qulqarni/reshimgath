@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
-import { useProfiles } from '../context/ProfileContext';
+import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
@@ -554,8 +554,8 @@ export const AdminPage = ({ onNavigate }) => {
     );
   }
 
-  // Filtered profiles logic
-  const filteredProfiles = profiles.filter((p) => {
+  // Filtered profiles logic (latest profiles appear on top)
+  const filteredProfiles = sortProfilesByLatest(profiles.filter((p) => {
     const q = searchQuery.toLowerCase().trim();
     const digitsQ = q.replace(/[^0-9]/g, '');
     const pDigits = (String(p.regId || '') + String(p.registrationId || '') + String(p.id || '')).replace(/[^0-9]/g, '');
@@ -590,7 +590,7 @@ export const AdminPage = ({ onNavigate }) => {
       (subscriptionFilter.toLowerCase() === subDetails.planId.toLowerCase());
 
     return matchesSearch && matchesGender && matchesVerification && matchesBlockStatus && matchesDistrict && matchesSubscription;
-  });
+  }));
 
   const verifiedCount = profiles.filter((p) => p.verified).length;
   const unverifiedCount = profiles.filter((p) => !p.verified).length;

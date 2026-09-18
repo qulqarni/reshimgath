@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useProfiles } from '../context/ProfileContext';
+import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { ProfileCard } from '../components/discovery/ProfileCard';
 import { 
   Heart, 
@@ -28,7 +28,7 @@ export const DashboardPage = ({ onNavigate }) => {
   const acceptedCount = interests.accepted.length;
   const visitsCount = profileViews.length;
 
-  const recommendedMatches = profiles.filter(p => p.id !== user?.id).slice(0, 3);
+  const recommendedMatches = sortProfilesByLatest(profiles.filter(p => p.id !== user?.id)).slice(0, 3);
 
   const visitorsRef = React.useRef(null);
 
