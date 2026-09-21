@@ -11,7 +11,6 @@ import {
   X,
   FileCheck,
   Printer,
-  Sparkles,
   User,
   GraduationCap,
   Briefcase,
@@ -126,30 +125,13 @@ export const BiodataPdfSection = ({
       />
 
       {/* Section Header */}
-      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-        <div className="flex items-center space-x-2 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200/60">
-            <FileText className="w-4 h-4 text-amber-700" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-serif text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-plum truncate">
-              Candidate Biodata
-            </h3>
-            <p className="text-[10px] text-brand-gray font-medium truncate">
-              बायोडेटा दस्तावेज
-            </p>
-          </div>
+      <div className="flex items-center space-x-2.5 min-w-0 border-b border-gray-100 pb-3">
+        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200/60">
+          <FileText className="w-4 h-4 text-amber-700" />
         </div>
-
-        {biodata ? (
-          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full shrink-0">
-            Uploaded PDF/IMG
-          </span>
-        ) : (
-          <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200/80 text-[10px] font-bold rounded-full shrink-0">
-            Digital Format
-          </span>
-        )}
+        <h3 className="font-serif text-sm sm:text-base font-bold text-brand-plum truncate">
+          Biodata (बायोडेटा)
+        </h3>
       </div>
 
       {uploadSuccess && (
@@ -159,132 +141,93 @@ export const BiodataPdfSection = ({
         </div>
       )}
 
-      {/* Main Content Area */}
-      {biodata ? (
-        /* Uploaded Biodata File Box */
-        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-3">
-          <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-brand-plum text-brand-gold flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-              {isBiodataImage ? 'IMG' : 'PDF'}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h4 className="font-serif font-bold text-xs text-brand-plum truncate">
-                {isUnlocked || isEditable ? biodata.fileName : `Biodata_${user?.registrationId || 'Document'}.${isBiodataImage ? 'jpg' : 'pdf'}`}
-              </h4>
-              <div className="flex items-center space-x-2 text-[11px] text-brand-gray mt-0.5">
-                <span>{isUnlocked || isEditable ? biodata.fileSize : 'Document File'}</span>
-                <span>•</span>
-                <span>Uploaded PDF/Image</span>
+      {/* Main Action Button */}
+      <div className="pt-0.5 space-y-2">
+        {isUnlocked || isEditable ? (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowViewerModal(true)}
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
+            >
+              <Eye className="w-4 h-4 text-brand-gold shrink-0" />
+              <span>View Biodata / बायोडेटा पहा</span>
+            </button>
+            {biodata && (
+              <a
+                href={biodata.url || '#'}
+                download={biodata.fileName || 'Biodata'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-3 px-3.5 bg-white text-brand-charcoal border border-gray-200 font-bold text-xs rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center space-x-1.5 shrink-0"
+                title="Download Biodata"
+              >
+                <Download className="w-4 h-4 text-brand-plum shrink-0" />
+                <span className="hidden sm:inline">Download</span>
+              </a>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onUnlockRequest}
+            className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
+          >
+            <Lock className="w-4 h-4 text-brand-gold shrink-0" />
+            <span>Unlock to View Biodata</span>
+          </button>
+        )}
+
+        {isEditable && (
+          <div className="pt-1">
+            {biodata ? (
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <span className="truncate text-brand-gray font-medium flex-1 mr-2">
+                  {biodata.fileName || 'Uploaded Biodata'}
+                </span>
+                <div className="flex items-center space-x-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="p-1.5 bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs rounded-lg hover:bg-amber-100 transition-all"
+                    title="Replace Biodata"
+                  >
+                    <UploadCloud className="w-3.5 h-3.5 text-amber-700" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                    title="Remove Biodata"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            {isUnlocked || isEditable ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowViewerModal(true)}
-                  className="flex-1 py-2 px-3 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-emerald-700 transition-all flex items-center justify-center space-x-1.5"
-                >
-                  <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
-                  <span>View Biodata</span>
-                </button>
-
-                <a
-                  href={biodata.url || '#'}
-                  download={biodata.fileName || 'Biodata'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="py-2 px-3 bg-white text-brand-charcoal border border-gray-200 font-bold text-xs rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center space-x-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                  <span>Download</span>
-                </a>
-
-                {isEditable && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="p-2 bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs rounded-xl hover:bg-amber-100 transition-all"
-                      title="Replace Biodata"
-                    >
-                      <UploadCloud className="w-3.5 h-3.5 text-amber-700" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleRemove}
-                      className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                      title="Remove Biodata"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                )}
-              </>
             ) : (
-              <button
-                type="button"
-                onClick={onUnlockRequest}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-sm hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
-              >
-                <Lock className="w-3.5 h-3.5 text-brand-gold shrink-0" />
-                <span>Unlock to View & Download Biodata</span>
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        /* Digital Biodata Card View */
-        <div className="bg-gradient-to-br from-amber-50/40 via-white to-rose-50/40 rounded-2xl p-4 border border-brand-rose/20 space-y-3">
-          <div className="space-y-1">
-            <h4 className="font-serif font-bold text-xs text-brand-plum flex items-center space-x-1.5">
-              <span>{firstName}'s Matrimonial Biodata</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            </h4>
-            <p className="text-[11px] text-brand-gray leading-relaxed">
-              Complete verified Maharashtrian biodata format with personal, education, career, and family details.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 pt-1">
-            {isUnlocked || isEditable ? (
-              <button
-                type="button"
-                onClick={() => setShowViewerModal(true)}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
-              >
-                <Eye className="w-4 h-4 text-brand-gold shrink-0" />
-                <span>View Biodata / बायोडेटा पहा</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onUnlockRequest}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
-              >
-                <Lock className="w-4 h-4 text-brand-gold shrink-0" />
-                <span>Unlock to View Biodata</span>
-              </button>
-            )}
-
-            {isEditable && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="w-full py-2 px-3 bg-white text-brand-plum border border-brand-rose/30 font-bold text-xs rounded-xl hover:bg-brand-lightBg transition-all flex items-center justify-center space-x-1.5"
+                className="w-full py-2.5 px-3 bg-white text-brand-plum border border-brand-rose/30 font-bold text-xs rounded-xl hover:bg-brand-lightBg transition-all flex items-center justify-center space-x-1.5"
               >
-                <UploadCloud className="w-3.5 h-3.5 text-brand-plum" />
-                <span>Upload PDF / Image Biodata File</span>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-plum" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-3.5 h-3.5 text-brand-plum" />
+                    <span>Upload PDF / Image Biodata File</span>
+                  </>
+                )}
               </button>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* FULL SCREEN BIODATA VIEWER MODAL */}
       {showViewerModal && createPortal(
