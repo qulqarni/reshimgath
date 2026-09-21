@@ -7,7 +7,7 @@ import { Bell, Heart, CheckCircle, Eye, ShieldCheck } from 'lucide-react';
 export const NotificationsPage = ({ onNavigate }) => {
   const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useProfiles();
+  const { profiles, notifications, markNotificationRead, markAllNotificationsRead, resolveNotificationProfile } = useProfiles();
 
   const userNotifications = notifications.filter((n) => {
     if (!user) return true;
@@ -47,32 +47,64 @@ export const NotificationsPage = ({ onNavigate }) => {
             <p className="text-[11px]">When candidates express interest or visit your profile, notifications will appear here.</p>
           </div>
         ) : (
-          userNotifications.map((n) => (
-          <div
-            key={n.id}
-            onClick={() => {
-              markNotificationRead(n.id);
-              if (n.type === 'interest') onNavigate('/interests');
-              if (n.type === 'accepted') onNavigate('/messages');
-            }}
-            className={`p-5 hover:bg-brand-ivory cursor-pointer transition-colors flex items-start space-x-4 ${
-              n.unread ? 'bg-brand-rose/10' : ''
-            }`}
-          >
-            <div className="w-10 h-10 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center shrink-0 mt-0.5">
-              {n.type === 'interest' ? <Heart className="w-5 h-5 text-brand-rose fill-brand-rose" /> : <CheckCircle className="w-5 h-5 text-brand-kesari" />}
-            </div>
+          userNotifications.map((n) => {
+            const targetPerson = resolveNotificationProfile ? resolveNotificationProfile(n, profiles) : null;
+            const targetSlug = targetPerson?.regId 
+              || (targetPerson?.registrationId ? `SS-${targetPerson.registrationId}` : null) 
+              || targetPerson?.id 
+              || n.profileId 
+              || n.senderId 
+              || n.visitorId;
+            const isProfileVisit = n.type === 'view' || (n.title && n.title.toLowerCase().includes('visit')) || (n.title && n.title.toLowerCase().includes('view'));
+            const isInterest = n.type === 'interest' || (n.title && n.title.toLowerCase().includes('interest') && !n.title.toLowerCase().includes('accepted'));
 
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4 className="font-serif font-bold text-sm text-brand-plum">{n.title}</h4>
-                <span className="text-xs text-gray-400">{n.time}</span>
+            return (
+              <div
+                key={n.id}
+                onClick={() => {
+                  markNotificationRead(n.id);
+                  if ((isProfileVisit || isInterest) && targetSlug) {
+                    onNavigate(`/profile/${targetSlug}`);
+                    return;
+                  }
+                  if (n.type === 'accepted') {
+                    onNavigate('/messages');
+                    return;
+                  }
+                  if (n.type === 'interest') {
+                    onNavigate('/interests');
+                    return;
+                  }
+                  if (targetSlug) {
+                    onNavigate(`/profile/${targetSlug}`);
+                    return;
+                  }
+                }}
+                className={`p-5 hover:bg-brand-ivory cursor-pointer transition-colors flex items-start space-x-4 ${
+                  n.unread ? 'bg-brand-rose/10' : ''
+                }`}
+              >
+                <div className="w-10 h-10 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center shrink-0 mt-0.5">
+                  {n.type === 'view' || isProfileVisit ? (
+                    <Eye className="w-5 h-5 text-blue-600" />
+                  ) : n.type === 'interest' || isInterest ? (
+                    <Heart className="w-5 h-5 text-brand-rose fill-brand-rose" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-brand-kesari" />
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-serif font-bold text-sm text-brand-plum">{n.title}</h4>
+                    <span className="text-xs text-gray-400">{n.time}</span>
+                  </div>
+                  <p className="text-xs text-brand-gray mt-1">{n.text}</p>
+                </div>
               </div>
-              <p className="text-xs text-brand-gray mt-1">{n.text}</p>
-            </div>
-          </div>
-        ))
-      )}
+            );
+          })
+        )}
       </div>
     </div>
   );

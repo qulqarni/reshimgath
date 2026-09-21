@@ -18,13 +18,14 @@ import {
   CheckCircle,
   LayoutDashboard,
   Crown,
-  Home
+  Home,
+  Eye
 } from 'lucide-react';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
   const { user, isAuthenticated, logout, loginAsDemo, isAdmin } = useAuth();
   const { lang, toggleLanguage, t } = useLanguage();
-  const { notifications, markNotificationRead, markAllNotificationsRead, totalUnreadMessagesCount } = useProfiles();
+  const { profiles, notifications, markNotificationRead, markAllNotificationsRead, totalUnreadMessagesCount, resolveNotificationProfile } = useProfiles();
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -210,31 +211,76 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                           {userNotifications.length === 0 ? (
                             <p className="p-4 text-xs text-brand-gray text-center">No notifications yet.</p>
                           ) : (
-                            userNotifications.map((n) => (
-                              <div
-                                key={n.id}
-                                onClick={() => {
-                                  markNotificationRead(n.id);
-                                  setShowNotifications(false);
-                                  if (n.type === 'interest') handleNav('/interests');
-                                  if (n.type === 'accepted') handleNav('/messages');
-                                }}
-                                className={`p-3.5 hover:bg-brand-ivory cursor-pointer transition-colors flex items-start space-x-3 ${
-                                  n.unread ? 'bg-brand-rose/10' : ''
-                                }`}
-                              >
-                                <div className="w-8 h-8 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center shrink-0 mt-0.5">
-                                  {n.type === 'interest' ? <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" /> : <CheckCircle className="w-4 h-4 text-brand-kesari" />}
+                            userNotifications.map((n) => {
+                              const targetPerson = resolveNotificationProfile ? resolveNotificationProfile(n, profiles) : null;
+                              const targetSlug = targetPerson?.regId 
+                                || (targetPerson?.registrationId ? `SS-${targetPerson.registrationId}` : null) 
+                                || targetPerson?.id 
+                                || n.profileId 
+                                || n.senderId 
+                                || n.visitorId;
+                              const isProfileVisit = n.type === 'view' || (n.title && n.title.toLowerCase().includes('visit')) || (n.title && n.title.toLowerCase().includes('view'));
+                              const isInterest = n.type === 'interest' || (n.title && n.title.toLowerCase().includes('interest') && !n.title.toLowerCase().includes('accepted'));
+
+                              return (
+                                <div
+                                  key={n.id}
+                                  onClick={() => {
+                                    markNotificationRead(n.id);
+                                    setShowNotifications(false);
+                                    if ((isProfileVisit || isInterest) && targetSlug) {
+                                      handleNav(`/profile/${targetSlug}`);
+                                      return;
+                                    }
+                                    if (n.type === 'accepted') {
+                                      handleNav('/messages');
+                                      return;
+                                    }
+                                    if (n.type === 'interest') {
+                                      handleNav('/interests');
+                                      return;
+                                    }
+                                    if (targetSlug) {
+                                      handleNav(`/profile/${targetSlug}`);
+                                      return;
+                                    }
+                                  }}
+                                  className={`p-3.5 hover:bg-brand-ivory cursor-pointer transition-colors flex items-start space-x-3 ${
+                                    n.unread ? 'bg-brand-rose/10' : ''
+                                  }`}
+                                >
+                                  <div className="w-8 h-8 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center shrink-0 mt-0.5">
+                                    {n.type === 'view' || isProfileVisit ? (
+                                      <Eye className="w-4 h-4 text-blue-600" />
+                                    ) : n.type === 'interest' || isInterest ? (
+                                      <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                                    ) : (
+                                      <CheckCircle className="w-4 h-4 text-brand-kesari" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-brand-charcoal">{n.title}</p>
+                                    <p className="text-xs text-brand-gray mt-0.5">{n.text}</p>
+                                    <span className="text-[10px] text-gray-400 mt-1 block">{n.time}</span>
+                                  </div>
                                 </div>
-                                <div className="flex-1">
-                                  <p className="text-xs font-semibold text-brand-charcoal">{n.title}</p>
-                                  <p className="text-xs text-brand-gray mt-0.5">{n.text}</p>
-                                  <span className="text-[10px] text-gray-400 mt-1 block">{n.time}</span>
-                                </div>
-                              </div>
-                            ))
+                              );
+                            })
                           )}
                         </div>
+                        {userNotifications.length > 0 && (
+                          <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/70 text-center rounded-b-2xl">
+                            <button
+                              onClick={() => {
+                                setShowNotifications(false);
+                                handleNav('/notifications');
+                              }}
+                              className="text-[11px] font-bold text-brand-plum hover:text-brand-plumDark transition-colors"
+                            >
+                              View all notifications →
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

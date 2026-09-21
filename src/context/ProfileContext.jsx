@@ -33,6 +33,64 @@ import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
 
+export const resolveNotificationProfile = (notification, profiles = []) => {
+  if (!notification) return null;
+
+  const personId = notification.profileId || notification.senderId || notification.visitorId;
+
+  // 1. Direct ID match from profiles list
+  if (personId && Array.isArray(profiles) && profiles.length > 0) {
+    const idStr = String(personId).toLowerCase().trim();
+    const matched = profiles.find((p) => {
+      const pId = String(p.id || '').toLowerCase().trim();
+      const pReg = String(p.regId || '').toLowerCase().trim();
+      const pRegNum = String(p.registrationId || '').toLowerCase().trim();
+      return pId === idStr || pReg === idStr || pRegNum === idStr || `ss-${pRegNum}` === idStr;
+    });
+    if (matched) return matched;
+  }
+
+  // 2. Direct senderRegId on notification
+  if (notification.senderRegId && Array.isArray(profiles) && profiles.length > 0) {
+    const regStr = String(notification.senderRegId).toLowerCase().trim();
+    const matched = profiles.find((p) => {
+      const pReg = String(p.regId || '').toLowerCase().trim();
+      const pRegNum = String(p.registrationId || '').toLowerCase().trim();
+      return pReg === regStr || pRegNum === regStr || `ss-${pRegNum}` === regStr;
+    });
+    if (matched) return matched;
+  }
+
+  // 3. Fallback: Search candidate by name from notification title, text, or senderName
+  const notifSearchContent = `${notification.title || ''} ${notification.text || ''} ${notification.senderName || ''}`.toLowerCase().trim();
+  if (notifSearchContent && Array.isArray(profiles) && profiles.length > 0) {
+    const matchedByName = profiles.find((p) => {
+      if (p.name) {
+        const cleanName = p.name.toLowerCase().trim();
+        if (cleanName.length >= 3 && notifSearchContent.includes(cleanName)) return true;
+        const parts = cleanName.split(/\s+/).filter((w) => w.length >= 3);
+        if (parts.length > 1 && parts.every((part) => notifSearchContent.includes(part))) return true;
+      }
+      if (p.nameMr) {
+        const cleanMr = p.nameMr.trim();
+        if (cleanMr.length >= 3 && notifSearchContent.includes(cleanMr)) return true;
+      }
+      return false;
+    });
+    if (matchedByName) return matchedByName;
+  }
+
+  // 4. Fallback: If not found in profiles, construct slug from senderRegId or personId
+  if (notification.senderRegId) {
+    return { id: notification.senderRegId, regId: notification.senderRegId };
+  }
+  if (personId) {
+    return { id: personId, regId: String(personId).startsWith('SS-') ? personId : null };
+  }
+
+  return null;
+};
+
 export const DEFAULT_INQUIRIES = [
   { id: 'inq_1', name: 'Suhas Patil', phone: '+91 98230 11223', email: 'suhas.patil@gmail.com', message: 'I would like to verify biodata PDF for profile ID p1.', date: 'Today, 10:15 AM', createdAt: new Date().toISOString(), resolved: false },
   { id: 'inq_2', name: 'Sunita Deshmukh', phone: '+91 98900 44556', email: 'sunita.d@gmail.com', message: 'Interested in registration assistance for my son in Ichalkaranji.', date: 'Yesterday, 4:30 PM', createdAt: new Date().toISOString(), resolved: true },
@@ -483,7 +541,11 @@ export const ProfileProvider = ({ children }) => {
       id: Date.now(),
       type: 'view',
       profileId: viewerUser.id,
+      visitorId: viewerUser.id,
       targetUserId: targetProfile.id,
+      senderName: viewerUser.name || 'A verified member',
+      senderRegId: viewerUser.regId || (viewerUser.registrationId ? `SS-${viewerUser.registrationId}` : null),
+      senderAvatar: viewerUser.avatar || viewerUser.photos?.[0] || null,
       title: 'Profile Visited! 👁️',
       text: `${viewerUser.name || 'A verified member'} viewed your profile.`,
       time: 'Just now',
@@ -591,7 +653,11 @@ export const ProfileProvider = ({ children }) => {
       id: Date.now(),
       type: 'interest',
       profileId: user.id,
+      senderId: user.id,
       targetUserId: profileId,
+      senderName: senderName,
+      senderRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : null),
+      senderAvatar: senderPhoto,
       title: 'New Interest Received! ❤️',
       text: `${senderName} expressed interest in your profile.`,
       time: 'Just now',
@@ -652,7 +718,10 @@ export const ProfileProvider = ({ children }) => {
       id: Date.now(),
       type: 'accepted',
       profileId: user.id,
+      senderId: user.id,
       targetUserId: profileId,
+      senderName: user.name || 'A verified member',
+      senderRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : null),
       title: 'Interest Accepted! 💕',
       text: `${user.name || 'A verified member'} accepted your interest request! You can now start chatting.`,
       time: 'Just now',
@@ -1204,7 +1273,8 @@ export const ProfileProvider = ({ children }) => {
         subModalConfig,
         openSubscriptionModal,
         closeSubscriptionModal,
-        sortProfilesByLatest
+        sortProfilesByLatest,
+        resolveNotificationProfile
       }}
     >
       {children}
