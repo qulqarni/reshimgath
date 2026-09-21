@@ -91,58 +91,21 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null, r
     });
   };
 
-  const getHeaderTitle = () => {
-    if (reason === 'send_interest') {
-      return targetProfileName 
-        ? `Subscribe to Send Interest to ${targetProfileName}`
-        : 'MEMBERSHIP REQUIRED TO SEND INTEREST';
-    }
-    if (reason === 'connect') {
-      return targetProfileName
-        ? `Subscribe to Connect with ${targetProfileName}`
-        : 'MEMBERSHIP REQUIRED TO CONNECT';
-    }
-    return targetProfileName 
-      ? `Unlock Full Profile Access for ${targetProfileName}` 
-      : 'CHOOSE A MATRIMONIAL MEMBERSHIP PLAN';
-  };
-
-  const getHeaderSubtitle = () => {
-    if (reason === 'send_interest' || reason === 'connect') {
-      return 'An active membership plan is required to send interest, connect with candidate profiles, and view contact numbers.';
-    }
-    return 'Select a plan to start opening candidate profiles and viewing direct contact details.';
-  };
-
   return createPortal(
     <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
       <div className="bg-white max-w-5xl w-full max-h-[85vh] sm:max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-200 my-auto animate-in zoom-in-95 duration-200">
         
-        {/* Modal Top Banner */}
-        <div className="bg-gradient-to-r from-brand-plum via-brand-plumDark to-brand-plum text-white p-5 sm:p-6 flex items-center justify-between relative border-b border-brand-gold/30 shrink-0">
-          <div className="space-y-1 min-w-0 pr-6">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold shadow-sm border border-amber-300">
-              <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
-              <span>संबोधी सारंग वधूवर सुचक केंद्र</span>
-            </div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {getHeaderTitle()}
-            </h2>
-            <p className="text-xs text-white/90 font-medium">
-              {getHeaderSubtitle()}
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-8 pt-12 sm:pt-10 space-y-6 bg-slate-50/50">
           
           {targetProfileName && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center space-x-3 text-xs text-amber-950">
