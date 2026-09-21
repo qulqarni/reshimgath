@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { PhotoGallery } from '../components/profile/PhotoGallery';
 import { VerificationBadge } from '../components/common/VerificationBadge';
-import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
+import { BiodataPdfSection, BiodataViewerModal } from '../components/profile/BiodataPdfSection';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
 import { 
@@ -38,7 +38,8 @@ import {
   MessageCircle,
   RotateCcw,
   HeartHandshake,
-  X
+  X,
+  Copy
 } from 'lucide-react';
 
 const HeroHeaderCard = ({ profile, hasValue }) => (
@@ -100,6 +101,325 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
   </div>
 );
 
+const ActionButtonsStack = ({
+  profile,
+  firstName,
+  isContactUnlocked,
+  hasCreditsToUnlock,
+  isAuthenticated,
+  isSubscribed,
+  isAccepted,
+  isReceived,
+  isSent,
+  handleAction,
+  handleUnlockContactClick,
+  onOpenBiodata,
+  onOpenContact,
+  acceptInterest,
+  declineInterest,
+  withdrawInterest,
+  t
+}) => (
+  <div className="space-y-3 w-full">
+    {/* 1. Send Interest Button */}
+    {isAccepted ? (
+      <button
+        type="button"
+        onClick={handleAction}
+        className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
+      >
+        <MessageSquare className="w-4 h-4 text-emerald-200" />
+        <span>{t('sendMessage') || 'Message Candidate'}</span>
+      </button>
+    ) : isReceived ? (
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => acceptInterest(profile.id)}
+          className="flex-1 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 border border-emerald-400/40"
+        >
+          <Check className="w-4 h-4 text-white" />
+          <span>{t('acceptInterest')} (Free)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => declineInterest(profile.id)}
+          className="py-3.5 px-4 bg-gray-100 text-gray-700 font-bold text-xs sm:text-sm rounded-2xl hover:bg-rose-50 hover:text-rose-700 transition-all"
+        >
+          {t('declineInterest')}
+        </button>
+      </div>
+    ) : isSent ? (
+      <div className="space-y-2">
+        <div className="w-full py-3 px-4 bg-amber-50 text-amber-900 border border-amber-300 rounded-2xl font-bold text-xs sm:text-sm text-center flex items-center justify-center space-x-2">
+          <UserCheck className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>{t('interestSent')}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => withdrawInterest(profile.id)}
+          className="w-full py-2 px-3 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl border border-rose-200 transition-all flex items-center justify-center space-x-1.5"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Withdraw / Cancel Request</span>
+        </button>
+      </div>
+    ) : (
+      <button
+        type="button"
+        onClick={handleAction}
+        className={`w-full py-3.5 px-4 font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border ${
+          isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock))
+            ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 hover:from-brand-plum hover:to-amber-600'
+            : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/40'
+        }`}
+      >
+        {isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) ? (
+          <>
+            <Crown className="w-4 h-4 text-amber-300" />
+            <span>{t('sendInterest')} (Subscribe)</span>
+          </>
+        ) : isAuthenticated && !isContactUnlocked && hasCreditsToUnlock ? (
+          <>
+            <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+            <span>{t('sendInterest')} (1 Credit - Unlocks Contact & Biodata)</span>
+          </>
+        ) : (
+          <>
+            <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+            <span>{t('sendInterest')}</span>
+          </>
+        )}
+      </button>
+    )}
+
+    {/* 2. View Biodata Button */}
+    <button
+      type="button"
+      onClick={() => {
+        if (!isContactUnlocked) {
+          handleUnlockContactClick();
+        } else {
+          onOpenBiodata();
+        }
+      }}
+      className="w-full py-3.5 px-4 bg-gradient-to-r from-brand-plum via-purple-900 to-brand-plumDark text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md hover:brightness-110 transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+    >
+      <Eye className="w-4 h-4 text-brand-gold shrink-0" />
+      <span>
+        {isContactUnlocked ? 'View Biodata / बायोडेटा पहा' : (
+          !isAuthenticated
+            ? 'View Biodata (Sign Up to View)'
+            : hasCreditsToUnlock
+            ? 'View Biodata (1 Credit Count)'
+            : 'View Biodata (Subscribe to View)'
+        )}
+      </span>
+      {!isContactUnlocked && <Lock className="w-3.5 h-3.5 text-brand-gold ml-1 shrink-0" />}
+    </button>
+
+    {/* 3. View Contact Button */}
+    <button
+      type="button"
+      onClick={() => {
+        if (!isContactUnlocked) {
+          handleUnlockContactClick();
+        } else {
+          onOpenContact();
+        }
+      }}
+      className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
+    >
+      <Phone className="w-4 h-4 text-brand-gold shrink-0" />
+      <span>
+        {isContactUnlocked ? 'View Contact Details / संपर्क माहिती पहा' : (
+          !isAuthenticated
+            ? 'View Contact Details (Sign Up to Unlock)'
+            : hasCreditsToUnlock
+            ? 'View Contact Details (1 Credit Count)'
+            : 'View Contact Details (Subscribe to Unlock)'
+        )}
+      </span>
+      {isContactUnlocked ? (
+        <CheckCircle2 className="w-4 h-4 text-emerald-300 ml-1 shrink-0" />
+      ) : (
+        <Lock className="w-3.5 h-3.5 text-brand-gold ml-1 shrink-0" />
+      )}
+    </button>
+
+    {/* If Contact Unlocked: Instant Inline Verified Contact Card */}
+    {isContactUnlocked && (
+      <div className="pt-2 space-y-2 text-xs animate-in fade-in duration-300">
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <Phone className="w-4 h-4 text-emerald-700 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] text-gray-500 font-medium block">Verified Phone / Mobile</span>
+              <span className="font-bold text-brand-plum font-mono text-xs sm:text-sm">{profile.phone || profile.mobile || '+91 98230 00000'}</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1.5 shrink-0">
+            {(profile.phone || profile.mobile) && (
+              <a
+                href={`tel:${String(profile.phone || profile.mobile).replace(/[^0-9+]/g, '')}`}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow-sm transition-all"
+              >
+                <Phone className="w-3 h-3" />
+                <span>Call</span>
+              </a>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-2.5 p-3 rounded-2xl bg-blue-50/70 border border-blue-200">
+          <Mail className="w-4 h-4 text-blue-700 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-[10px] text-gray-500 font-medium block">Email Address</span>
+            <span className="font-bold text-brand-plum text-xs truncate block">{profile.email || 'Contact bureau for email'}</span>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+const ContactDetailsModal = ({ isOpen, onClose, profile, onCopy, copiedField }) => {
+  if (!isOpen || !profile) return null;
+
+  const phoneNum = profile.phone || profile.mobile || '+91 98230 00000';
+  const cleanPhone = String(phoneNum).replace(/[^0-9+]/g, '');
+  const emailAddr = profile.email || 'contact@sambodhisarang.com';
+  const candidatePhoto = (profile.photos && profile.photos.length > 0) ? profile.photos[0] : (profile.avatar || null);
+
+  return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md p-4 flex items-center justify-center">
+      <div className="bg-white max-w-md w-full rounded-3xl overflow-hidden shadow-2xl relative border border-brand-rose/20 animate-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="bg-brand-plum text-white p-5 flex items-center justify-between border-b border-brand-gold/30">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-brand-gold text-brand-plum flex items-center justify-center font-bold shrink-0">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-base text-white">Contact Details</h3>
+              <p className="text-[11px] text-brand-rose/80">संपर्क माहिती • Verified Direct Details</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-brand-rose hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-5">
+          {/* Candidate mini card */}
+          <div className="flex items-center space-x-3 bg-rose-50/50 p-3 rounded-2xl border border-rose-100">
+            {candidatePhoto ? (
+              <img src={candidatePhoto} alt={profile.name} className="w-12 h-12 rounded-xl object-cover border border-brand-plum/20 shrink-0" />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-brand-plum/10 text-brand-plum flex items-center justify-center font-bold text-lg shrink-0">
+                {profile.name ? profile.name[0] : 'C'}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h4 className="font-serif font-bold text-sm text-brand-plum truncate">{profile.name}</h4>
+              <p className="text-[11px] text-brand-gray">
+                Profile No. {profile.registrationId || (profile.regId ? String(profile.regId).replace(/^SS-?/i, '') : '1001')}
+              </p>
+            </div>
+            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center space-x-1 shrink-0">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>Verified</span>
+            </span>
+          </div>
+
+          {/* Phone section */}
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-brand-gray uppercase tracking-wider block">
+              Phone / Mobile Number
+            </label>
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <Phone className="w-5 h-5 text-emerald-700 shrink-0" />
+                <span className="font-bold text-brand-plum font-mono text-base">{phoneNum}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onCopy(phoneNum, 'Phone number')}
+                className="px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-lg border border-emerald-200 transition-all flex items-center space-x-1 shrink-0"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{copiedField === 'Phone number' ? 'Copied!' : 'Copy'}</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <a
+                href={`tel:${cleanPhone}`}
+                className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-sm transition-all"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Call Now</span>
+              </a>
+              <a
+                href={`https://wa.me/${cleanPhone.replace('+', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2.5 px-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-sm transition-all"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Email section */}
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-brand-gray uppercase tracking-wider block">
+              Email Address
+            </label>
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/60 border border-blue-200">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <Mail className="w-5 h-5 text-blue-700 shrink-0" />
+                <span className="font-bold text-brand-plum text-xs sm:text-sm truncate">{emailAddr}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onCopy(emailAddr, 'Email')}
+                className="px-2.5 py-1 bg-white hover:bg-blue-100 text-blue-800 font-bold text-xs rounded-lg border border-blue-200 transition-all flex items-center space-x-1 shrink-0"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{copiedField === 'Email' ? 'Copied!' : 'Copy'}</span>
+              </button>
+            </div>
+            <a
+              href={`mailto:${emailAddr}`}
+              className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-sm transition-all"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Send Email</span>
+            </a>
+          </div>
+
+          {/* Security note */}
+          <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200/70 flex items-start space-x-2">
+            <ShieldCheck className="w-4 h-4 text-brand-kesari shrink-0 mt-0.5" />
+            <p className="text-[10px] text-brand-charcoal leading-relaxed">
+              These contact details are confidential and shared solely for matrimonial communication under Sambodhi Sarang privacy guidelines.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const { user, isAuthenticated, canViewProfile, unlockProfileForUser, hasActiveSubscription, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
@@ -110,6 +430,21 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [unlockActionPending, setUnlockActionPending] = useState(null);
+  const [showBiodataViewerModal, setShowBiodataViewerModal] = useState(false);
+  const [showContactDetailsModal, setShowContactDetailsModal] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const handleCopyText = (text, fieldName) => {
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(text);
+      if (addToast) {
+        addToast(`${fieldName || 'Details'} copied to clipboard!`, 'success');
+      }
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {}
+  };
 
   const profile = profiles.find((p) => {
     if (!profileId) return true;
@@ -287,7 +622,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const hasLifestyle = hasValue(profile.diet) || hasValue(profile.smoking) || hasValue(profile.drinking) || hasValue(profile.hobbies);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28 md:pb-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-12">
       
       {/* Top Header Navigation Row */}
       <div className="flex items-center justify-between">
@@ -452,87 +787,46 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             </div>
           )}
 
-          {/* 4. संपर्क व बायोडेटा (CONTACT DETAILS) */}
+          {/* ४. भागीदाराकडून अपेक्षा (PARTNER EXPECTATIONS) - Always Above Action Buttons */}
           <div className="space-y-3">
             <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-brand-plum border-b border-rose-100 pb-1 flex items-center space-x-1.5">
-              <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>४. संपर्क व बायोडेटा (CONTACT DETAILS)</span>
+              <HeartHandshake className="w-4 h-4 text-brand-kesari shrink-0" />
+              <span>४. भागीदाराकडून अपेक्षा (PARTNER EXPECTATIONS)</span>
             </h4>
-
-            {isContactUnlocked ? (
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200">
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <div>
-                      <span className="text-[10px] text-gray-500 font-medium block">Phone / Mobile</span>
-                      <span className="font-bold text-brand-plum font-mono">{profile.phone || profile.mobile || '+91 98230 00000'}</span>
-                    </div>
-                  </div>
-                  {(profile.phone || profile.mobile) && (
-                    <a
-                      href={`tel:${String(profile.phone || profile.mobile).replace(/[^0-9+]/g, '')}`}
-                      className="px-3 py-1.5 bg-emerald-600 text-white font-bold text-[11px] rounded-xl flex items-center space-x-1"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>Call</span>
-                    </a>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-2xl bg-blue-50/60 border border-blue-200">
-                  <Mail className="w-4 h-4 text-blue-700 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-[10px] text-gray-500 font-medium block">Email Address</span>
-                    <span className="font-bold text-brand-plum truncate block">{profile.email || 'Contact bureau'}</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 text-center space-y-3">
-                <p className="text-xs font-semibold text-brand-charcoal">
-                  {!isAuthenticated
-                    ? 'Log In or Sign Up to unlock verified contact details and connect.'
-                    : accessStatus.hasActivePlan && accessStatus.remainingVisits > 0
-                    ? `You have ${accessStatus.remainingVisits} profile credits remaining. Unlock contact details.`
-                    : 'A membership plan is required to unlock contact details.'}
-                </p>
-                <button
-                  onClick={handleUnlockContactClick}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2 border border-emerald-400/40 hover:from-emerald-700 hover:to-emerald-900 transition-all"
-                >
-                  <Lock className="w-4 h-4 text-brand-gold" />
-                  <span>
-                    {!isAuthenticated
-                      ? 'View Contact Details (Sign Up to Unlock)'
-                      : accessStatus.hasActivePlan && accessStatus.remainingVisits > 0
-                      ? 'View Contact Details (1 Credit Count)'
-                      : 'Activate Membership Plan to View Contact'}
-                  </span>
-                </button>
-              </div>
-            )}
+            <p className="text-xs text-brand-charcoal leading-relaxed whitespace-pre-line bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80 font-medium">
+              {hasValue(profile.expectations) 
+                ? profile.expectations 
+                : 'अनुरूप, सुशिक्षित व सुसंस्कृत स्थळ अपेक्षित. (Suitable, educated and cultured partner expectations.)'}
+            </p>
           </div>
 
-          {/* ५. भागीदाराकडून अपेक्षा (PARTNER EXPECTATIONS) */}
-          {hasValue(profile.expectations) && (
-            <div className="space-y-3">
-              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-brand-plum border-b border-rose-100 pb-1 flex items-center space-x-1.5">
-                <HeartHandshake className="w-4 h-4 text-brand-kesari shrink-0" />
-                <span>५. भागीदाराकडून अपेक्षा (PARTNER EXPECTATIONS)</span>
-              </h4>
-              <p className="text-xs text-brand-charcoal leading-relaxed whitespace-pre-line bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80 font-medium">
-                {profile.expectations}
-              </p>
-            </div>
-          )}
+          {/* ५. कृती व संपर्क (ACTIONS & CONTACT) - Stacked vertically below Partner Expectations */}
+          <div className="space-y-3 pt-2">
+            <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-brand-plum border-b border-rose-100 pb-1 flex items-center space-x-1.5">
+              <Sparkles className="w-4 h-4 text-brand-kesari shrink-0" />
+              <span>५. कृती व संपर्क (ACTIONS & CONTACT)</span>
+            </h4>
 
-          {/* Candidate Biodata Attachment */}
-          <BiodataPdfSection
-            user={profile}
-            isEditable={false}
-            isUnlocked={isContactUnlocked}
-            onUnlockRequest={handleUnlockContactClick}
-          />
+            <ActionButtonsStack
+              profile={profile}
+              firstName={firstName}
+              isContactUnlocked={isContactUnlocked}
+              hasCreditsToUnlock={hasCreditsToUnlock}
+              isAuthenticated={isAuthenticated}
+              isSubscribed={isSubscribed}
+              isAccepted={isAccepted}
+              isReceived={isReceived}
+              isSent={isSent}
+              handleAction={handleAction}
+              handleUnlockContactClick={handleUnlockContactClick}
+              onOpenBiodata={() => setShowBiodataViewerModal(true)}
+              onOpenContact={() => setShowContactDetailsModal(true)}
+              acceptInterest={acceptInterest}
+              declineInterest={declineInterest}
+              withdrawInterest={withdrawInterest}
+              t={t}
+            />
+          </div>
 
           {/* Footer Branding */}
           <div className="text-center pt-3 border-t border-amber-200/60 space-y-0.5">
@@ -558,133 +852,48 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
           </div>
 
-          {/* Hero Header Card (Mobile Only: Rendered right after Photo Gallery) */}
-          <div className="block lg:hidden w-full max-w-full overflow-hidden">
-            <HeroHeaderCard profile={profile} hasValue={hasValue} />
-          </div>
-
-          {/* Interest Status Card */}
+          {/* Candidate Verification & Trust Badges Card */}
           <div className="bg-white p-5 sm:p-6 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4 w-full max-w-full overflow-hidden">
-            <div className="text-[10px] font-bold tracking-wider text-brand-gray uppercase border-b border-gray-100 pb-2">
-              Interest Status
+            <div className="flex items-center space-x-2 border-b border-gray-100 pb-3">
+              <ShieldCheck className="w-5 h-5 text-brand-plum" />
+              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-brand-plum">
+                Verified Matrimonial Profile
+              </h4>
             </div>
 
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60">
+                <span className="text-brand-gray font-medium">Profile ID:</span>
+                <span className="font-bold text-brand-plum font-mono">
+                  SS-{profile.registrationId || (profile.regId ? String(profile.regId).replace(/^SS-?/i, '') : '1001')}
+                </span>
               </div>
-              <div className="min-w-0">
-                <h4 className="font-bold text-xs text-brand-plum">
-                  {isAccepted 
-                    ? "Connection Unlocked!" 
-                    : isReceived 
-                    ? `${firstName} sent you an interest!` 
-                    : isSent 
-                    ? "Interest Request Sent" 
-                    : "No interest sent yet"}
-                </h4>
-                <p className="text-[11px] text-brand-gray mt-0.5 leading-relaxed">
-                  {isAccepted 
-                    ? "You are connected! You can now send direct private messages." 
-                    : isReceived 
-                    ? `Accept ${firstName}'s interest to view contact details, biodata & message for free.` 
-                    : isSent 
-                    ? `Waiting for ${firstName} to accept your interest request.` 
-                    : `Send interest to connect with ${firstName}.`}
-                </p>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/50 border border-rose-100">
+                <span className="text-brand-gray font-medium">Verification Status:</span>
+                <span className="font-bold text-emerald-700 flex items-center space-x-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>100% Phone & ID Verified</span>
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-brand-lightBg/50 border border-gray-100">
+                <span className="text-brand-gray font-medium">Native Location:</span>
+                <span className="font-bold text-brand-plum truncate">
+                  {profile.nativePlace || profile.district || 'Maharashtra'}
+                </span>
               </div>
             </div>
 
-            {/* Primary Action Button */}
-            {isAccepted ? (
-              <button
-                onClick={handleAction}
-                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
-              >
-                <MessageSquare className="w-4 h-4 text-emerald-200" />
-                <span>Message</span>
-              </button>
-            ) : isReceived ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => acceptInterest(profile.id)}
-                  className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 border border-emerald-400/40"
-                >
-                  <Check className="w-4 h-4 text-white" />
-                  <span>{t('acceptInterest')} (Free)</span>
-                </button>
-                <button
-                  onClick={() => declineInterest(profile.id)}
-                  className="py-3.5 px-4 bg-gray-100 text-gray-700 font-bold text-xs rounded-2xl hover:bg-rose-50 hover:text-rose-700 transition-all"
-                >
-                  {t('declineInterest')}
-                </button>
-              </div>
-            ) : isSent ? (
-              <div className="space-y-2">
-                <div className="w-full py-3 bg-amber-50 text-amber-900 border border-amber-300 rounded-2xl font-bold text-xs text-center flex items-center justify-center space-x-2">
-                  <UserCheck className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>{t('interestSent')}</span>
-                </div>
-                <button
-                  onClick={() => withdrawInterest(profile.id)}
-                  className="w-full py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-2xl border border-rose-200 transition-all flex items-center justify-center space-x-1.5"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Withdraw / Cancel Request</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleAction}
-                className={`w-full py-3.5 font-bold text-xs rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border ${
-                  isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock))
-                    ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 hover:from-brand-plum hover:to-amber-600'
-                    : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/40'
-                }`}
-                title={
-                  isAuthenticated
-                    ? isContactUnlocked
-                      ? 'Send interest to this candidate (Contact & Biodata already unlocked - 0 credits)'
-                      : hasCreditsToUnlock
-                      ? 'Uses 1 profile credit to send interest & automatically unlock contact details & biodata'
-                      : 'Membership subscription or credits required'
-                    : 'Send Interest'
-                }
-              >
-                {isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) ? (
-                  <>
-                    <Crown className="w-4 h-4 text-amber-300" />
-                    <span>{t('sendInterest')} (Subscribe)</span>
-                  </>
-                ) : isAuthenticated && !isContactUnlocked && hasCreditsToUnlock ? (
-                  <>
-                    <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                    <span>{t('sendInterest')} (1 Credit - Unlocks Contact & Biodata)</span>
-                  </>
-                ) : (
-                  <>
-                    <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                    <span>{t('sendInterest')}</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            {!isAccepted && (
-              <p className="text-[10px] text-center text-brand-gray italic">
-                You can message once interest is accepted
+            <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-200/50 text-center">
+              <p className="text-[11px] text-brand-charcoal leading-relaxed font-medium">
+                संबोधी सारंग विवाह संस्था, इचलकरंजी
               </p>
-            )}
+              <p className="text-[10px] text-brand-gray mt-0.5">
+                Trusted Maharashtrian Matrimonial Bureau
+              </p>
+            </div>
           </div>
-
-          {/* Candidate Maharashtrian Biodata Document Section */}
-          <BiodataPdfSection 
-            user={profile} 
-            isEditable={false} 
-            isUnlocked={isContactUnlocked}
-            onUnlockRequest={handleUnlockContactClick}
-          />
         </aside>
 
         {/* RIGHT MAIN CONTENT COLUMN */}
@@ -695,138 +904,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             <HeroHeaderCard profile={profile} hasValue={hasValue} />
           </div>
 
-          {/* Contact Details (संपर्क माहिती) Card */}
-          <div className="bg-gradient-to-br from-white via-slate-50/50 to-amber-50/20 p-6 sm:p-8 rounded-3xl border border-brand-gold/30 shadow-luxury space-y-5">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-xl bg-brand-plum text-brand-gold flex items-center justify-center shrink-0 shadow-sm">
-                  <Phone className="w-4 h-4 text-brand-gold" />
-                </div>
-                <div>
-                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
-                    Contact Details (संपर्क माहिती)
-                  </h3>
-                  <p className="text-[10px] text-brand-gray">Direct phone number & email address</p>
-                </div>
-              </div>
-              <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full border flex items-center space-x-1 ${
-                isContactUnlocked 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
-              }`}>
-                {isContactUnlocked ? <ShieldCheck className="w-3 h-3 text-emerald-600" /> : <Lock className="w-3 h-3 text-amber-600" />}
-                <span>{isContactUnlocked ? 'Verified Contact' : 'Locked Contact'}</span>
-              </span>
-            </div>
 
-            {isContactUnlocked ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {/* Phone / Mobile No. */}
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <Phone className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-brand-gray font-medium block">Phone / Mobile No.</span>
-                      <p className="font-bold text-brand-plum text-xs mt-0.5 font-mono">
-                        {profile.phone || profile.mobile || '+91 98230 00000'}
-                      </p>
-                    </div>
-                  </div>
-                  {(profile.phone || profile.mobile) && (
-                    <a
-                      href={`tel:${String(profile.phone || profile.mobile).replace(/[^0-9+]/g, '')}`}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-xl transition-all flex items-center space-x-1 shadow-sm shrink-0"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>Call</span>
-                    </a>
-                  )}
-                </div>
-
-                {/* Email Address */}
-                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm">
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[10px] text-brand-gray font-medium block">Email Address</span>
-                    <p className="font-bold text-brand-plum text-xs mt-0.5 truncate">
-                      {profile.email || 'Contact bureau for email'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Locked Contact View */
-              <div className="bg-white/90 p-5 rounded-2xl border border-amber-200/80 space-y-4 text-center">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs opacity-60 pointer-events-none filter blur-[2px] select-none">
-                  <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
-                    <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <div className="text-left">
-                      <span className="text-[10px] text-gray-500 block font-medium">Phone / Mobile No.</span>
-                      <p className="font-bold text-gray-800 font-mono text-xs">+91 98234 •••••</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
-                    <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-                    <div className="text-left">
-                      <span className="text-[10px] text-gray-500 block font-medium">Email Address</span>
-                      <p className="font-bold text-gray-800 text-xs">••••••••@gmail.com</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-1">
-                  <p className="text-xs text-brand-charcoal font-semibold">
-                    {!isAuthenticated
-                      ? 'Log In or Sign Up to unlock verified contact details and connect with candidate.'
-                      : accessStatus.hasActivePlan && accessStatus.remainingVisits > 0
-                      ? `You have ${accessStatus.remainingVisits} profile credits remaining. Unlock to view verified contact details.`
-                      : 'A membership plan is required to unlock direct contact numbers & email address.'}
-                  </p>
-
-                  <div className="flex justify-center">
-                    {!isAuthenticated ? (
-                      <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-sm">
-                        <button
-                          onClick={() => onNavigate('/login')}
-                          className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-md hover:from-emerald-700 hover:to-emerald-900 transition-all border border-emerald-400/40 flex items-center justify-center space-x-1.5"
-                        >
-                          <Lock className="w-4 h-4 text-brand-gold" />
-                          <span>View Contact Details (Log In)</span>
-                        </button>
-                        <button
-                          onClick={() => onNavigate('/signup')}
-                          className="flex-1 py-3 px-4 bg-white text-brand-plum border border-brand-rose/30 font-bold text-xs rounded-xl hover:bg-brand-lightBg transition-all flex items-center justify-center space-x-1.5"
-                        >
-                          <UserCheck className="w-4 h-4" />
-                          <span>Sign Up</span>
-                        </button>
-                      </div>
-                    ) : accessStatus.hasActivePlan && accessStatus.remainingVisits > 0 ? (
-                      <button
-                        onClick={() => setShowUnlockModal(true)}
-                        className="py-3 px-6 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-luxury hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
-                      >
-                        <UserCheck className="w-4 h-4 text-brand-gold" />
-                        <span>View Contact Details (1 Credit Count)</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setShowSubModal(true)}
-                        className="py-3 px-6 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs rounded-xl shadow-luxury hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
-                      >
-                        <Crown className="w-4 h-4 text-brand-gold fill-brand-gold" />
-                        <span>Activate Membership Plan to View Contact</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Personal Information Section Card */}
           {hasPersonalInfo && (
@@ -1134,28 +1212,75 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             </div>
           )}
 
-          {/* Partner Expectations Section Card */}
-          {hasValue(profile.expectations) && (
-            <div className="order-9 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5">
-              <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                  <HeartHandshake className="w-4 h-4 text-brand-kesari" />
-                </div>
-                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
-                  Partner Expectations (भागीदाराकडून अपेक्षा)
-                </h3>
+          {/* Partner Expectations Section Card - Above Action Buttons */}
+          <div className="order-9 bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
+            <div className="flex items-center space-x-2.5 border-b border-gray-100 pb-3.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                <HeartHandshake className="w-4 h-4 text-brand-kesari" />
               </div>
-              <p className="text-xs text-brand-charcoal leading-relaxed whitespace-pre-line bg-amber-50/60 p-4 rounded-2xl border border-amber-200/60 font-medium">
-                {profile.expectations}
-              </p>
+              <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
+                Partner Expectations (भागीदाराकडून अपेक्षा)
+              </h3>
             </div>
-          )}
+            <p className="text-xs text-brand-charcoal leading-relaxed whitespace-pre-line bg-amber-50/60 p-4 rounded-2xl border border-amber-200/60 font-medium">
+              {hasValue(profile.expectations) 
+                ? profile.expectations 
+                : 'अनुरूप, सुशिक्षित व सुसंस्कृत स्थळ अपेक्षित. (Suitable, educated and cultured partner expectations.)'}
+            </p>
+          </div>
+
+          {/* Connect & View Documents (Actions & Contact Details Card) - Directly Below Partner Expectations */}
+          <div className="order-10 bg-white p-6 sm:p-8 rounded-3xl border border-brand-gold/30 shadow-luxury space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3.5">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-brand-plum text-brand-gold flex items-center justify-center shrink-0 shadow-sm">
+                  <Sparkles className="w-4 h-4 text-brand-gold" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-plum">
+                    Connect & View Documents (कृती व संपर्क)
+                  </h3>
+                  <p className="text-[11px] text-brand-gray">
+                    Send interest, view candidate biodata, and access verified contact details
+                  </p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full border flex items-center space-x-1 ${
+                isContactUnlocked 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-amber-50 text-amber-800 border-amber-200'
+              }`}>
+                {isContactUnlocked ? <ShieldCheck className="w-3 h-3 text-emerald-600" /> : <Lock className="w-3 h-3 text-amber-600" />}
+                <span>{isContactUnlocked ? 'Contact Unlocked' : 'Locked Contact'}</span>
+              </span>
+            </div>
+
+            <ActionButtonsStack
+              profile={profile}
+              firstName={firstName}
+              isContactUnlocked={isContactUnlocked}
+              hasCreditsToUnlock={hasCreditsToUnlock}
+              isAuthenticated={isAuthenticated}
+              isSubscribed={isSubscribed}
+              isAccepted={isAccepted}
+              isReceived={isReceived}
+              isSent={isSent}
+              handleAction={handleAction}
+              handleUnlockContactClick={handleUnlockContactClick}
+              onOpenBiodata={() => setShowBiodataViewerModal(true)}
+              onOpenContact={() => setShowContactDetailsModal(true)}
+              acceptInterest={acceptInterest}
+              declineInterest={declineInterest}
+              withdrawInterest={withdrawInterest}
+              t={t}
+            />
+          </div>
 
         </main>
 
       </div>
 
-      {/* Safety Banner Footer (matching reference bottom banner) */}
+      {/* Safety Banner Footer */}
       <div className="bg-gradient-to-r from-rose-50/80 via-brand-ivory to-rose-50/80 border border-rose-100 p-4 sm:p-5 rounded-3xl flex items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-2xl bg-rose-100 text-brand-plum flex items-center justify-center shrink-0">
@@ -1168,72 +1293,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Floating Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-14 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-brand-rose/20 shadow-2xl z-40">
-        {isAccepted ? (
-          <button
-            onClick={handleAction}
-            className="w-full py-3 bg-emerald-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-2"
-          >
-            <MessageSquare className="w-4 h-4 text-brand-gold" />
-            <span>{t('sendMessage')}</span>
-          </button>
-        ) : isReceived ? (
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                if (!isSubscribed) {
-                  setSubModalReason('connect');
-                  setShowSubModal(true);
-                  return;
-                }
-                acceptInterest(profile.id);
-              }}
-              className="flex-1 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-1"
-            >
-              <Check className="w-4 h-4 text-brand-gold" />
-              <span>{t('acceptInterest')}</span>
-            </button>
-            <button
-              onClick={() => declineInterest(profile.id)}
-              className="py-3 px-4 bg-gray-100 text-gray-700 font-semibold text-xs rounded-xl"
-            >
-              {t('declineInterest')}
-            </button>
-          </div>
-        ) : isSent ? (
-          <div className="w-full py-2.5 bg-amber-50 text-amber-900 border border-amber-300 font-bold text-xs text-center rounded-xl">
-            {t('interestSent')}
-          </div>
-        ) : (
-          <button
-            onClick={handleAction}
-            className={`w-full py-3 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center space-x-2 ${
-              isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock))
-                ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark border border-amber-400/40'
-                : 'bg-brand-plum'
-            }`}
-          >
-            {isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) ? (
-              <>
-                <Crown className="w-4 h-4 text-amber-300" />
-                <span>{t('sendInterest')} (Subscribe)</span>
-              </>
-            ) : isAuthenticated && !isContactUnlocked && hasCreditsToUnlock ? (
-              <>
-                <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                <span>{t('sendInterest')} (1 Credit)</span>
-              </>
-            ) : (
-              <>
-                <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                <span>{t('sendInterest')}</span>
-              </>
-            )}
-          </button>
-        )}
       </div>
 
       <SubscriptionModal
@@ -1327,6 +1386,22 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         </div>,
         document.body
       )}
+
+      {/* Fullscreen Maharashtrian Biodata Viewer Modal */}
+      <BiodataViewerModal
+        isOpen={showBiodataViewerModal}
+        onClose={() => setShowBiodataViewerModal(false)}
+        user={profile}
+      />
+
+      {/* Unlocked Contact Details Modal */}
+      <ContactDetailsModal
+        isOpen={showContactDetailsModal}
+        onClose={() => setShowContactDetailsModal(false)}
+        profile={profile}
+        onCopy={handleCopyText}
+        copiedField={copiedField}
+      />
 
     </div>
   );

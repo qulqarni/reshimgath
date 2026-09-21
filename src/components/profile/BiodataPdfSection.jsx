@@ -230,8 +230,40 @@ export const BiodataPdfSection = ({
       </div>
 
       {/* FULL SCREEN BIODATA VIEWER MODAL */}
-      {showViewerModal && createPortal(
-        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
+      <BiodataViewerModal
+        isOpen={showViewerModal}
+        onClose={() => setShowViewerModal(false)}
+        user={user}
+      />
+    </div>
+  );
+};
+
+export const BiodataViewerModal = ({ isOpen, onClose, user }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const biodata = user?.biodataPdf || null;
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Candidate';
+  const handlePrint = () => {
+    window.print();
+  };
+  const isBiodataImage = biodata?.fileType === 'image' || biodata?.url?.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(biodata?.fileName || '');
+  const candidatePhoto = (user?.photos && user.photos.length > 0) ? user.photos[0] : (user?.avatar || null);
+  const hasVal = (val) => val !== null && val !== undefined && String(val).trim().length > 0;
+
+  return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
           <div className="bg-white max-w-3xl w-full max-h-[92vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-gray-200 my-auto print:max-h-none print:shadow-none print:border-none print:w-full print:rounded-none">
             
             {/* Modal Top Bar (Hidden during Print) */}
@@ -274,7 +306,7 @@ export const BiodataPdfSection = ({
 
                 <button
                   type="button"
-                  onClick={() => setShowViewerModal(false)}
+                  onClick={onClose}
                   className="p-1.5 text-brand-rose hover:text-white rounded-lg hover:bg-white/10 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -516,8 +548,5 @@ export const BiodataPdfSection = ({
           </div>
         </div>,
         document.body
-      )}
-
-    </div>
-  );
+      );
 };
