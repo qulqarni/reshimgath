@@ -554,13 +554,14 @@ export const AuthProvider = ({ children }) => {
       return senderStr === myIdStr && targetIdentifiers.includes(targetStr);
     });
 
-    if (isAlreadyUnlocked || isReceivedFromTarget || isConnectedWithTarget || isSentToTarget) {
-      return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true };
+    if (isAlreadyUnlocked || isConnectedWithTarget || isSentToTarget) {
+      return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true, isConnected: isConnectedWithTarget };
     }
 
     return {
       canView: false,
       alreadyUnlocked: false,
+      isReceivedFromTarget: Boolean(isReceivedFromTarget),
       remainingVisits: remaining,
       totalVisits: total,
       hasActivePlan: hasPlan

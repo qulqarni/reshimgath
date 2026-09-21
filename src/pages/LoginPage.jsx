@@ -21,7 +21,19 @@ export const LoginPage = ({ onNavigate }) => {
     const result = login(email, password);
     if (result && result.success) {
       setError('');
-      onNavigate('/');
+      let redirectPath = null;
+      try {
+        redirectPath = sessionStorage.getItem('reshimgath_redirect_after_auth');
+        if (redirectPath) {
+          sessionStorage.removeItem('reshimgath_redirect_after_auth');
+        }
+      } catch (e) {}
+
+      if (redirectPath) {
+        onNavigate(redirectPath);
+      } else {
+        onNavigate('/');
+      }
     } else {
       setError(result?.message || 'Account not found. Please check your login credentials.');
     }

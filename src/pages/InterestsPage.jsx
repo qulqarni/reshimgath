@@ -382,19 +382,11 @@ export const InterestsPage = ({ onNavigate }) => {
                         </button>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <button
-                            onClick={() => {
-                              if (!isSubscribed) {
-                                setSelectedProfileForSub(p);
-                                setSubModalReason('connect');
-                                setShowSubModal(true);
-                                return;
-                              }
-                              acceptInterest(p.id);
-                            }}
+                            onClick={() => acceptInterest(p.id)}
                             className="flex-1 py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                           >
                             <Check className="w-3.5 h-3.5 text-white" />
-                            <span>{t('acceptInterest')}</span>
+                            <span>{t('acceptInterest')} (Free)</span>
                           </button>
                           <button
                             onClick={() => declineInterest(p.id)}

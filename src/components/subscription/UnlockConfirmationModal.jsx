@@ -7,7 +7,8 @@ import {
   Sparkles, 
   AlertCircle,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Crown
 } from 'lucide-react';
 import { WatermarkOverlay } from '../common/WatermarkOverlay';
 
@@ -15,6 +16,7 @@ export const UnlockConfirmationModal = ({
   isOpen, 
   onClose, 
   onConfirm, 
+  onOpenPlans,
   profile, 
   remainingVisits = 0,
   totalVisits = 25
@@ -106,16 +108,28 @@ export const UnlockConfirmationModal = ({
           <button
             type="button"
             onClick={onConfirm}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
           >
             <UserCheck className="w-4 h-4 text-brand-gold" />
-            <span>Confirm & Unlock Profile (1 Credit)</span>
+            <span>Use 1 Credit (Unlocks Interest, Contact & Biodata)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              if (onOpenPlans) onOpenPlans();
+            }}
+            className="w-full py-3 px-4 bg-amber-50 text-amber-900 border border-amber-300 font-bold text-xs rounded-2xl hover:bg-amber-100 transition-all flex items-center justify-center space-x-2 shadow-sm"
+          >
+            <Crown className="w-4 h-4 text-amber-600" />
+            <span>Purchase / Upgrade Plan</span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 px-4 bg-gray-100 text-brand-charcoal font-bold text-xs rounded-2xl hover:bg-gray-200 transition-all"
+            className="w-full py-2 px-4 text-brand-gray font-bold text-xs hover:text-brand-charcoal transition-all"
           >
             Cancel
           </button>

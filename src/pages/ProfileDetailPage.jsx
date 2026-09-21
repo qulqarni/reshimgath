@@ -103,12 +103,13 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const { user, isAuthenticated, canViewProfile, unlockProfileForUser, hasActiveSubscription, triggerPrivacyAlert } = useAuth();
   const { t } = useLanguage();
-  const { profiles, interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, recordProfileView } = useProfiles();
+  const { profiles, interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, recordProfileView, addToast } = useProfiles();
 
   const [showSubModal, setShowSubModal] = useState(false);
   const [subModalReason, setSubModalReason] = useState(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
+  const [unlockActionPending, setUnlockActionPending] = useState(null);
 
   const profile = profiles.find((p) => {
     if (!profileId) return true;
@@ -120,6 +121,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     return false;
   }) || profiles[0];
 
+  const firstName = profile?.name ? profile.name.split(' ')[0] : 'Candidate';
   const accessStatus = canViewProfile(profile?.id);
   const isContactUnlocked = accessStatus.canView || accessStatus.alreadyUnlocked;
   const isMeAdmin = user?.isAdmin === true || user?.role === 'admin' || user?.id === 'admin_1';
@@ -130,10 +132,23 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     isMeAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
   ));
 
+  const saveRedirectForGuest = () => {
+    const targetSlug = profile?.regId || (profile?.registrationId ? `SS-${profile.registrationId}` : profile?.id);
+    if (targetSlug) {
+      try {
+        sessionStorage.setItem('reshimgath_redirect_after_auth', `/profile/${targetSlug}`);
+      } catch (e) {}
+    }
+  };
+
   const handleUnlockContactClick = () => {
     if (!isAuthenticated) {
+      saveRedirectForGuest();
       setShowGuestAuthModal(true);
+    } else if (isReceived && !isAccepted) {
+      if (addToast) addToast(`Accept ${firstName}'s interest above to view their contact details & biodata for free!`, 'info');
     } else if (accessStatus.hasActivePlan && accessStatus.remainingVisits > 0) {
+      setUnlockActionPending(null);
       setShowUnlockModal(true);
     } else {
       setSubModalReason('view_contact');
@@ -215,6 +230,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
   const handleAction = () => {
     if (!isAuthenticated) {
+      saveRedirectForGuest();
       if (triggerPrivacyAlert) triggerPrivacyAlert();
       setShowGuestAuthModal(true);
       return;
@@ -226,11 +242,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
 
     if (isReceived) {
-      if (!isSubscribed) {
-        setSubModalReason('connect');
-        setShowSubModal(true);
-        return;
-      }
       acceptInterest(profile.id);
       return;
     }
@@ -239,6 +250,11 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       if (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) {
         setSubModalReason('send_interest');
         setShowSubModal(true);
+        return;
+      }
+      if (!isContactUnlocked && hasCreditsToUnlock) {
+        setUnlockActionPending('send_interest');
+        setShowUnlockModal(true);
         return;
       }
       sendInterest(profile.id);
@@ -264,8 +280,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     if (Array.isArray(val)) return val.length > 0;
     return true;
   };
-
-  const firstName = profile.name ? profile.name.split(' ')[0] : 'Candidate';
 
   const hasPersonalInfo = hasValue(profile.maritalStatus) || hasValue(profile.dob) || hasValue(profile.motherTongue) || hasValue(profile.religion) || hasValue(profile.caste) || hasValue(profile.nativePlace);
   const hasCareer = hasValue(profile.education) || hasValue(profile.college) || hasValue(profile.occupation) || hasValue(profile.company) || hasValue(profile.income) || hasValue(profile.district);
@@ -573,7 +587,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   {isAccepted 
                     ? "You are connected! You can now send direct private messages." 
                     : isReceived 
-                    ? `Accept ${firstName}'s interest to unlock private messaging.` 
+                    ? `Accept ${firstName}'s interest to view contact details, biodata & message for free.` 
                     : isSent 
                     ? `Waiting for ${firstName} to accept your interest request.` 
                     : `Send interest to connect with ${firstName}.`}
@@ -593,18 +607,11 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             ) : isReceived ? (
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    if (!isSubscribed) {
-                      setSubModalReason('connect');
-                      setShowSubModal(true);
-                      return;
-                    }
-                    acceptInterest(profile.id);
-                  }}
-                  className="flex-1 py-3.5 bg-brand-plum text-white font-bold text-xs rounded-2xl shadow-md hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/40"
+                  onClick={() => acceptInterest(profile.id)}
+                  className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 border border-emerald-400/40"
                 >
-                  <Check className="w-4 h-4 text-brand-gold" />
-                  <span>{t('acceptInterest')}</span>
+                  <Check className="w-4 h-4 text-white" />
+                  <span>{t('acceptInterest')} (Free)</span>
                 </button>
                 <button
                   onClick={() => declineInterest(profile.id)}
@@ -1238,10 +1245,23 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
       <UnlockConfirmationModal
         isOpen={showUnlockModal}
-        onClose={() => setShowUnlockModal(false)}
-        onConfirm={() => {
-          unlockProfileForUser(profile.id);
+        onClose={() => {
           setShowUnlockModal(false);
+          setUnlockActionPending(null);
+        }}
+        onConfirm={() => {
+          const success = unlockProfileForUser(profile.id);
+          setShowUnlockModal(false);
+          if (success && unlockActionPending === 'send_interest') {
+            sendInterest(profile.id);
+          }
+          setUnlockActionPending(null);
+        }}
+        onOpenPlans={() => {
+          setShowUnlockModal(false);
+          setUnlockActionPending(null);
+          setSubModalReason(unlockActionPending === 'send_interest' ? 'send_interest' : 'view_contact');
+          setShowSubModal(true);
         }}
         profile={profile}
         remainingVisits={accessStatus.remainingVisits}
@@ -1260,32 +1280,37 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-16 h-16 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center mx-auto border-2 border-brand-plum/20 shadow-inner">
-              <Lock className="w-8 h-8 text-brand-plum" />
+            <div className="w-16 h-16 rounded-2xl bg-brand-plum text-brand-gold flex items-center justify-center mx-auto shadow-md border border-brand-gold/30">
+              <Crown className="w-8 h-8 text-brand-gold" />
             </div>
 
             <div className="space-y-2">
               <h3 className="font-serif font-bold text-2xl text-brand-plum">
-                Sign Up to Access Contact Info & Biodata
+                Sign Up & Choose a Plan
               </h3>
-              <p className="text-xs text-brand-gray leading-relaxed px-2">
-                To view verified contact numbers, email address, and candidate biodata, please create an account or sign up first. You can then use your profile credits to unlock details.
+              <p className="text-xs text-brand-kesari font-semibold">
+                खाते तयार करा आणि योजना निवडा
+              </p>
+              <p className="text-xs text-brand-gray leading-relaxed px-2 pt-1">
+                To send interest, view verified contact numbers, and access candidate biodata, please create an account and choose a membership plan.
               </p>
             </div>
 
             <div className="space-y-3 pt-2">
               <button
                 onClick={() => {
+                  saveRedirectForGuest();
                   setShowGuestAuthModal(false);
                   onNavigate('/signup');
                 }}
                 className="w-full py-3.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-xl transition-all border border-brand-gold/30 flex items-center justify-center space-x-2"
               >
-                <span>Register / Sign Up First</span>
+                <span>Sign Up / Create Account & Choose Plan</span>
               </button>
 
               <button
                 onClick={() => {
+                  saveRedirectForGuest();
                   setShowGuestAuthModal(false);
                   onNavigate('/login');
                 }}

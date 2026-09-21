@@ -76,7 +76,19 @@ export const SignUpPage = ({ onNavigate }) => {
 
     const res = signup(formData);
     if (res && res.success) {
-      onNavigate('/profile-setup');
+      let redirectPath = null;
+      try {
+        redirectPath = sessionStorage.getItem('reshimgath_redirect_after_auth');
+        if (redirectPath) {
+          sessionStorage.removeItem('reshimgath_redirect_after_auth');
+        }
+      } catch (e) {}
+
+      if (redirectPath) {
+        onNavigate(redirectPath);
+      } else {
+        onNavigate('/profile-setup');
+      }
     } else {
       setError(res?.message || 'Failed to create profile. Please try again.');
     }

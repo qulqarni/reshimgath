@@ -682,27 +682,14 @@ export const ProfileProvider = ({ children }) => {
       return false;
     }
 
-    const isSubscribed = hasActiveSubscription ? hasActiveSubscription() : (
-      user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1' || Boolean(
-        user.subscription?.planId && user.subscription.planId !== 'none' && user.subscription.planId !== 'free'
-      )
-    );
-
-    if (!isSubscribed) {
-      const targetProfile = profiles.find(p => String(p.id).toLowerCase() === String(profileId).toLowerCase() || (p.regId && String(p.regId).toLowerCase() === String(profileId).toLowerCase()));
-      addToast('A membership subscription is required to connect and chat with profiles.', 'warning');
-      openSubscriptionModal(targetProfile?.name || null, 'connect');
-      return false;
-    }
-
     const acceptedEntry = { user1: user.id, user2: profileId, profileId: profileId, timestamp: 'Just now' };
 
     setInterests((prev) => {
       const updated = {
         ...prev,
-        received: prev.received.filter((item) => {
+        received: (prev.received || []).filter((item) => {
           const pid = typeof item === 'string' ? item : item.profileId || item.senderId;
-          return String(pid) !== String(profileId);
+          return String(pid).toLowerCase() !== String(profileId).toLowerCase();
         }),
         accepted: [
           ...(prev.accepted || []).filter(a => typeof a === 'object' && a !== null),
@@ -710,6 +697,9 @@ export const ProfileProvider = ({ children }) => {
         ]
       };
       saveInterestsToFirestore(updated);
+      try {
+        localStorage.setItem('reshimgath_interests', JSON.stringify(updated));
+      } catch (e) {}
       return updated;
     });
 
@@ -740,7 +730,8 @@ export const ProfileProvider = ({ children }) => {
       // fallback
     }
 
-    addToast('Interest Accepted! You can now start private chat.', 'success');
+    addToast('Interest Accepted! Connection unlocked. Contact details & Biodata are now available for free.', 'success');
+    return true;
   };
 
   const declineInterest = (profileId) => {
