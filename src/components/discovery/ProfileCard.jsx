@@ -119,6 +119,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
   };
 
   const profileSlug = profile.regId || (profile.registrationId ? `SS-${profile.registrationId}` : profile.id);
+  const candidateCaste = (profile?.caste || profile?.community || profile?.religion || '').trim();
 
   return (
     <div
@@ -157,8 +158,8 @@ export const ProfileCard = ({ profile, onSelect }) => {
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </button>
 
-            {/* Slideshow Pagination Indicator Dots */}
-            <div className="absolute bottom-3 right-3 flex items-center space-x-1.5 z-20 bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10">
+            {/* Slideshow Pagination Indicator Dots (Centered at bottom) */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-1.5 z-20 bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-sm">
               {photosList.map((_, idx) => (
                 <button
                   key={idx}
@@ -203,6 +204,15 @@ export const ProfileCard = ({ profile, onSelect }) => {
             {profile.registrationId ? String(profile.registrationId) : (profile.regId ? (String(profile.regId).replace(/[^0-9]/g, '') || profile.regId) : (String(profile.id).replace(/[^0-9]/g, '') || profile.id))}
           </span>
         </div>
+
+        {/* Caste on Image Bottom Right Corner */}
+        {candidateCaste && (
+          <div className="absolute bottom-3 right-3 z-10 max-w-[48%]">
+            <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md text-white font-bold text-xs rounded-full border border-white/20 shadow-md inline-block truncate max-w-full drop-shadow-md">
+              {candidateCaste}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Card Info Body (White Box Below Photo) */}
