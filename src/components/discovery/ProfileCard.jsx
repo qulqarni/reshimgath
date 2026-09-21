@@ -207,9 +207,10 @@ export const ProfileCard = ({ profile, onSelect }) => {
 
         {/* Caste on Image Bottom Right Corner */}
         {candidateCaste && (
-          <div className="absolute bottom-3 right-3 z-10 max-w-[48%]">
-            <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md text-white font-bold text-xs rounded-full border border-white/20 shadow-md inline-block truncate max-w-full drop-shadow-md">
-              {candidateCaste}
+          <div className="absolute bottom-3 right-3 z-10 max-w-[50%]">
+            <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md text-white text-xs rounded-full border border-white/20 shadow-md inline-flex items-center space-x-1 truncate max-w-full drop-shadow-md">
+              <span className="text-gray-200 font-medium">caste:</span>
+              <span className="font-bold text-white truncate">{candidateCaste}</span>
             </span>
           </div>
         )}
