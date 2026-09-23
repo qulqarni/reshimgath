@@ -570,24 +570,6 @@ export const ProfileProvider = ({ children }) => {
       return false;
     }
 
-    const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
-    const currentSub = user.subscription || {};
-    const remainingCredits = currentSub.creditsRemaining || 0;
-    const viewStatus = canViewProfile ? canViewProfile(profileId) : { alreadyUnlocked: false, canView: false };
-    const isAlreadyUnlocked = viewStatus.alreadyUnlocked || viewStatus.canView;
-
-    const isSubscribed = hasActiveSubscription ? hasActiveSubscription() : (
-      isAdminUser || Boolean(currentSub.planId && currentSub.planId !== 'none' && currentSub.planId !== 'free')
-    );
-
-    // If not subscribed OR (not admin AND not already unlocked AND no credits remaining)
-    if (!isSubscribed || (!isAdminUser && !isAlreadyUnlocked && remainingCredits <= 0)) {
-      const targetProfile = profiles.find(p => String(p.id).toLowerCase() === String(profileId).toLowerCase() || (p.regId && String(p.regId).toLowerCase() === String(profileId).toLowerCase()));
-      addToast('An active membership plan with available credits is required to send interest & unlock details.', 'warning');
-      openSubscriptionModal(targetProfile?.name || null, 'send_interest');
-      return false;
-    }
-
     // Check if already sent
     const alreadySent = (interests.sent || []).some((item) =>
       typeof item === 'string'
@@ -595,18 +577,6 @@ export const ProfileProvider = ({ children }) => {
         : (String(item.profileId) === String(profileId) && String(item.senderId) === String(user.id))
     );
     if (alreadySent) return true;
-
-    // Deduct 1 credit & unlock profile if not already unlocked (vice versa: unlocking send interest auto-unlocks contact & biodata)
-    let creditDeducted = false;
-    if (!isAlreadyUnlocked && !isAdminUser && unlockProfileForUser) {
-      const unlockSuccess = unlockProfileForUser(profileId);
-      if (!unlockSuccess) {
-        const targetProfile = profiles.find(p => String(p.id).toLowerCase() === String(profileId).toLowerCase() || (p.regId && String(p.regId).toLowerCase() === String(profileId).toLowerCase()));
-        openSubscriptionModal(targetProfile?.name || null, 'send_interest');
-        return false;
-      }
-      creditDeducted = true;
-    }
 
     const senderName = user.name || 'A verified member';
     const senderPhoto = user.avatar || user.photos?.[0] || null;
@@ -666,13 +636,7 @@ export const ProfileProvider = ({ children }) => {
     setNotifications((prev) => [interestNotif, ...prev]);
     saveNotificationToFirestore(interestNotif);
 
-    if (creditDeducted) {
-      addToast('Interest sent! 1 profile credit used. Contact details & Biodata are now unlocked! 🎉', 'success');
-    } else if (isAlreadyUnlocked) {
-      addToast('Interest sent successfully! (Profile already unlocked)', 'success');
-    } else {
-      addToast('Interest sent successfully!', 'success');
-    }
+    addToast('Interest sent successfully!', 'success');
     return true;
   };
 
@@ -713,7 +677,7 @@ export const ProfileProvider = ({ children }) => {
       senderName: user.name || 'A verified member',
       senderRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : null),
       title: 'Interest Accepted! 💕',
-      text: `${user.name || 'A verified member'} accepted your interest request! You can now start chatting.`,
+      text: `${user.name || 'A verified member'} accepted your interest request!`,
       time: 'Just now',
       unread: true
     };
@@ -730,7 +694,7 @@ export const ProfileProvider = ({ children }) => {
       // fallback
     }
 
-    addToast('Interest Accepted! Connection unlocked. Contact details & Biodata are now available for free.', 'success');
+    addToast('Interest Accepted!', 'success');
     return true;
   };
 

@@ -121,7 +121,7 @@ const ActionButtonsStack = ({
   t
 }) => (
   <div className="space-y-3 w-full">
-    {/* 1. Send Interest Button */}
+    {/* 1. Send Interest / Message Button */}
     {isAccepted ? (
       <button
         type="button"
@@ -130,6 +130,7 @@ const ActionButtonsStack = ({
       >
         <MessageSquare className="w-4 h-4 text-emerald-200" />
         <span>{t('sendMessage') || 'Message Candidate'}</span>
+        {!isContactUnlocked && <Lock className="w-3.5 h-3.5 text-emerald-200 ml-1 shrink-0" />}
       </button>
     ) : isReceived ? (
       <div className="flex gap-2">
@@ -168,28 +169,10 @@ const ActionButtonsStack = ({
       <button
         type="button"
         onClick={handleAction}
-        className={`w-full py-3.5 px-4 font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border ${
-          isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock))
-            ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 hover:from-brand-plum hover:to-amber-600'
-            : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/40'
-        }`}
+        className="w-full py-3.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
       >
-        {isAuthenticated && (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) ? (
-          <>
-            <Crown className="w-4 h-4 text-amber-300" />
-            <span>{t('sendInterest')} (Subscribe)</span>
-          </>
-        ) : isAuthenticated && !isContactUnlocked && hasCreditsToUnlock ? (
-          <>
-            <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-            <span>{t('sendInterest')} (1 Credit - Unlocks Contact & Biodata)</span>
-          </>
-        ) : (
-          <>
-            <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-            <span>{t('sendInterest')}</span>
-          </>
-        )}
+        <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+        <span>{t('sendInterest')}</span>
       </button>
     )}
 
@@ -198,7 +181,7 @@ const ActionButtonsStack = ({
       type="button"
       onClick={() => {
         if (!isContactUnlocked) {
-          handleUnlockContactClick();
+          handleUnlockContactClick('biodata');
         } else {
           onOpenBiodata();
         }
@@ -223,7 +206,7 @@ const ActionButtonsStack = ({
       type="button"
       onClick={() => {
         if (!isContactUnlocked) {
-          handleUnlockContactClick();
+          handleUnlockContactClick('contact');
         } else {
           onOpenContact();
         }
@@ -476,17 +459,17 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
   };
 
-  const handleUnlockContactClick = () => {
+  const handleUnlockContactClick = (action = 'contact') => {
     if (!isAuthenticated) {
       saveRedirectForGuest();
       setShowGuestAuthModal(true);
-    } else if (isReceived && !isAccepted) {
-      if (addToast) addToast(`Accept ${firstName}'s interest above to view their contact details & biodata for free!`, 'info');
-    } else if (accessStatus.hasActivePlan && accessStatus.remainingVisits > 0) {
-      setUnlockActionPending(null);
+      return;
+    }
+    setUnlockActionPending(action);
+    if (hasCreditsToUnlock) {
       setShowUnlockModal(true);
     } else {
-      setSubModalReason('view_contact');
+      setSubModalReason(action === 'message' ? 'message' : action === 'biodata' ? 'view_biodata' : 'view_contact');
       setShowSubModal(true);
     }
   };
@@ -572,6 +555,13 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
 
     if (isAccepted) {
+      if (!isContactUnlocked) {
+        handleUnlockContactClick('message');
+        return;
+      }
+      try {
+        sessionStorage.setItem('reshimgath_target_chat', profile.id);
+      } catch (e) {}
       onNavigate('/messages');
       return;
     }
@@ -582,16 +572,6 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
 
     if (!isSent && !isDeclined) {
-      if (!isSubscribed || (!isContactUnlocked && !hasCreditsToUnlock)) {
-        setSubModalReason('send_interest');
-        setShowSubModal(true);
-        return;
-      }
-      if (!isContactUnlocked && hasCreditsToUnlock) {
-        setUnlockActionPending('send_interest');
-        setShowUnlockModal(true);
-        return;
-      }
       sendInterest(profile.id);
     }
   };
@@ -1311,15 +1291,25 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         onConfirm={() => {
           const success = unlockProfileForUser(profile.id);
           setShowUnlockModal(false);
-          if (success && unlockActionPending === 'send_interest') {
-            sendInterest(profile.id);
+          if (success) {
+            if (unlockActionPending === 'biodata') {
+              setShowBiodataViewerModal(true);
+            } else if (unlockActionPending === 'contact') {
+              setShowContactDetailsModal(true);
+            } else if (unlockActionPending === 'message') {
+              try {
+                sessionStorage.setItem('reshimgath_target_chat', profile.id);
+              } catch (e) {}
+              onNavigate('/messages');
+            }
           }
           setUnlockActionPending(null);
         }}
         onOpenPlans={() => {
+          const reason = unlockActionPending === 'message' ? 'message' : unlockActionPending === 'biodata' ? 'view_biodata' : 'view_contact';
           setShowUnlockModal(false);
           setUnlockActionPending(null);
-          setSubModalReason(unlockActionPending === 'send_interest' ? 'send_interest' : 'view_contact');
+          setSubModalReason(reason);
           setShowSubModal(true);
         }}
         profile={profile}

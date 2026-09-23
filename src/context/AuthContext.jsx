@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
 import { saveProfileToFirestore } from '../services/firebaseService';
+import { db, isFirebaseConfigured } from '../config/firebase';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -194,6 +196,42 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Real-time Firestore sync for logged-in user profile, subscription & unlocked profiles
+  useEffect(() => {
+    if (!user?.id || user.id === 'admin_1' || !isFirebaseConfigured) return;
+
+    const userDocRef = doc(db, 'profiles', String(user.id));
+    const unsub = onSnapshot(userDocRef, (snap) => {
+      if (snap.exists()) {
+        const liveData = snap.data();
+        setUser((prev) => {
+          if (!prev || String(prev.id) !== String(user.id)) return prev;
+          const liveSub = liveData.subscription || {};
+          const liveUnlocked = liveData.unlockedProfiles || liveSub.unlockedProfiles || [];
+          const prevUnlocked = prev.unlockedProfiles || prev.subscription?.unlockedProfiles || [];
+          const mergedUnlocked = Array.from(new Set([...prevUnlocked, ...liveUnlocked]));
+
+          const mergedSub = {
+            ...(prev.subscription || {}),
+            ...liveSub,
+            unlockedProfiles: mergedUnlocked
+          };
+
+          return {
+            ...prev,
+            ...liveData,
+            subscription: mergedSub,
+            unlockedProfiles: mergedUnlocked
+          };
+        });
+      }
+    }, (err) => {
+      console.warn('Realtime user subscription error:', err);
+    });
+
+    return () => unsub();
+  }, [user?.id]);
+
   const login = (emailOrPhone, password) => {
     const input = (emailOrPhone || '').trim().toLowerCase();
     const pass = (password || '').trim();
@@ -276,6 +314,36 @@ export const AuthProvider = ({ children }) => {
       }
       const normMatched = normalizeProfile(matchedProfile);
       setUser(normMatched);
+
+      // Proactively fetch latest profile data from Firestore (source of truth for unlockedProfiles and credits)
+      if (isFirebaseConfigured && matchedProfile.id) {
+        getDoc(doc(db, 'profiles', String(matchedProfile.id))).then((snap) => {
+          if (snap.exists()) {
+            const firestoreData = snap.data();
+            setUser((prev) => {
+              if (!prev || String(prev.id) !== String(matchedProfile.id)) return prev;
+              const liveSub = firestoreData.subscription || {};
+              const liveUnlocked = firestoreData.unlockedProfiles || liveSub.unlockedProfiles || [];
+              const prevUnlocked = prev.unlockedProfiles || prev.subscription?.unlockedProfiles || [];
+              const mergedUnlocked = Array.from(new Set([...prevUnlocked, ...liveUnlocked]));
+              const mergedSub = {
+                ...(prev.subscription || {}),
+                ...liveSub,
+                unlockedProfiles: mergedUnlocked
+              };
+              return {
+                ...prev,
+                ...firestoreData,
+                subscription: mergedSub,
+                unlockedProfiles: mergedUnlocked
+              };
+            });
+          }
+        }).catch((err) => {
+          console.warn('Proactive firestore fetch on login:', err);
+        });
+      }
+
       return { success: true, user: normMatched };
     }
 
@@ -490,78 +558,19 @@ export const AuthProvider = ({ children }) => {
     }
 
     const sub = user.subscription || {};
-    const unlockedList = (sub.unlockedProfiles || []).map(id => String(id).toLowerCase());
+    const unlockedList = [
+      ...(sub.unlockedProfiles || []),
+      ...(user.unlockedProfiles || [])
+    ].map(id => String(id).toLowerCase());
 
     const isAlreadyUnlocked = unlockedList.some(id => targetIdentifiers.includes(id));
     const remaining = sub.creditsRemaining || 0;
     const total = sub.creditsTotal || 0;
     const hasPlan = (sub.planId && total > 0) || remaining > 0;
 
-    // Check if target user has sent an interest request to current user (Received Interest)
-    // Or if target user and current user have accepted connection (Connected Profiles)
-    // If target user initiated an interest request or is connected, viewing target profile is 100% FREE!
-    const interestsSaved = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('reshimgath_interests') || '{}');
-      } catch (e) {
-        return {};
-      }
-    })();
-
-    const myIdStr = String(user.id).toLowerCase();
-    const myEmailStr = user.email ? String(user.email).toLowerCase() : '';
-    const myNameStr = user.name ? String(user.name).toLowerCase() : '';
-
-    const receivedArray = interestsSaved.received || [];
-    const isReceivedFromTarget = receivedArray.some(r => {
-      if (!r) return false;
-      const sender = typeof r === 'string' ? r : (r.senderId || r.profileId || r.user1);
-      const target = typeof r === 'string' ? user.id : (r.targetUserId || r.user2);
-      const senderStr = String(sender).toLowerCase();
-      const targetStr = String(target).toLowerCase();
-      return targetIdentifiers.includes(senderStr) && targetStr === myIdStr;
-    });
-
-    const acceptedArray = [...(interestsSaved.accepted || []), ...(interestsSaved.connected || [])];
-    const isConnectedWithTarget = acceptedArray.some(a => {
-      if (!a) return false;
-      let u1 = '';
-      let u2 = '';
-      if (typeof a === 'string') {
-        u1 = a.toLowerCase();
-        u2 = '';
-      } else {
-        u1 = String(a.user1 || a.senderId || '').toLowerCase();
-        u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
-      }
-
-      const u1IsMe = u1 === myIdStr || (myEmailStr && u1 === myEmailStr) || (myNameStr && u1 === myNameStr);
-      const u2IsMe = u2 === myIdStr || (myEmailStr && u2 === myEmailStr) || (myNameStr && u2 === myNameStr);
-
-      const u1IsTarget = targetIdentifiers.includes(u1);
-      const u2IsTarget = targetIdentifiers.includes(u2);
-
-      return (u1IsMe && u2IsTarget) || (u2IsMe && u1IsTarget);
-    });
-
-    const sentArray = interestsSaved.sent || [];
-    const isSentToTarget = sentArray.some(s => {
-      if (!s) return false;
-      const sender = typeof s === 'string' ? user.id : (s.senderId || s.user1);
-      const target = typeof s === 'string' ? s : (s.profileId || s.targetUserId || s.user2);
-      const senderStr = String(sender).toLowerCase();
-      const targetStr = String(target).toLowerCase();
-      return senderStr === myIdStr && targetIdentifiers.includes(targetStr);
-    });
-
-    if (isAlreadyUnlocked || isConnectedWithTarget || isSentToTarget) {
-      return { canView: true, alreadyUnlocked: true, remainingVisits: remaining, totalVisits: total, hasActivePlan: true, isConnected: isConnectedWithTarget };
-    }
-
     return {
-      canView: false,
-      alreadyUnlocked: false,
-      isReceivedFromTarget: Boolean(isReceivedFromTarget),
+      canView: isAlreadyUnlocked,
+      alreadyUnlocked: isAlreadyUnlocked,
       remainingVisits: remaining,
       totalVisits: total,
       hasActivePlan: hasPlan
@@ -584,15 +593,17 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    const targetIdentifiers = getProfileIdentifiers(profileId);
+    const primaryId = String(profileId).toLowerCase().trim();
 
     setUser((prev) => {
       if (!prev) return prev;
       const prevSub = prev.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
-      const prevUnlocked = (prevSub.unlockedProfiles || []).map(id => String(id).toLowerCase());
+      const prevUnlocked = [
+        ...(prevSub.unlockedProfiles || []),
+        ...(prev.unlockedProfiles || [])
+      ].map(id => String(id).toLowerCase());
       const prevRemaining = prevSub.creditsRemaining || 0;
 
-      const primaryId = String(profileId).toLowerCase().trim();
       const newUnlocked = Array.from(new Set([...prevUnlocked, primaryId]));
       const newRemaining = isAdminUser ? prevRemaining : Math.max(0, prevRemaining - 1);
 
@@ -604,10 +615,14 @@ export const AuthProvider = ({ children }) => {
 
       const updated = {
         ...prev,
-        subscription: updatedSub
+        subscription: updatedSub,
+        unlockedProfiles: newUnlocked
       };
 
-      localStorage.setItem('reshimgath_user', JSON.stringify(updated));
+      try {
+        localStorage.setItem('reshimgath_user', JSON.stringify(updated));
+      } catch (e) {}
+
       if (updated.id) {
         saveProfileToFirestore(updated.id, updated);
       }

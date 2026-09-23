@@ -86,7 +86,7 @@ export const UnlockConfirmationModal = ({
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-amber-900 flex items-center space-x-1.5">
               <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>Your Profile Visit Credits</span>
+              <span>Your Available Credits</span>
             </span>
             <span className="px-2.5 py-0.5 bg-amber-200 text-amber-950 font-extrabold rounded-full text-[11px]">
               {remainingVisits} / {totalVisits} Left
@@ -94,12 +94,12 @@ export const UnlockConfirmationModal = ({
           </div>
 
           <p className="text-xs text-brand-charcoal leading-relaxed pt-1">
-            Do you really want to view and unlock complete profile details of <strong className="text-brand-plum">{profile.name}</strong>?
+            Do you want to unlock <strong className="text-brand-plum">{profile.name}</strong>? Using 1 credit will instantly unlock <strong>Messaging</strong>, <strong>Contact Details</strong>, and <strong>Full Biodata</strong> for this candidate.
           </p>
           
           <div className="text-[11px] text-amber-800 font-medium italic flex items-center space-x-1 pt-1">
             <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span>1 visit credit will be deducted from your account.</span>
+            <span>1 credit will be deducted (unlocks all 3 features together).</span>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ export const UnlockConfirmationModal = ({
             className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
           >
             <UserCheck className="w-4 h-4 text-brand-gold" />
-            <span>Use 1 Credit (Unlocks Interest, Contact & Biodata)</span>
+            <span>Use 1 Credit (Unlocks Message, Contact Details & Biodata)</span>
           </button>
 
           <button

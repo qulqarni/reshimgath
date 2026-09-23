@@ -18,12 +18,29 @@ import {
 } from 'lucide-react';
 
 export const MessagesPage = ({ onNavigate }) => {
-  const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, triggerPrivacyAlert, canViewProfile } = useAuth();
   const { t } = useLanguage();
-  const { profiles, interests, chats, sendMessage, markChatAsRead } = useProfiles();
+  const { profiles, chats, sendMessage, markChatAsRead } = useProfiles();
 
-  // Get all accepted connection profiles for current logged-in user
-  const acceptedProfiles = profiles.filter((p) => {
+  // Check if navigating directly to a specific chat via profile/interest page
+  const [activePartnerId, setActivePartnerId] = useState(() => {
+    return sessionStorage.getItem('reshimgath_target_chat') || null;
+  });
+  const [mobileView, setMobileView] = useState(() => {
+    return sessionStorage.getItem('reshimgath_target_chat') ? 'chat' : 'list';
+  });
+  const [messageInput, setMessageInput] = useState('');
+
+  // Clear target chat from session storage after reading
+  useEffect(() => {
+    if (sessionStorage.getItem('reshimgath_target_chat')) {
+      sessionStorage.removeItem('reshimgath_target_chat');
+    }
+  }, []);
+
+  // Filter profiles that current user can message:
+  // Must be unlocked by current user, or have existing chat history, or is the active target
+  const conversationProfiles = profiles.filter((p) => {
     if (!user) return false;
 
     // 1. Exclude self
@@ -42,47 +59,17 @@ export const MessagesPage = ({ onNavigate }) => {
     const isMeAdmin = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
     if (!isMeAdmin && p.blocked) return false;
 
-    // 4. Must be explicitly accepted for this user
-    return (interests.accepted || []).some((a) => {
-      if (typeof a === 'object' && a !== null) {
-        const u1 = String(a.user1 || '').toLowerCase();
-        const u2 = String(a.user2 || '').toLowerCase();
-        const pid = String(a.profileId || '').toLowerCase();
-        const targetId = String(a.targetUserId || '').toLowerCase();
-        const senderId = String(a.senderId || '').toLowerCase();
+    // 4. Must be unlocked by current user OR have an existing chat thread OR be the active target
+    const isUnlocked = canViewProfile ? canViewProfile(p.id).alreadyUnlocked : false;
+    const convoKey = [String(user.id), String(p.id)].sort().join('_');
+    const hasChatHistory = chats[convoKey] && chats[convoKey].length > 0;
+    const isActiveTarget = activePartnerId && String(activePartnerId) === String(p.id);
 
-        const me = String(user.id || '').toLowerCase();
-        const meEmail = String(user.email || '').toLowerCase();
-        const meName = String(user.name || '').toLowerCase();
-
-        const other = String(p.id || '').toLowerCase();
-        const otherEmail = String(p.email || '').toLowerCase();
-        const otherName = String(p.name || '').toLowerCase();
-
-        const isMeInEntry = (
-          u1 === me || (meEmail && u1 === meEmail) || (meName && u1 === meName) ||
-          u2 === me || (meEmail && u2 === meEmail) || (meName && u2 === meName) ||
-          pid === me || (meEmail && pid === meEmail) || (meName && pid === meName) ||
-          targetId === me || (meEmail && targetId === meEmail) || (meName && targetId === meName) ||
-          senderId === me || (meEmail && senderId === meEmail) || (meName && senderId === meName)
-        );
-
-        const isOtherInEntry = (
-          u1 === other || (otherEmail && u1 === otherEmail) || (otherName && u1 === otherName) ||
-          u2 === other || (otherEmail && u2 === otherEmail) || (otherName && u2 === otherName) ||
-          pid === other || (otherEmail && pid === otherEmail) || (otherName && pid === otherName) ||
-          targetId === other || (otherEmail && targetId === otherEmail) || (otherName && targetId === otherName) ||
-          senderId === other || (otherEmail && senderId === otherEmail) || (otherName && senderId === otherName)
-        );
-
-        return isMeInEntry && isOtherInEntry;
-      }
-      return false;
-    });
+    return isUnlocked || hasChatHistory || isActiveTarget;
   });
 
   // Sort conversation list dynamically by most recent message timestamp (Latest messages first!)
-  const sortedProfiles = [...acceptedProfiles].sort((a, b) => {
+  const sortedProfiles = [...conversationProfiles].sort((a, b) => {
     if (!user) return 0;
     const keyA = [String(user.id), String(a.id)].sort().join('_');
     const keyB = [String(user.id), String(b.id)].sort().join('_');
@@ -112,11 +99,6 @@ export const MessagesPage = ({ onNavigate }) => {
     return String(a.name || '').localeCompare(String(b.name || ''));
   });
 
-  // By default when opening messages section, NO chat is selected!
-  const [activePartnerId, setActivePartnerId] = useState(null);
-  const [mobileView, setMobileView] = useState('list'); // 'list' or 'chat'
-  const [messageInput, setMessageInput] = useState('');
-
   const chatContainerRef = useRef(null);
   const messageInputRef = useRef(null);
 
@@ -126,8 +108,8 @@ export const MessagesPage = ({ onNavigate }) => {
     return null;
   }
 
-  // If no accepted connections exist
-  if (acceptedProfiles.length === 0) {
+  // If no unlocked or active conversations exist
+  if (conversationProfiles.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
         <div className="bg-white rounded-3xl p-8 sm:p-12 border border-brand-rose/20 shadow-2xl space-y-6">
@@ -140,16 +122,24 @@ export const MessagesPage = ({ onNavigate }) => {
               {t('messagesTitle')}
             </h2>
             <p className="text-xs text-brand-gray leading-relaxed">
-              {t('messagingBlockedNotice')}
+              You do not have any active conversations yet. Unlock a candidate profile with 1 credit to immediately start messaging, view contact numbers, and access full biodata.
             </p>
           </div>
 
-          <button
-            onClick={() => onNavigate('/interests')}
-            className="px-6 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all"
-          >
-            Go to Received Interests & Accept Requests
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => onNavigate('/search')}
+              className="px-6 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all"
+            >
+              Explore Profiles
+            </button>
+            <button
+              onClick={() => onNavigate('/interests')}
+              className="px-6 py-3 bg-brand-rose/20 text-brand-plum font-bold text-xs rounded-xl border border-brand-rose/40 hover:bg-brand-rose/30 transition-all"
+            >
+              View Interests
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -215,7 +205,7 @@ export const MessagesPage = ({ onNavigate }) => {
           className="md:hidden mb-3 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-white border border-brand-rose/30 text-brand-plum text-xs font-bold shadow-sm hover:bg-brand-rose/10 transition-all"
         >
           <ArrowLeft className="w-3.5 h-3.5 text-brand-plum stroke-[2.5]" />
-          <span>Back to Connections</span>
+          <span>Back to Conversations</span>
         </button>
       )}
 
@@ -225,7 +215,7 @@ export const MessagesPage = ({ onNavigate }) => {
         {/* Left Conversation List Sidebar */}
         <aside className={`${mobileView === 'chat' ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-4 border-r border-gray-100 flex-col bg-brand-lightBg/30`}>
           <div className="p-4 border-b border-gray-100 font-serif font-bold text-sm text-brand-plum flex items-center justify-between">
-            <span>Accepted Connections ({sortedProfiles.length})</span>
+            <span>Conversations ({sortedProfiles.length})</span>
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50">

@@ -87,24 +87,23 @@ export const ProfileCard = ({ profile, onSelect }) => {
     }
 
     if (isAccepted) {
+      if (!isProfileUnlocked) {
+        onSelect(profileSlug, 'viewProfile');
+        return;
+      }
+      try {
+        sessionStorage.setItem('reshimgath_target_chat', profile.id);
+      } catch (err) {}
       onSelect(profile.id, 'chat');
       return;
     }
 
     if (isReceived) {
-      if (!isSubscribed) {
-        if (openSubscriptionModal) openSubscriptionModal(profile.name, 'connect');
-        return;
-      }
       acceptInterest(profile.id);
       return;
     }
 
     if (!isSent && !isDeclined) {
-      if (!isSubscribed || (!isProfileUnlocked && !hasCreditsToUnlock)) {
-        if (openSubscriptionModal) openSubscriptionModal(profile.name, 'send_interest');
-        return;
-      }
       sendInterest(profile.id);
     }
   };
@@ -325,37 +324,11 @@ export const ProfileCard = ({ profile, onSelect }) => {
           ) : (
             <button
               onClick={handleAction}
-              className={`w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all border ${
-                isAuthenticated && (!isSubscribed || (!isProfileUnlocked && !hasCreditsToUnlock))
-                  ? 'bg-gradient-to-r from-amber-600 via-brand-plum to-brand-plumDark text-white border-amber-400/40 group-hover:from-brand-plum group-hover:to-amber-600'
-                  : 'bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/30 group-hover:from-brand-plumDark group-hover:to-brand-plum'
-              }`}
-              title={
-                isAuthenticated
-                  ? isProfileUnlocked
-                    ? 'Send interest to this profile (Already unlocked - 0 credits)'
-                    : hasCreditsToUnlock
-                    ? 'Uses 1 profile credit to send interest & unlock contact details & biodata'
-                    : 'Membership subscription or credits required'
-                  : 'Send Interest'
-              }
+              className="w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all border bg-gradient-to-r from-brand-plum to-brand-plumDark text-white border-brand-gold/30 group-hover:from-brand-plumDark group-hover:to-brand-plum"
+              title="Send Interest (Free)"
             >
-              {isAuthenticated && (!isSubscribed || (!isProfileUnlocked && !hasCreditsToUnlock)) ? (
-                <>
-                  <Crown className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{t('sendInterest')} (Subscribe)</span>
-                </>
-              ) : isAuthenticated && !isProfileUnlocked && hasCreditsToUnlock ? (
-                <>
-                  <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                  <span>{t('sendInterest')} (1 Credit)</span>
-                </>
-              ) : (
-                <>
-                  <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
-                  <span>{t('sendInterest')}</span>
-                </>
-              )}
+              <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+              <span>{t('sendInterest')}</span>
             </button>
           )}
         </div>

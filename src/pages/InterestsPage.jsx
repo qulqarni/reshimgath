@@ -472,7 +472,17 @@ export const InterestsPage = ({ onNavigate }) => {
                   actions={
                     <>
                       <button
-                        onClick={() => onNavigate('/messages')}
+                        onClick={() => {
+                          const { alreadyUnlocked, canView } = canViewProfile(p.id);
+                          if (alreadyUnlocked || canView) {
+                            try {
+                              sessionStorage.setItem('reshimgath_target_chat', p.id);
+                            } catch (e) {}
+                            onNavigate('/messages');
+                          } else {
+                            handleOpenProfileClick(p);
+                          }
+                        }}
                         className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
