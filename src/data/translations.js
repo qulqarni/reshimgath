@@ -99,6 +99,7 @@ export const translations = {
     messagesTitle: "Private Messages & Chats",
     messagesSubtext: "Direct end-to-end private messaging with accepted matrimonial matches.",
     messagingBlockedNotice: "Private messaging is locked for security until an interest request is accepted by both families.",
+    typeMessagePlaceholder: "Type your message...",
 
     // Discovery & Filters
     discoverTitle: "Discover Matrimonial Matches",
@@ -253,6 +254,7 @@ export const translations = {
     messagesTitle: "खाजगी संदेश व संवाद",
     messagesSubtext: "स्वीकृत केलेल्या वर-वधूंशी खाजगी सुरक्षित संवाद साधा.",
     messagingBlockedNotice: "कुटुंबांच्या सुरक्षेसाठी, समोरासमोर पसंती स्वीकारल्यानंतरच खाजगी संदेश सुविधेचा वापर करता येईल.",
+    typeMessagePlaceholder: "संदेश टाईप करा...",
 
     // Discovery & Filters
     discoverTitle: "वर-वधू प्रोफाईल्स शोधा",

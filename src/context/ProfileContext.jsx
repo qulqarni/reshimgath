@@ -770,7 +770,7 @@ export const ProfileProvider = ({ children }) => {
       senderId: senderId,
       sender: 'user',
       text: text.trim(),
-      timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
       createdAt: now.toISOString(),
       status: 'delivered'
     };

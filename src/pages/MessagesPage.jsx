@@ -17,6 +17,59 @@ import {
   ArrowLeft
 } from 'lucide-react';
 
+// Helper function ensuring consistent 12-hour AM/PM format across all browsers and devices
+const formatMessageTime = (raw, createdAt) => {
+  // 1. Try ISO createdAt first if present
+  if (createdAt) {
+    const d = new Date(createdAt);
+    if (!isNaN(d.getTime())) {
+      const h = d.getHours();
+      const m = d.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+  }
+
+  // 2. Parse string timestamp
+  if (typeof raw === 'string' && raw.trim()) {
+    const trimmed = raw.trim();
+
+    // Already 12-hour format: "3:24 PM" or "03:24 pm"
+    const match12 = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)$/i);
+    if (match12) {
+      const h = parseInt(match12[1], 10);
+      const min = match12[2];
+      const ampm = match12[3].toUpperCase();
+      return `${String(h).padStart(2, '0')}:${min} ${ampm}`;
+    }
+
+    // 24-hour format: "15:13" or "09:05" or "15:13:00"
+    const match24 = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (match24) {
+      const h = parseInt(match24[1], 10);
+      const min = match24[2];
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${String(h12).padStart(2, '0')}:${min} ${ampm}`;
+    }
+
+    // Try parsing as full date string
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      const h = d.getHours();
+      const m = d.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+
+    return trimmed;
+  }
+
+  return '';
+};
+
 export const MessagesPage = ({ onNavigate }) => {
   const { user, isAuthenticated, triggerPrivacyAlert, canViewProfile } = useAuth();
   const { t } = useLanguage();
@@ -264,7 +317,7 @@ export const MessagesPage = ({ onNavigate }) => {
                         <span className={`text-[10px] shrink-0 ml-1.5 ${
                           unreadInThread > 0 ? 'text-emerald-600 font-bold' : 'text-gray-400'
                         }`}>
-                          {lastMsg.timestamp}
+                          {formatMessageTime(lastMsg.timestamp, lastMsg.createdAt)}
                         </span>
                       )}
                     </div>
@@ -372,7 +425,7 @@ export const MessagesPage = ({ onNavigate }) => {
                       </div>
                       <div className="flex items-center space-x-1 mt-1 px-1">
                         <span className="text-[10px] text-gray-400">
-                          {msg.timestamp}
+                          {formatMessageTime(msg.timestamp, msg.createdAt)}
                         </span>
                         {isUser && (
                           <span className="inline-flex items-center">
@@ -398,7 +451,7 @@ export const MessagesPage = ({ onNavigate }) => {
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder={t('typeMessagePlaceholder')}
+                  placeholder={t('typeMessagePlaceholder') || 'Type your message...'}
                   className="flex-1 px-4 py-3 border border-gray-200 rounded-2xl text-xs focus:ring-2 focus:ring-brand-plum/20"
                 />
                 <button
