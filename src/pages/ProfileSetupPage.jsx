@@ -15,8 +15,9 @@ export const ProfileSetupPage = ({ onNavigate }) => {
   const initReligion = user?.religion ? (RELIGIONS.includes(user.religion) ? user.religion : 'Other') : '';
   const initCustomReligion = user?.religion && !RELIGIONS.includes(user.religion) ? user.religion : '';
 
-  const initCaste = user?.caste ? (MAHARASHTRA_COMMUNITIES.includes(user.caste) ? user.caste : 'Other') : '';
-  const initCustomCaste = user?.caste && !MAHARASHTRA_COMMUNITIES.includes(user.caste) ? user.caste : '';
+  const cleanInitCaste = user?.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user?.caste;
+  const initCaste = cleanInitCaste ? (MAHARASHTRA_COMMUNITIES.includes(cleanInitCaste) ? cleanInitCaste : 'Other') : '';
+  const initCustomCaste = cleanInitCaste && !MAHARASHTRA_COMMUNITIES.includes(cleanInitCaste) ? cleanInitCaste : '';
 
   const initEdu = user?.education ? (EDUCATION_LEVELS.includes(user.education) ? user.education : 'Other') : '';
   const initCustomEdu = user?.education && !EDUCATION_LEVELS.includes(user.education) ? user.education : '';

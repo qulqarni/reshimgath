@@ -36,7 +36,7 @@ export const EditProfilePage = ({ onNavigate }) => {
     isGovtEmployee: user?.isGovtEmployee || '',
     company: user?.company || '',
     income: user?.income || '',
-    caste: user?.caste || '',
+    caste: user?.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : (user?.caste || ''),
     aboutMe: user?.aboutMe || '',
     expectations: user?.expectations || '',
     fatherOccupation: user?.fatherOccupation || '',
@@ -67,7 +67,7 @@ export const EditProfilePage = ({ onNavigate }) => {
         isGovtEmployee: user.isGovtEmployee || '',
         company: user.company || '',
         income: user.income || '',
-        caste: user.caste || '',
+        caste: user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : (user.caste || ''),
         aboutMe: user.aboutMe || '',
         expectations: user.expectations || '',
         fatherOccupation: user.fatherOccupation || '',
@@ -516,7 +516,7 @@ export const EditProfilePage = ({ onNavigate }) => {
               </div>
               <div className="bg-brand-lightBg p-3 rounded-xl">
                 <span className="text-[10px] text-brand-gray uppercase font-semibold">Caste</span>
-                <p className="font-bold text-brand-plum mt-0.5">{user?.caste || 'Maratha'}</p>
+                <p className="font-bold text-brand-plum mt-0.5">{user?.caste ? String(user.caste).replace(/bauddha/gi, 'Buddhist') : 'Maratha'}</p>
               </div>
               <div className="bg-brand-lightBg p-3 rounded-xl">
                 <span className="text-[10px] text-brand-gray uppercase font-semibold">District</span>

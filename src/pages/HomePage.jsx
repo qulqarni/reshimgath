@@ -155,7 +155,11 @@ export const HomePage = ({ onNavigate }) => {
           if (isStandardCaste) return false;
         } else {
           const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
-          if (!c.includes(targetC) && !c.includes(baseTarget)) return false;
+          if (targetC === 'buddhist' || targetC === 'bauddha') {
+            if (!c.includes('buddhist') && !c.includes('bauddha') && !c.includes('buddh')) return false;
+          } else if (!c.includes(targetC) && !c.includes(baseTarget)) {
+            return false;
+          }
         }
       }
 
@@ -195,6 +199,7 @@ export const HomePage = ({ onNavigate }) => {
       // 13. Search Query Text & Profile No.
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim();
+        const qAlt = q.includes('bauddha') ? q.replace(/bauddha/gi, 'buddhist') : (q.includes('buddhist') ? q.replace(/buddhist/gi, 'bauddha') : q);
         const digitsQ = q.replace(/[^0-9]/g, '');
 
         const name = (p.name || '').toLowerCase();
@@ -213,7 +218,9 @@ export const HomePage = ({ onNavigate }) => {
           edu.includes(q) ||
           occ.includes(q) ||
           caste.includes(q) ||
+          caste.includes(qAlt) ||
           rel.includes(q) ||
+          rel.includes(qAlt) ||
           regId.includes(q) ||
           registrationId.includes(q) ||
           (digitsQ.length > 0 && profileDigits.includes(digitsQ));

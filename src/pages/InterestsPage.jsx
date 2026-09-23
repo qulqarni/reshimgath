@@ -81,7 +81,7 @@ const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-
             {p.caste && (
               <span className="flex items-center space-x-1">
                 <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                <strong className="text-brand-charcoal font-semibold">{p.caste}</strong>
+                <strong className="text-brand-charcoal font-semibold">{String(p.caste).replace(/bauddha/gi, 'Buddhist')}</strong>
               </span>
             )}
             {p.education && (

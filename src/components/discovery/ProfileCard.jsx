@@ -130,7 +130,8 @@ export const ProfileCard = ({ profile, onSelect }) => {
   };
 
   const profileSlug = profile.regId || (profile.registrationId ? `SS-${profile.registrationId}` : profile.id);
-  const candidateCaste = (profile?.caste || profile?.community || profile?.religion || '').trim();
+  const rawCaste = (profile?.caste || profile?.community || profile?.religion || '').trim();
+  const candidateCaste = /bauddha/i.test(rawCaste) ? rawCaste.replace(/bauddha/gi, 'Buddhist') : rawCaste;
 
   return (
     <div

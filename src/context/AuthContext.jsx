@@ -162,8 +162,34 @@ export const normalizeProfile = (p, defaultIndex = 0) => {
     numId = 1001 + defaultIndex;
   }
 
+  const cleanBauddha = (val) => {
+    if (typeof val !== 'string') return val;
+    if (val.toLowerCase().trim() === 'bauddha') return 'Buddhist';
+    if (/bauddha/i.test(val)) return val.replace(/bauddha/gi, 'Buddhist');
+    return val;
+  };
+
+  const cleanCaste = cleanBauddha(p.caste);
+  const cleanReligion = cleanBauddha(p.religion);
+  const cleanCommunity = cleanBauddha(p.community);
+  const cleanSubcaste = cleanBauddha(p.subcaste);
+  const cleanCustomCaste = cleanBauddha(p.customCaste);
+  const cleanCustomReligion = cleanBauddha(p.customReligion);
+  const cleanAboutMe = cleanBauddha(p.aboutMe);
+  const cleanExpectations = cleanBauddha(p.expectations);
+  const cleanPartnerExpectations = cleanBauddha(p.partnerExpectations);
+
   return {
     ...p,
+    ...(cleanCaste !== undefined ? { caste: cleanCaste } : {}),
+    ...(cleanReligion !== undefined ? { religion: cleanReligion } : {}),
+    ...(cleanCommunity !== undefined ? { community: cleanCommunity } : {}),
+    ...(cleanSubcaste !== undefined ? { subcaste: cleanSubcaste } : {}),
+    ...(cleanCustomCaste !== undefined ? { customCaste: cleanCustomCaste } : {}),
+    ...(cleanCustomReligion !== undefined ? { customReligion: cleanCustomReligion } : {}),
+    ...(cleanAboutMe !== undefined ? { aboutMe: cleanAboutMe } : {}),
+    ...(cleanExpectations !== undefined ? { expectations: cleanExpectations } : {}),
+    ...(cleanPartnerExpectations !== undefined ? { partnerExpectations: cleanPartnerExpectations } : {}),
     gender: genderVal,
     lookingFor: genderVal,
     registrationId: numId,

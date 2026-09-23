@@ -40,7 +40,7 @@ export const MAHARASHTRA_DISTRICTS = [
 export const MAHARASHTRA_COMMUNITIES = [
   'Maratha',
   'Brahmin (Deshastha / Kokanastha)',
-  'Bauddha',
+  'Buddhist',
   'Matang',
   'Lingayat',
   'Jain (Digambar / Shwetambar)',

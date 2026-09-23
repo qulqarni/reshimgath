@@ -139,8 +139,9 @@ export const MyProfilePage = ({ onNavigate }) => {
   const initReligion = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
   const initCustomReligion = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
 
-  const initCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
-  const initCustomCaste = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+  const userCasteClean = user?.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user?.caste;
+  const initCaste = MAHARASHTRA_COMMUNITIES.includes(userCasteClean) ? (userCasteClean || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
+  const initCustomCaste = MAHARASHTRA_COMMUNITIES.includes(userCasteClean) ? '' : (userCasteClean || '');
 
   const initEdu = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
   const initCustomEdu = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');
@@ -197,8 +198,8 @@ export const MyProfilePage = ({ onNavigate }) => {
         maritalStatus: user.maritalStatus || 'Never Married',
         religion: RELIGIONS.includes(user.religion) ? (user.religion || 'Hindu') : 'Other',
         customReligion: RELIGIONS.includes(user.religion) ? '' : (user.religion || ''),
-        caste: MAHARASHTRA_COMMUNITIES.includes(user.caste) ? (user.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other',
-        customCaste: MAHARASHTRA_COMMUNITIES.includes(user.caste) ? '' : (user.caste || ''),
+        caste: MAHARASHTRA_COMMUNITIES.includes(user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user.caste) ? (user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : (user.caste || 'Brahmin (Deshastha / Kokanastha)')) : 'Other',
+        customCaste: MAHARASHTRA_COMMUNITIES.includes(user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user.caste) ? '' : (user.caste || ''),
         motherTongue: user.motherTongue || 'Marathi',
         district: user.district || 'Pune',
         nativePlace: user.nativePlace || 'Ichalkaranji / Sangli',
@@ -294,8 +295,9 @@ export const MyProfilePage = ({ onNavigate }) => {
     const rSel = RELIGIONS.includes(user?.religion) ? (user?.religion || 'Hindu') : 'Other';
     const rCust = RELIGIONS.includes(user?.religion) ? '' : (user?.religion || '');
 
-    const cSel = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? (user?.caste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
-    const cCust = MAHARASHTRA_COMMUNITIES.includes(user?.caste) ? '' : (user?.caste || '');
+    const cleanUCaste = user?.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user?.caste;
+    const cSel = MAHARASHTRA_COMMUNITIES.includes(cleanUCaste) ? (cleanUCaste || 'Brahmin (Deshastha / Kokanastha)') : 'Other';
+    const cCust = MAHARASHTRA_COMMUNITIES.includes(cleanUCaste) ? '' : (cleanUCaste || '');
 
     const eSel = EDUCATION_LEVELS.includes(user?.education) ? (user?.education || 'B.E. / B.Tech') : 'Other';
     const eCust = EDUCATION_LEVELS.includes(user?.education) ? '' : (user?.education || '');

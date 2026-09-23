@@ -919,7 +919,10 @@ export const AdminPage = ({ onNavigate }) => {
     const map = new Map();
     rawCastes.forEach((c) => {
       if (typeof c === 'string') {
-        const trimmed = c.trim();
+        let trimmed = c.trim();
+        if (/bauddha/i.test(trimmed)) {
+          trimmed = trimmed.replace(/bauddha/gi, 'Buddhist');
+        }
         if (trimmed && trimmed.toLowerCase() !== 'other') {
           const key = trimmed.toLowerCase();
           if (!map.has(key)) {
@@ -1438,7 +1441,7 @@ export const AdminPage = ({ onNavigate }) => {
 
                       <td className="p-4">
                         <p className="font-semibold text-brand-charcoal">{p.district}</p>
-                        <p className="text-[10px] text-brand-gray">{p.caste}</p>
+                        <p className="text-[10px] text-brand-gray">{p.caste ? String(p.caste).replace(/bauddha/gi, 'Buddhist') : ''}</p>
                       </td>
 
                       <td className="p-4">
@@ -2759,7 +2762,11 @@ export const AdminPage = ({ onNavigate }) => {
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Caste / Community *</label>
                     <select
-                      value={MAHARASHTRA_COMMUNITIES.includes(editingProfile.caste) ? editingProfile.caste : 'Other'}
+                      value={
+                        editingProfile.caste?.toLowerCase() === 'bauddha'
+                          ? 'Buddhist'
+                          : (MAHARASHTRA_COMMUNITIES.includes(editingProfile.caste) ? editingProfile.caste : 'Other')
+                      }
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === 'Other') {
@@ -2774,7 +2781,7 @@ export const AdminPage = ({ onNavigate }) => {
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
-                    {(!MAHARASHTRA_COMMUNITIES.includes(editingProfile.caste) || editingProfile.caste === 'Other') && (
+                    {(!MAHARASHTRA_COMMUNITIES.includes(editingProfile.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : editingProfile.caste) || editingProfile.caste === 'Other') && (
                       <input
                         type="text"
                         placeholder="Type custom caste..."
@@ -3615,7 +3622,11 @@ export const AdminPage = ({ onNavigate }) => {
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">Caste / Community *</label>
                     <select
-                      value={MAHARASHTRA_COMMUNITIES.includes(newProfileForm.caste) ? newProfileForm.caste : 'Other'}
+                      value={
+                        newProfileForm.caste?.toLowerCase() === 'bauddha'
+                          ? 'Buddhist'
+                          : (MAHARASHTRA_COMMUNITIES.includes(newProfileForm.caste) ? newProfileForm.caste : 'Other')
+                      }
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === 'Other') {
@@ -3630,7 +3641,7 @@ export const AdminPage = ({ onNavigate }) => {
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
-                    {(!MAHARASHTRA_COMMUNITIES.includes(newProfileForm.caste) || newProfileForm.caste === 'Other') && (
+                    {(!MAHARASHTRA_COMMUNITIES.includes(newProfileForm.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : newProfileForm.caste) || newProfileForm.caste === 'Other') && (
                       <input
                         type="text"
                         placeholder="Type custom caste..."

@@ -431,7 +431,7 @@ export const BiodataViewerModal = ({ isOpen, onClose, user }) => {
                     <div className="flex justify-between py-1 border-b border-gray-50">
                       <span className="text-brand-gray font-medium">धर्म / जात:</span>
                       <span className="font-bold text-brand-plum text-right">
-                        {user?.religion || 'Hindu'} {user?.caste ? `- ${user.caste}` : ''}
+                        {String(user?.religion || 'Hindu').replace(/bauddha/gi, 'Buddhist')} {user?.caste ? `- ${String(user.caste).replace(/bauddha/gi, 'Buddhist')}` : ''}
                       </span>
                     </div>
 
