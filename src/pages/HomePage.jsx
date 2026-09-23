@@ -870,26 +870,17 @@ export const HomePage = ({ onNavigate }) => {
 
       {/* LIGHT WARM CALL TO ACTION */}
       <section className="max-w-5xl mx-auto px-4">
-        <div className="bg-gradient-to-r from-amber-50 via-rose-50/70 to-amber-50 rounded-3xl p-8 sm:p-12 text-center space-y-6 shadow-xl border-2 border-amber-200/80 relative overflow-hidden">
-          <div className="space-y-2">
-            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-brand-plum">
-              {t('ctaTitle')}
-            </h2>
-            <p className="text-sm text-brand-gray max-w-xl mx-auto">
-              {t('ctaSubtitle')}
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-2">
+        <div className="bg-gradient-to-r from-amber-50 via-rose-50/70 to-amber-50 rounded-3xl p-6 sm:p-8 text-center shadow-xl border-2 border-amber-200/80 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             <button
               onClick={() => onNavigate(isAuthenticated ? '/my-profile' : '/signup')}
-              className="px-8 py-3.5 bg-brand-plum text-white font-bold rounded-2xl hover:bg-brand-plumDark transition-all shadow-lg text-sm border border-brand-gold/40"
+              className="w-full sm:w-auto px-8 py-3.5 bg-brand-plum text-white font-bold rounded-2xl hover:bg-brand-plumDark transition-all shadow-lg text-sm border border-brand-gold/40"
             >
               {t('createProfileCTA')}
             </button>
             <button
               onClick={() => onNavigate('/contact')}
-              className="px-8 py-3.5 bg-white text-brand-plum font-bold rounded-2xl hover:bg-brand-ivory transition-all text-sm border border-brand-plum/30 shadow-sm"
+              className="w-full sm:w-auto px-8 py-3.5 bg-white text-brand-plum font-bold rounded-2xl hover:bg-brand-ivory transition-all text-sm border border-brand-plum/30 shadow-sm"
             >
               {t('contactUs')}
             </button>
