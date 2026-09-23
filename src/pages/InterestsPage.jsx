@@ -81,7 +81,7 @@ const HorizontalProfileItem = ({ profile: p, badge, borderClass = 'border-brand-
             {p.caste && (
               <span className="flex items-center space-x-1">
                 <User className="w-3.5 h-3.5 text-brand-plum shrink-0" />
-                <span>Caste: <strong className="text-brand-charcoal font-semibold">{p.caste}</strong></span>
+                <strong className="text-brand-charcoal font-semibold">{p.caste}</strong>
               </span>
             )}
             {p.education && (
@@ -139,17 +139,30 @@ export const InterestsPage = ({ onNavigate }) => {
   const myId = user?.id ? String(user.id).toLowerCase() : '';
 
   const handleOpenProfileClick = (targetProfile) => {
+    if (!targetProfile) return;
+    const profileSlug = targetProfile.regId || (targetProfile.registrationId ? `SS-${targetProfile.registrationId}` : targetProfile.id);
+    onNavigate(`/profile/${profileSlug}`);
+  };
+
+  const handleMessageCandidate = (targetProfile) => {
     if (!targetProfile || !targetProfile.id) return;
 
-    const { canView, alreadyUnlocked, remainingVisits, hasActivePlan } = canViewProfile(targetProfile.id);
+    const { canView, alreadyUnlocked } = canViewProfile(targetProfile.id);
 
     if (alreadyUnlocked || canView) {
-      onNavigate(`/profile/${targetProfile.id}`);
+      try {
+        sessionStorage.setItem('reshimgath_target_chat', targetProfile.id);
+      } catch (e) {}
+      onNavigate('/messages');
       return;
     }
 
-    if (!hasActivePlan || remainingVisits <= 0) {
+    const remainingCredits = user?.subscription?.creditsRemaining || 0;
+    const isMeAdmin = user?.isAdmin === true || user?.role === 'admin' || user?.id === 'admin_1';
+
+    if (!isMeAdmin && remainingCredits <= 0) {
       setSelectedProfileForSub(targetProfile);
+      setSubModalReason('message');
       setShowSubModal(true);
       return;
     }
@@ -166,8 +179,12 @@ export const InterestsPage = ({ onNavigate }) => {
     setSelectedProfileForUnlock(null);
 
     if (success) {
-      onNavigate(`/profile/${targetId}`);
+      try {
+        sessionStorage.setItem('reshimgath_target_chat', targetId);
+      } catch (e) {}
+      onNavigate('/messages');
     } else {
+      setSubModalReason('message');
       setShowSubModal(true);
     }
   };
@@ -383,7 +400,7 @@ export const InterestsPage = ({ onNavigate }) => {
                           className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-gradient-to-r from-brand-plum to-brand-plumDark hover:from-brand-plumDark hover:to-brand-plum text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
                         >
                           <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
-                          <span>Open Profile {isUnlocked ? '(Free)' : '(1 Credit)'}</span>
+                          <span>Open Profile</span>
                         </button>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <button
@@ -477,24 +494,14 @@ export const InterestsPage = ({ onNavigate }) => {
                   actions={
                     <>
                       <button
-                        onClick={() => {
-                          const { alreadyUnlocked, canView } = canViewProfile(p.id);
-                          if (alreadyUnlocked || canView) {
-                            try {
-                              sessionStorage.setItem('reshimgath_target_chat', p.id);
-                            } catch (e) {}
-                            onNavigate('/messages');
-                          } else {
-                            handleOpenProfileClick(p);
-                          }
-                        }}
+                        onClick={() => handleMessageCandidate(p)}
                         className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
                         <span>{t('sendMessage')}</span>
                       </button>
                       <button
-                        onClick={() => onNavigate(`/profile/${p.id}`)}
+                        onClick={() => handleOpenProfileClick(p)}
                         className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
                       >
                         <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
