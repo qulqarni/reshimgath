@@ -480,37 +480,46 @@ export const InterestsPage = ({ onNavigate }) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {connectedList.map((p) => (
-                <HorizontalProfileItem
-                  key={p.id}
-                  profile={p}
-                  borderClass="border-emerald-200/80"
-                  onOpenProfile={() => onNavigate(`/profile/${p.id}`)}
-                  badge={
-                    <span className="absolute -top-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow-sm" title="Connected">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </span>
-                  }
-                  actions={
-                    <>
-                      <button
-                        onClick={() => handleMessageCandidate(p)}
-                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
-                        <span>{t('sendMessage')}</span>
-                      </button>
-                      <button
-                        onClick={() => handleOpenProfileClick(p)}
-                        className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
-                        <span>Open Profile</span>
-                      </button>
-                    </>
-                  }
-                />
-              ))}
+              {connectedList.map((p) => {
+                const { canView, alreadyUnlocked } = canViewProfile(p.id);
+                const isConnUnlocked = canView || alreadyUnlocked;
+
+                return (
+                  <HorizontalProfileItem
+                    key={p.id}
+                    profile={p}
+                    borderClass={isConnUnlocked ? "border-emerald-300 shadow-sm" : "border-emerald-200/80"}
+                    onOpenProfile={() => handleOpenProfileClick(p)}
+                    badge={
+                      <span className="absolute -top-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow-sm" title="Connected">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </span>
+                    }
+                    actions={
+                      <>
+                        <button
+                          onClick={() => handleMessageCandidate(p)}
+                          className={`flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap ${
+                            isConnUnlocked
+                              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                              : "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                          }`}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span>{isConnUnlocked ? t('sendMessage') : 'Message (1 Credit)'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenProfileClick(p)}
+                          className="flex-1 sm:flex-none w-full sm:w-auto py-2.5 px-4 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-brand-gold/30 whitespace-nowrap"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                          <span>Open Profile</span>
+                        </button>
+                      </>
+                    }
+                  />
+                );
+              })}
             </div>
           )
         )}

@@ -324,12 +324,20 @@ export const ProfileProvider = ({ children }) => {
           return !['p1','p2','p3','p4','p5','p6','p7','p8','admin_1'].includes(idStr);
         };
 
+        const incomingUnlocked = firestoreInterests.unlockedConnections || [];
+        if (incomingUnlocked.length > 0) {
+          try {
+            localStorage.setItem('reshimgath_unlocked_connections', JSON.stringify(incomingUnlocked));
+          } catch (e) {}
+        }
+
         setInterests({
           sent: (firestoreInterests.sent || []).filter(cleanObjItem),
           received: (firestoreInterests.received || []).filter(cleanObjItem),
           accepted: (firestoreInterests.accepted || []).filter(cleanObjItem),
           declined: (firestoreInterests.declined || []).filter(cleanObjItem),
-          shortlisted: (firestoreInterests.shortlisted || []).filter(id => typeof id === 'string')
+          shortlisted: (firestoreInterests.shortlisted || []).filter(id => typeof id === 'string'),
+          unlockedConnections: incomingUnlocked
         });
       }
     });
@@ -435,7 +443,8 @@ export const ProfileProvider = ({ children }) => {
         received: (parsed.received || []).filter(cleanItem),
         accepted: (parsed.accepted || []).filter(cleanItem),
         declined: (parsed.declined || []).filter(cleanItem),
-        shortlisted: (parsed.shortlisted || []).filter(cleanItem)
+        shortlisted: (parsed.shortlisted || []).filter(cleanItem),
+        unlockedConnections: parsed.unlockedConnections || []
       };
     }
     return {
@@ -443,7 +452,8 @@ export const ProfileProvider = ({ children }) => {
       received: [],
       accepted: [],
       declined: [],
-      shortlisted: []
+      shortlisted: [],
+      unlockedConnections: []
     };
   });
 

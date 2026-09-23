@@ -94,12 +94,12 @@ export const UnlockConfirmationModal = ({
           </div>
 
           <p className="text-xs text-brand-charcoal leading-relaxed pt-1">
-            Do you want to unlock <strong className="text-brand-plum">{profile.name}</strong>? Using 1 credit will instantly unlock <strong>Messaging</strong>, <strong>Contact Details</strong>, and <strong>Full Biodata</strong> for this candidate.
+            Do you want to unlock <strong className="text-brand-plum">{profile.name}</strong>? Using 1 credit will instantly unlock <strong>Messaging</strong>, <strong>Contact Details</strong>, and <strong>Full Biodata</strong> for BOTH of you.
           </p>
           
-          <div className="text-[11px] text-amber-800 font-medium italic flex items-center space-x-1 pt-1">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span>1 credit will be deducted (unlocks all 3 features together).</span>
+          <div className="text-[11px] text-emerald-800 font-medium flex items-center space-x-1.5 pt-1 bg-emerald-50/90 border border-emerald-200 p-2 rounded-xl text-left">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Mutual Unlock: Once either of you spends 1 credit, you both can see each other's contact details, biodata, and chat for free!</span>
           </div>
         </div>
 

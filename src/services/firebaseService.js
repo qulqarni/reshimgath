@@ -397,6 +397,39 @@ export const saveInterestsToFirestore = async (interestsData) => {
   }
 };
 
+/**
+ * Save an unlocked mutual connection record to Firestore
+ */
+export const saveUnlockedConnectionToFirestore = async (connectionEntry) => {
+  if (!isFirebaseConfigured || !connectionEntry) return true;
+  try {
+    const docRef = doc(db, INTERESTS_COLLECTION, 'global');
+    const docSnap = await getDoc(docRef);
+    const existing = docSnap.exists() ? (docSnap.data().unlockedConnections || []) : [];
+    const exists = existing.some(
+      (c) =>
+        (String(c.user1).toLowerCase() === String(connectionEntry.user1).toLowerCase() &&
+         String(c.user2).toLowerCase() === String(connectionEntry.user2).toLowerCase()) ||
+        (String(c.user1).toLowerCase() === String(connectionEntry.user2).toLowerCase() &&
+         String(c.user2).toLowerCase() === String(connectionEntry.user1).toLowerCase())
+    );
+    if (!exists) {
+      await setDoc(
+        docRef,
+        {
+          unlockedConnections: [...existing, connectionEntry],
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+    }
+    return true;
+  } catch (error) {
+    console.error('Error saving unlocked connection to Firestore:', error);
+    return false;
+  }
+};
+
 // -------------------------------------------------------------
 // FIRESTORE PROFILE VIEWS & NOTIFICATIONS API
 // -------------------------------------------------------------

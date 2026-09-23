@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
-import { saveProfileToFirestore } from '../services/firebaseService';
+import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore } from '../services/firebaseService';
 import { db, isFirebaseConfigured } from '../config/firebase';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 
 const AuthContext = createContext();
@@ -566,7 +566,75 @@ export const AuthProvider = ({ children }) => {
       ...(user.unlockedProfiles || [])
     ].map(id => String(id).toLowerCase());
 
-    const isAlreadyUnlocked = unlockedList.some(id => targetIdentifiers.includes(id));
+    let isAlreadyUnlocked = unlockedList.some(id => targetIdentifiers.includes(id));
+
+    // Mutual Unlock Check 1: Check if candidate has unlocked current user in their profile
+    if (!isAlreadyUnlocked) {
+      try {
+        const stored = localStorage.getItem('reshimgath_profiles');
+        const allProfiles = stored ? JSON.parse(stored) : DEMO_PROFILES;
+        const targetProfile = allProfiles.find(p => {
+          if (!p) return false;
+          const pId = String(p.id || '').toLowerCase();
+          const pReg = String(p.regId || '').toLowerCase();
+          const pNum = String(p.registrationId || '').toLowerCase();
+          return targetIdentifiers.includes(pId) || targetIdentifiers.includes(pReg) || targetIdentifiers.includes(pNum) || targetIdentifiers.includes(`ss-${pNum}`);
+        });
+
+        if (targetProfile) {
+          const targetUnlocked = [
+            ...(targetProfile.subscription?.unlockedProfiles || []),
+            ...(targetProfile.unlockedProfiles || [])
+          ].map(id => String(id).toLowerCase());
+
+          const myIdentifiers = getProfileIdentifiers(user.id);
+          if (targetUnlocked.some(id => myIdentifiers.includes(id))) {
+            isAlreadyUnlocked = true;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Mutual Unlock Check 2: Check global unlockedConnections records in localStorage
+    if (!isAlreadyUnlocked) {
+      try {
+        const connsRaw = localStorage.getItem('reshimgath_unlocked_connections');
+        const conns = connsRaw ? JSON.parse(connsRaw) : [];
+        const myIdentifiers = getProfileIdentifiers(user.id);
+        const hasMutual = conns.some(c => {
+          if (!c) return false;
+          const u1 = String(c.user1 || '').toLowerCase();
+          const u2 = String(c.user2 || '').toLowerCase();
+          return (myIdentifiers.includes(u1) && targetIdentifiers.includes(u2)) ||
+                 (myIdentifiers.includes(u2) && targetIdentifiers.includes(u1));
+        });
+        if (hasMutual) {
+          isAlreadyUnlocked = true;
+        }
+      } catch (e) {}
+    }
+
+    // Mutual Unlock Check 3: Check interests in localStorage for unlockedConnections
+    if (!isAlreadyUnlocked) {
+      try {
+        const interestsRaw = localStorage.getItem('reshimgath_interests');
+        const interestsObj = interestsRaw ? JSON.parse(interestsRaw) : null;
+        if (interestsObj?.unlockedConnections && Array.isArray(interestsObj.unlockedConnections)) {
+          const myIdentifiers = getProfileIdentifiers(user.id);
+          const hasMutual = interestsObj.unlockedConnections.some(c => {
+            if (!c) return false;
+            const u1 = String(c.user1 || '').toLowerCase();
+            const u2 = String(c.user2 || '').toLowerCase();
+            return (myIdentifiers.includes(u1) && targetIdentifiers.includes(u2)) ||
+                   (myIdentifiers.includes(u2) && targetIdentifiers.includes(u1));
+          });
+          if (hasMutual) {
+            isAlreadyUnlocked = true;
+          }
+        }
+      } catch (e) {}
+    }
+
     const remaining = sub.creditsRemaining || 0;
     const total = sub.creditsTotal || 0;
     const hasPlan = (sub.planId && total > 0) || remaining > 0;
@@ -597,7 +665,9 @@ export const AuthProvider = ({ children }) => {
     }
 
     const primaryId = String(profileId).toLowerCase().trim();
+    const myId = String(user.id).toLowerCase().trim();
 
+    // 1. Update current user state and storage
     setUser((prev) => {
       if (!prev) return prev;
       const prevSub = prev.subscription || { unlockedProfiles: [], creditsRemaining: 0 };
@@ -631,6 +701,124 @@ export const AuthProvider = ({ children }) => {
       }
       return updated;
     });
+
+    // 2. Perform mutual unlock across localStorage, Firestore, and connections
+    const newConnectionRecord = {
+      user1: myId,
+      user2: primaryId,
+      unlockedBy: myId,
+      unlockedAt: new Date().toISOString()
+    };
+
+    // Save to reshimgath_unlocked_connections
+    try {
+      const existingConnsRaw = localStorage.getItem('reshimgath_unlocked_connections');
+      const existingConns = existingConnsRaw ? JSON.parse(existingConnsRaw) : [];
+      const isAlreadyRecorded = existingConns.some(
+        c => (c.user1 === myId && c.user2 === primaryId) || (c.user1 === primaryId && c.user2 === myId)
+      );
+      if (!isAlreadyRecorded) {
+        localStorage.setItem('reshimgath_unlocked_connections', JSON.stringify([...existingConns, newConnectionRecord]));
+      }
+    } catch (e) {}
+
+    // Save to interests.unlockedConnections
+    try {
+      const interestsRaw = localStorage.getItem('reshimgath_interests');
+      const interestsObj = interestsRaw ? JSON.parse(interestsRaw) : { sent: [], received: [], accepted: [], declined: [], shortlisted: [] };
+      const existingUnlocked = interestsObj.unlockedConnections || [];
+      const hasConn = existingUnlocked.some(
+        c => (c.user1 === myId && c.user2 === primaryId) || (c.user1 === primaryId && c.user2 === myId)
+      );
+      if (!hasConn) {
+        const updatedInterests = {
+          ...interestsObj,
+          unlockedConnections: [...existingUnlocked, newConnectionRecord]
+        };
+        localStorage.setItem('reshimgath_interests', JSON.stringify(updatedInterests));
+      }
+    } catch (e) {}
+
+    // Update target profile in reshimgath_profiles so target has user.id in unlockedProfiles
+    let targetProfileObj = null;
+    try {
+      const storedProfiles = localStorage.getItem('reshimgath_profiles');
+      let allProfiles = storedProfiles ? JSON.parse(storedProfiles) : DEMO_PROFILES;
+      allProfiles = allProfiles.map(p => {
+        if (!p) return p;
+        const pId = String(p.id || '').toLowerCase();
+        const pReg = String(p.regId || '').toLowerCase();
+        const pNum = String(p.registrationId || '').toLowerCase();
+        if (pId === primaryId || pReg === primaryId || pNum === primaryId || `ss-${pNum}` === primaryId) {
+          targetProfileObj = p;
+          const prevTargetUnlocked = [
+            ...(p.subscription?.unlockedProfiles || []),
+            ...(p.unlockedProfiles || [])
+          ].map(id => String(id).toLowerCase());
+          const newTargetUnlocked = Array.from(new Set([...prevTargetUnlocked, myId]));
+          return {
+            ...p,
+            unlockedProfiles: newTargetUnlocked,
+            subscription: {
+              ...(p.subscription || {}),
+              unlockedProfiles: newTargetUnlocked
+            }
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('reshimgath_profiles', JSON.stringify(allProfiles));
+    } catch (e) {}
+
+    // Update target profile in Firestore and record mutual connection in Firestore
+    if (isFirebaseConfigured) {
+      saveUnlockedConnectionToFirestore(newConnectionRecord);
+
+      // Also update target profile document in Firestore
+      const targetDocId = targetProfileObj?.id || primaryId;
+      if (targetDocId) {
+        (async () => {
+          try {
+            const targetDocRef = doc(db, 'profiles', String(targetDocId));
+            const targetSnap = await getDoc(targetDocRef);
+            if (targetSnap.exists()) {
+              const tData = targetSnap.data();
+              const tSub = tData.subscription || {};
+              const tUnlocked = Array.from(new Set([
+                ...(tData.unlockedProfiles || []),
+                ...(tSub.unlockedProfiles || []),
+                myId
+              ]));
+              await setDoc(targetDocRef, {
+                unlockedProfiles: tUnlocked,
+                subscription: {
+                  ...tSub,
+                  unlockedProfiles: tUnlocked
+                }
+              }, { merge: true });
+            }
+          } catch (err) {
+            console.warn('Error updating target profile in Firestore:', err);
+          }
+        })();
+      }
+
+      // Send real-time notification to the target candidate
+      const mutualNotif = {
+        id: Date.now(),
+        type: 'unlocked',
+        profileId: user.id,
+        senderId: user.id,
+        targetUserId: targetDocId,
+        senderName: user.name || 'A connected member',
+        senderRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : null),
+        title: 'Connection Unlocked! 🔓',
+        text: `${user.name || 'A connected member'} unlocked your connection! You can now view their contact details, biodata, and chat for free.`,
+        time: 'Just now',
+        unread: true
+      };
+      saveNotificationToFirestore(mutualNotif);
+    }
 
     return true;
   };
