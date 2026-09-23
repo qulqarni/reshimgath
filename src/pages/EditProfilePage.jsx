@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
 import { uploadBiodataPdfToFirebase } from '../services/firebaseService';
+import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { 
   Save, 
   ArrowLeft, 
@@ -25,6 +26,8 @@ export const EditProfilePage = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     gender: user?.gender || 'female',
+    dob: user?.dob || '',
+    age: user?.age || (user?.dob ? calculateAgeFromDob(user.dob) : ''),
     district: user?.district || '',
     city: user?.city || '',
     nativePlace: user?.nativePlace || '',
@@ -54,6 +57,8 @@ export const EditProfilePage = ({ onNavigate }) => {
       setFormData({
         name: user.name || '',
         gender: user.gender || 'female',
+        dob: user.dob || '',
+        age: user.age || (user.dob ? calculateAgeFromDob(user.dob) : ''),
         district: user.district || '',
         city: user.city || '',
         nativePlace: user.nativePlace || '',
@@ -138,8 +143,10 @@ export const EditProfilePage = ({ onNavigate }) => {
       }
     }
 
+    const calculatedAge = formData.age || (formData.dob ? calculateAgeFromDob(formData.dob) : '');
     const payload = {
       ...formData,
+      ...(calculatedAge ? { age: Number(calculatedAge) } : {}),
       ...(newPassword ? { password: newPassword } : {})
     };
 
@@ -204,6 +211,38 @@ export const EditProfilePage = ({ onNavigate }) => {
                 <option value="female">Female (स्त्री)</option>
                 <option value="male">Male (पुरुष)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Date of Birth (जन्मतारीख)</label>
+              <input
+                type="date"
+                value={formData.dob}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const calculatedAge = calculateAgeFromDob(val);
+                  setFormData({
+                    ...formData,
+                    dob: val,
+                    age: calculatedAge || formData.age
+                  });
+                }}
+                className="w-full p-2.5 rounded-xl border border-gray-200"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Age (वय)</label>
+              <input
+                type="number"
+                min="18"
+                max="80"
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-gray-200"
+                placeholder="Age in years"
+              />
             </div>
 
             <div>

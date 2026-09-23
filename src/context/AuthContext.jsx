@@ -3,6 +3,7 @@ import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
 import { saveProfileToFirestore } from '../services/firebaseService';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { calculateAgeFromDob } from '../utils/ageCalculator';
 
 const AuthContext = createContext();
 
@@ -440,6 +441,8 @@ export const AuthProvider = ({ children }) => {
       email: inputEmail,
       phone: inputPhone,
       gender: signupData.gender || "female",
+      dob: signupData.dob || "",
+      age: signupData.age || (signupData.dob ? calculateAgeFromDob(signupData.dob) : ""),
       password: signupData.password || "",
       verified: false,
       createdAt: new Date().toISOString()

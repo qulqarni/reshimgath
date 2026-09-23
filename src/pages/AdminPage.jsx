@@ -8,6 +8,7 @@ import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
+import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase } from '../services/firebaseService';
 import { 
   ShieldCheck, 
@@ -2675,6 +2676,25 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Date of Birth (DOB)</label>
+                    <input
+                      type="date"
+                      value={editingProfile.dob || ''}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const newAge = calculateAgeFromDob(val);
+                        setEditingProfile({
+                          ...editingProfile,
+                          dob: val,
+                          age: newAge || editingProfile.age
+                        });
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block font-semibold mb-1 text-gray-700">Age *</label>
                     <input
                       type="number"
@@ -2683,16 +2703,6 @@ export const AdminPage = ({ onNavigate }) => {
                       max="80"
                       value={editingProfile.age || ''}
                       onChange={(e) => setEditingProfile({ ...editingProfile, age: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Date of Birth (DOB)</label>
-                    <input
-                      type="date"
-                      value={editingProfile.dob || ''}
-                      onChange={(e) => setEditingProfile({ ...editingProfile, dob: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
                     />
                   </div>
@@ -3524,6 +3534,25 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
+                    <label className="block font-semibold mb-1 text-gray-700">Date of Birth (DOB)</label>
+                    <input
+                      type="date"
+                      value={newProfileForm.dob}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const newAge = calculateAgeFromDob(val);
+                        setNewProfileForm({
+                          ...newProfileForm,
+                          dob: val,
+                          age: newAge || newProfileForm.age
+                        });
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block font-semibold mb-1 text-gray-700">Age *</label>
                     <input
                       type="number"
@@ -3532,16 +3561,6 @@ export const AdminPage = ({ onNavigate }) => {
                       max="80"
                       value={newProfileForm.age}
                       onChange={(e) => setNewProfileForm({ ...newProfileForm, age: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold mb-1 text-gray-700">Date of Birth (DOB)</label>
-                    <input
-                      type="date"
-                      value={newProfileForm.dob}
-                      onChange={(e) => setNewProfileForm({ ...newProfileForm, dob: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
                     />
                   </div>

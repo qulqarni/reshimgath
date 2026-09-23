@@ -40,17 +40,36 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
     validPhotos.push('/default-avatar.png');
   }
 
+  // Preload all candidate photos immediately so switching is instantaneous
+  useEffect(() => {
+    if (validPhotos.length > 1) {
+      validPhotos.forEach((url) => {
+        if (url && typeof url === 'string' && url !== '/default-avatar.png') {
+          const img = new Image();
+          img.src = url;
+        }
+      });
+    }
+  }, [validPhotos]);
+
   const currentPhoto = validPhotos[activeIndex] || validPhotos[0];
 
   return (
     <div className="space-y-4">
       {/* Main Feature Photo */}
       <div className="relative h-96 sm:h-[480px] w-full rounded-3xl overflow-hidden bg-brand-charcoal group shadow-luxury">
-        <img
-          src={currentPhoto}
-          alt={`${name} photo ${activeIndex + 1}`}
-          className="w-full h-full object-cover"
-        />
+        {validPhotos.map((img, idx) => (
+          <img
+            key={img || idx}
+            src={img}
+            alt={`${name} photo ${idx + 1}`}
+            fetchPriority={idx === 0 ? "high" : "auto"}
+            decoding="async"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ease-out ${
+              idx === activeIndex ? 'opacity-100 z-[1]' : 'opacity-0 pointer-events-none z-0'
+            }`}
+          />
+        ))}
 
         <WatermarkOverlay size="medium" />
 

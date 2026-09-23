@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { calculateAgeFromDob } from '../utils/ageCalculator';
 
 export const ProfileSetupPage = ({ onNavigate }) => {
   const { user, updateProfile } = useAuth();
@@ -25,6 +26,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
 
   const [formData, setFormData] = useState({
     dob: user?.dob || '',
+    age: user?.age || (user?.dob ? calculateAgeFromDob(user.dob) : ''),
     height: user?.height || '',
     maritalStatus: user?.maritalStatus || '',
     religion: initReligion,
@@ -63,6 +65,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     } else {
       const finalData = {
         ...formData,
+        age: formData.age || (formData.dob ? calculateAgeFromDob(formData.dob) : (user?.age || '')),
         religion: formData.religion === 'Other' ? (formData.customReligion || 'Other') : formData.religion,
         caste: formData.caste === 'Other' ? (formData.customCaste || 'Other') : formData.caste,
         education: formData.education === 'Other' ? (formData.customEducation || 'Other') : formData.education,
@@ -163,11 +166,23 @@ export const ProfileSetupPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1">Date of Birth</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-brand-charcoal">Date of Birth</label>
+                  {formData.age && (
+                    <span className="text-[11px] font-bold text-brand-plum bg-brand-rose/20 px-2 py-0.5 rounded-full border border-brand-rose/40 animate-in fade-in">
+                      Age: {formData.age} Years (वय: {formData.age} वर्षे)
+                    </span>
+                  )}
+                </div>
                 <input
                   type="date"
                   value={formData.dob}
-                  onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const calculated = calculateAgeFromDob(val);
+                    setFormData({ ...formData, dob: val, age: calculated });
+                  }}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 />
               </div>

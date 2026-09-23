@@ -10,6 +10,7 @@ import { SubscriptionModal } from '../components/subscription/SubscriptionModal'
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { compressImage } from '../utils/imageCompressor';
 import { uploadPhotoToFirebase } from '../services/firebaseService';
+import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { 
   User, 
   MapPin, 
@@ -147,11 +148,14 @@ export const MyProfilePage = ({ onNavigate }) => {
   const initOcc = OCCUPATIONS.includes(user?.occupation) ? (user?.occupation || 'Software Engineer / IT Professional') : 'Other';
   const initCustomOcc = OCCUPATIONS.includes(user?.occupation) ? '' : (user?.occupation || '');
 
+  const initialDob = user?.dob || '1998-06-15';
+  const initialAge = user?.age || (user?.dob ? calculateAgeFromDob(user.dob) : '24');
+
   const [editFormData, setEditFormData] = useState({
     name: user?.name || '',
     gender: user?.gender || 'female',
-    age: user?.age || '24',
-    dob: user?.dob || '1998-06-15',
+    age: initialAge,
+    dob: initialDob,
     height: user?.height || '5\' 6" (168 cm)',
     maritalStatus: user?.maritalStatus || 'Never Married',
     religion: initReligion,
@@ -183,10 +187,11 @@ export const MyProfilePage = ({ onNavigate }) => {
 
   useEffect(() => {
     if (user) {
+      const syncedAge = user.age || (user.dob ? calculateAgeFromDob(user.dob) : '24');
       setEditFormData({
         name: user.name || '',
         gender: user.gender || 'female',
-        age: user.age || '24',
+        age: syncedAge,
         dob: user.dob || '1998-06-15',
         height: user.height || '5\' 6" (168 cm)',
         maritalStatus: user.maritalStatus || 'Never Married',
@@ -951,7 +956,16 @@ export const MyProfilePage = ({ onNavigate }) => {
                     <input
                       type="date"
                       value={editFormData.dob}
-                      onChange={(e) => setEditFormData({ ...editFormData, dob: e.target.value })}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const newAge = calculateAgeFromDob(val);
+                        setEditFormData({ 
+                          ...editFormData, 
+                          dob: val, 
+                          age: newAge || editFormData.age 
+                        });
+                      }}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                     />
                   </div>

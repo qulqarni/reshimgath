@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useProfiles } from '../../context/ProfileContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -28,6 +28,18 @@ export const ProfileCard = ({ profile, onSelect }) => {
   }, [profile?.avatar, profile?.photos]);
 
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  // Preload all candidate photos immediately so sliding is instantaneous with zero delay
+  useEffect(() => {
+    if (photosList.length > 1) {
+      photosList.forEach((url) => {
+        if (url && typeof url === 'string' && url !== '/default-avatar.png') {
+          const img = new Image();
+          img.src = url;
+        }
+      });
+    }
+  }, [photosList]);
 
   const handlePrevPhoto = (e) => {
     e.stopPropagation();
@@ -127,17 +139,24 @@ export const ProfileCard = ({ profile, onSelect }) => {
     >
       {/* Top Image Container with Slideshow */}
       <div className="relative h-96 sm:h-[420px] w-full overflow-hidden bg-brand-lightBg">
-        <img
-          src={photosList[currentPhotoIndex] || photosList[0]}
-          alt={profile.name}
-          className="w-full h-full object-cover object-[center_top] transition-all duration-500"
-        />
+        {photosList.map((photo, idx) => (
+          <img
+            key={photo || idx}
+            src={photo}
+            alt={`${profile.name} ${idx + 1}`}
+            fetchPriority={idx === 0 ? "high" : "auto"}
+            decoding="async"
+            className={`absolute inset-0 w-full h-full object-cover object-[center_top] transition-opacity duration-150 ease-out ${
+              idx === currentPhotoIndex ? 'opacity-100 z-[1]' : 'opacity-0 pointer-events-none z-0'
+            }`}
+          />
+        ))}
 
         {/* Centered Watermark Logo */}
         <WatermarkOverlay size="medium" />
 
         {/* Gradient Overlay for Badges & Bottom Text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none z-10" />
 
         {/* Left & Right Slideshow Arrows */}
         {photosList.length > 1 && (
