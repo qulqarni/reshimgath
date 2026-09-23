@@ -53,9 +53,6 @@ export const MyProfilePage = ({ onNavigate }) => {
     }
   }, [user, onNavigate]);
 
-  if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
-    return null;
-  }
 
   const [showPhotoManager, setShowPhotoManager] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
@@ -226,6 +223,11 @@ export const MyProfilePage = ({ onNavigate }) => {
   const avatarFileInputRef = useRef(null);
   const galleryFileInputRef = useRef(null);
   const modalFileInputRef = useRef(null);
+
+  // Return early after all hooks have been unconditionally initialized
+  if (user && (user.isAdmin || user.role === 'admin' || user.id === 'admin_1')) {
+    return null;
+  }
 
   const photos = user?.photos || [];
   const currentAvatar = user?.avatar || '/default-avatar.png';

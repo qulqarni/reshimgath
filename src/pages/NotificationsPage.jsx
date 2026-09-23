@@ -22,9 +22,14 @@ export const NotificationsPage = ({ onNavigate }) => {
     }
   }, [userNotifications]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      triggerPrivacyAlert?.();
+      onNavigate?.('/login');
+    }
+  }, [isAuthenticated, onNavigate, triggerPrivacyAlert]);
+
   if (!isAuthenticated) {
-    triggerPrivacyAlert();
-    onNavigate('/login');
     return null;
   }
 

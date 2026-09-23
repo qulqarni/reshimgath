@@ -102,9 +102,42 @@ export const MessagesPage = ({ onNavigate }) => {
   const chatContainerRef = useRef(null);
   const messageInputRef = useRef(null);
 
+  const currentPartner = activePartnerId ? profiles.find((p) => String(p.id) === String(activePartnerId)) : null;
+  const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
+  const activeThread = (convoKey && chats[convoKey]) ? chats[convoKey] : [];
+
+  // Redirect if not authenticated via useEffect (ensuring hooks execute unconditionally)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      triggerPrivacyAlert?.();
+      onNavigate?.('/login');
+    }
+  }, [isAuthenticated, onNavigate, triggerPrivacyAlert]);
+
+  // Mark active chat as read in real-time when opened
+  useEffect(() => {
+    if (currentPartner && currentPartner.id) {
+      markChatAsRead(currentPartner.id);
+    }
+  }, [currentPartner?.id, activeThread.length, markChatAsRead]);
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    if (currentPartner) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeThread, activePartnerId, currentPartner]);
+
+  // Early returns placed AFTER all hooks are defined
   if (!isAuthenticated) {
-    triggerPrivacyAlert();
-    onNavigate('/login');
     return null;
   }
 
@@ -144,32 +177,6 @@ export const MessagesPage = ({ onNavigate }) => {
       </div>
     );
   }
-
-  const currentPartner = activePartnerId ? profiles.find((p) => String(p.id) === String(activePartnerId)) : null;
-  const convoKey = (user && currentPartner) ? [String(user.id), String(currentPartner.id)].sort().join('_') : null;
-  const activeThread = (convoKey && chats[convoKey]) ? chats[convoKey] : [];
-
-  // Mark active chat as read in real-time when opened
-  useEffect(() => {
-    if (currentPartner && currentPartner.id) {
-      markChatAsRead(currentPartner.id);
-    }
-  }, [currentPartner?.id, activeThread.length]);
-
-  const scrollToBottom = () => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  };
-
-  useEffect(() => {
-    if (currentPartner) {
-      const timer = setTimeout(() => {
-        scrollToBottom();
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [activeThread, activePartnerId, currentPartner]);
 
   const handleSend = (e) => {
     e.preventDefault();

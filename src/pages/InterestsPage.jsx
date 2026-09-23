@@ -124,9 +124,14 @@ export const InterestsPage = ({ onNavigate }) => {
     user?.isAdmin || (user?.subscription?.planId && user?.subscription?.planId !== 'none' && user?.subscription?.planId !== 'free')
   ));
 
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      triggerPrivacyAlert?.();
+      onNavigate?.('/login');
+    }
+  }, [isAuthenticated, onNavigate, triggerPrivacyAlert]);
+
   if (!isAuthenticated) {
-    triggerPrivacyAlert();
-    onNavigate('/login');
     return null;
   }
 
