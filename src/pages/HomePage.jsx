@@ -868,23 +868,21 @@ export const HomePage = ({ onNavigate }) => {
         </section>
       )}
 
-      {/* LIGHT WARM CALL TO ACTION */}
+      {/* CALL TO ACTION BUTTONS */}
       <section className="max-w-5xl mx-auto px-4">
-        <div className="bg-gradient-to-r from-amber-50 via-rose-50/70 to-amber-50 rounded-3xl p-6 sm:p-8 text-center shadow-xl border-2 border-amber-200/80 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <button
-              onClick={() => onNavigate(isAuthenticated ? '/my-profile' : '/signup')}
-              className="w-full sm:w-auto px-8 py-3.5 bg-brand-plum text-white font-bold rounded-2xl hover:bg-brand-plumDark transition-all shadow-lg text-sm border border-brand-gold/40"
-            >
-              {t('createProfileCTA')}
-            </button>
-            <button
-              onClick={() => onNavigate('/contact')}
-              className="w-full sm:w-auto px-8 py-3.5 bg-white text-brand-plum font-bold rounded-2xl hover:bg-brand-ivory transition-all text-sm border border-brand-plum/30 shadow-sm"
-            >
-              {t('contactUs')}
-            </button>
-          </div>
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+          <button
+            onClick={() => onNavigate(isAuthenticated ? '/my-profile' : '/signup')}
+            className="w-full sm:w-auto px-8 py-3.5 bg-brand-plum text-white font-bold rounded-2xl hover:bg-brand-plumDark transition-all shadow-lg text-sm border border-brand-gold/40 text-center"
+          >
+            {t('createProfileCTA')}
+          </button>
+          <button
+            onClick={() => onNavigate('/contact')}
+            className="w-full sm:w-auto px-8 py-3.5 bg-white text-brand-plum font-bold rounded-2xl hover:bg-brand-ivory transition-all text-sm border border-brand-plum/30 shadow-sm text-center"
+          >
+            {t('contactUs')}
+          </button>
         </div>
       </section>
       {/* Mobile Filter Modal Sheet */}
