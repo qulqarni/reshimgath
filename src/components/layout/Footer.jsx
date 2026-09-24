@@ -11,7 +11,7 @@ export const Footer = ({ onNavigate }) => {
   }
 
   return (
-    <footer className="bg-brand-ivory text-brand-charcoal pt-8 sm:pt-16 pb-20 md:pb-12 border-t-2 sm:border-t-4 border-brand-plum relative overflow-hidden">
+    <footer className="hidden md:block bg-brand-ivory text-brand-charcoal pt-8 sm:pt-16 pb-12 border-t-2 sm:border-t-4 border-brand-plum relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-15 pointer-events-none paithani-bg-accent" />
 
