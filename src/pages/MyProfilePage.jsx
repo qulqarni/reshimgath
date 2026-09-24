@@ -855,6 +855,25 @@ export const MyProfilePage = ({ onNavigate }) => {
           </div>
         )}
 
+        {/* Account Settings & Danger Zone Section */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-brand-rose/20 shadow-luxury space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="font-serif font-bold text-lg text-brand-plum">Account Settings</h3>
+              <p className="text-xs text-brand-gray">
+                Manage your account credentials, security options, or permanently delete your profile.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('/settings')}
+              className="w-full sm:w-auto px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-colors flex items-center justify-center space-x-2 shrink-0 shadow-sm"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Delete Account</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Lightbox Modal */}

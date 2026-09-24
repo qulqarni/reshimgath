@@ -19,7 +19,8 @@ import {
   LayoutDashboard,
   Crown,
   Home,
-  Eye
+  Eye,
+  Trash2
 } from 'lucide-react';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
@@ -454,6 +455,18 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                   className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl"
                 >
                   {t('myProfile')}
+                </button>
+                <button
+                  onClick={() => handleNav('/settings')}
+                  className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2">
+                    <ShieldCheck className="w-4 h-4 text-brand-gray shrink-0" />
+                    <span>{t('settings')}</span>
+                  </div>
+                  <span className="text-[11px] text-rose-600 font-bold bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                    Delete Account
+                  </span>
                 </button>
                 <button
                   onClick={() => {
