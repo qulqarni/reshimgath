@@ -183,8 +183,14 @@ exports.onNotificationCreated = functions.firestore
       return null;
     }
 
-    const title = notificationData.title || 'Sambodhi Sarang Notification';
-    const body = notificationData.text || notificationData.message || notificationData.body || 'You have a new update on Sambodhi Sarang.';
+    const title = notificationData.type === 'message'
+      ? 'New Message'
+      : (notificationData.title || 'Sambodhi Sarang Notification');
+
+    const body = notificationData.type === 'message'
+      ? 'You have received a new message.'
+      : (notificationData.text || notificationData.message || notificationData.body || 'You have a new update on Sambodhi Sarang.');
+
     const type = notificationData.type || 'general';
     const senderName = notificationData.senderName || '';
     const senderId = notificationData.senderId || notificationData.visitorId || notificationData.profileId || '';
@@ -196,7 +202,7 @@ exports.onNotificationCreated = functions.firestore
       notification: {
         title: title,
         body: body,
-        ...(senderAvatar ? { imageUrl: senderAvatar } : {})
+        ...(senderAvatar && notificationData.type !== 'message' ? { imageUrl: senderAvatar } : {})
       },
       data: {
         notificationId: String(notificationId),
@@ -264,6 +270,7 @@ exports.onNotificationCreated = functions.firestore
  * ---------------------------------------------------------------------------------
  * TRIGGER 2: Automatic FCM Push Notification when a new message is added to a thread
  * in 'chats/{chatId}' collection.
+ * Privacy-safe: Exposes NO private message text in the push notification body.
  * ---------------------------------------------------------------------------------
  */
 exports.onChatUpdated = functions.firestore
@@ -292,8 +299,8 @@ exports.onChatUpdated = functions.firestore
 
     if (!recipientId) return null;
 
-    // Fetch sender profile details for nice notification title
-    let senderName = 'A Member';
+    // Fetch sender profile details for data payload routing
+    let senderName = '';
     try {
       const senderDoc = await db.collection('profiles').doc(latestMsg.senderId).get();
       if (senderDoc.exists && senderDoc.data().name) {
@@ -304,18 +311,21 @@ exports.onChatUpdated = functions.firestore
     const { tokens, docRefs } = await getTokensForUser(recipientId);
     if (tokens.length === 0) return null;
 
+    // Privacy-Safe FCM Payload (Generic Title & Body)
     const payload = {
       tokens: tokens,
       notification: {
-        title: `${senderName} 💬`,
-        body: latestMsg.text || 'Sent you a message.'
+        title: 'New Message',
+        body: 'You have received a new message.'
       },
       data: {
         chatId: String(chatId),
         type: 'message',
         senderId: String(latestMsg.senderId),
+        senderName: String(senderName),
         targetUserId: String(recipientId),
-        click_action: 'FLUTTER_NOTIFICATION_CLICK'
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        timestamp: String(Date.now())
       },
       android: {
         priority: 'high',
