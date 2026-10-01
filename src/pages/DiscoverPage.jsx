@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { ProfileCard } from '../components/discovery/ProfileCard';
+import { MultiSelectDropdown } from '../components/common/MultiSelectDropdown';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
 import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
@@ -51,17 +52,19 @@ export const DiscoverPage = ({ onNavigate }) => {
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [selectedDistrict, setSelectedDistrict] = useState([]);
   const [selectedReligion, setSelectedReligion] = useState('All');
   const [selectedCaste, setSelectedCaste] = useState(() => defaultCaste);
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('All');
-  const [selectedEducation, setSelectedEducation] = useState('All');
+  const [selectedEducation, setSelectedEducation] = useState([]);
   const [govtEmployeeFilter, setGovtEmployeeFilter] = useState('All');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('60');
   const [genderFilter, setGenderFilter] = useState(() => defaultGender);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
 
   useEffect(() => {
     setSelectedCaste(defaultCaste);
@@ -140,16 +143,22 @@ export const DiscoverPage = ({ onNavigate }) => {
         if (!isNaN(maxA) && ageNum > maxA) return false;
       }
 
-      // 7. District Filter
-      if (selectedDistrict !== 'All') {
+      // 7. District Filter (Multi-select)
+      if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : (selectedDistrict && selectedDistrict !== 'All')) {
+        const selectedList = Array.isArray(selectedDistrict) ? selectedDistrict : [selectedDistrict];
         const d = (p.district || '').toLowerCase().trim();
-        const targetD = selectedDistrict.toLowerCase().trim();
-        const parts = targetD.split('/').map(s => s.trim()).filter(Boolean);
-        const matches = d === targetD || 
-          d.includes(targetD) || 
-          targetD.includes(d) || 
-          parts.some(part => d === part || d.includes(part) || part.includes(d));
-        if (!matches) return false;
+
+        const matchesAny = selectedList.some((targetItem) => {
+          if (!targetItem || targetItem === 'All') return true;
+          const targetD = targetItem.toLowerCase().trim();
+          const parts = targetD.split('/').map(s => s.trim()).filter(Boolean);
+          return d === targetD || 
+            d.includes(targetD) || 
+            targetD.includes(d) || 
+            parts.some(part => d === part || d.includes(part) || part.includes(d));
+        });
+
+        if (!matchesAny) return false;
       }
 
       // 8. Religion Filter
@@ -196,23 +205,29 @@ export const DiscoverPage = ({ onNavigate }) => {
         }
       }
 
-      // 10. Education Filter
-      if (selectedEducation !== 'All') {
+      // 10. Education Filter (Multi-select)
+      if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : (selectedEducation && selectedEducation !== 'All')) {
+        const selectedList = Array.isArray(selectedEducation) ? selectedEducation : [selectedEducation];
         const edu = (p.education || '').toLowerCase().trim();
-        const targetEdu = selectedEducation.toLowerCase().trim();
-        const firstToken = targetEdu.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
 
-        if (targetEdu === 'other') {
-          const isStandard = EDUCATION_LEVELS
-            .filter((item) => item.toLowerCase().trim() !== 'other')
-            .some((std) => {
-              const stdToken = std.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
-              return stdToken && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(stdToken);
-            });
-          if (isStandard) return false;
-        } else if (!edu.includes(targetEdu) && (firstToken.length >= 2 ? !edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(firstToken) : true)) {
-          return false;
-        }
+        const matchesAny = selectedList.some((targetItem) => {
+          if (!targetItem || targetItem === 'All') return true;
+          const targetEdu = targetItem.toLowerCase().trim();
+          const firstToken = targetEdu.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+          if (targetEdu === 'other') {
+            const isStandard = EDUCATION_LEVELS
+              .filter((item) => item.toLowerCase().trim() !== 'other')
+              .some((std) => {
+                const stdToken = std.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+                return stdToken && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(stdToken);
+              });
+            return !isStandard;
+          }
+          return edu.includes(targetEdu) || (firstToken.length >= 2 && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(firstToken));
+        });
+
+        if (!matchesAny) return false;
       }
 
       // 11. Government Employee Filter
@@ -267,11 +282,11 @@ export const DiscoverPage = ({ onNavigate }) => {
   }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   const handleReset = () => {
-    setSelectedDistrict('All');
+    setSelectedDistrict([]);
     setSelectedReligion('All');
     setSelectedCaste(defaultCaste);
     setSelectedMaritalStatus('All');
-    setSelectedEducation('All');
+    setSelectedEducation([]);
     setGovtEmployeeFilter('All');
     setMinAge('18');
     setMaxAge('60');
@@ -304,10 +319,10 @@ export const DiscoverPage = ({ onNavigate }) => {
     if (genderFilter !== defaultGender && genderFilter !== 'all') count++;
     if (selectedMaritalStatus !== 'All') count++;
     if (minAge !== '18' || maxAge !== '60') count++;
-    if (selectedDistrict !== 'All') count++;
+    if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : selectedDistrict !== 'All') count++;
     if (selectedReligion !== 'All') count++;
     if (selectedCaste !== 'All') count++;
-    if (selectedEducation !== 'All') count++;
+    if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : selectedEducation !== 'All') count++;
     if (govtEmployeeFilter !== 'All') count++;
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
@@ -449,25 +464,18 @@ export const DiscoverPage = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* 4. District */}
-          <div>
-            <label className="block text-[11px] text-gray-500 mb-1">District / जिल्हा</label>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-            >
-              <option value="All">All Districts / सर्व जिल्हे</option>
-              <option value="Ichalkaranji">Ichalkaranji / इचलकरंजी</option>
-              {DISTRICTS.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
+          {/* 4. District (Multi-Select) */}
+          <MultiSelectDropdown
+            label="District / जिल्हा"
+            options={districtOptions}
+            selectedValues={selectedDistrict}
+            onChange={setSelectedDistrict}
+            allLabel="All Districts / सर्व जिल्हे"
+          />
 
           {/* 5. Religion */}
           <div>
-            <label className="block text-[11px] text-gray-500 mb-1">Religion / धर्म</label>
+            <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Religion / धर्म</label>
             <select
               value={selectedReligion}
               onChange={(e) => setSelectedReligion(e.target.value)}
@@ -482,7 +490,7 @@ export const DiscoverPage = ({ onNavigate }) => {
 
           {/* 6. Caste / Community */}
           <div>
-            <label className="block text-[11px] text-gray-500 mb-1">Caste / जात-समाज</label>
+            <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
             <select
               value={selectedCaste}
               onChange={(e) => setSelectedCaste(e.target.value)}
@@ -495,20 +503,14 @@ export const DiscoverPage = ({ onNavigate }) => {
             </select>
           </div>
 
-          {/* 7. Education */}
-          <div>
-            <label className="block text-[11px] text-gray-500 mb-1">Education / शिक्षण</label>
-            <select
-              value={selectedEducation}
-              onChange={(e) => setSelectedEducation(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-            >
-              <option value="All">All Education Backgrounds</option>
-              {EDUCATION_LEVELS.map((edu) => (
-                <option key={edu} value={edu}>{edu}</option>
-              ))}
-            </select>
-          </div>
+          {/* 7. Education (Multi-Select) */}
+          <MultiSelectDropdown
+            label="Education / शिक्षण"
+            options={EDUCATION_LEVELS}
+            selectedValues={selectedEducation}
+            onChange={setSelectedEducation}
+            allLabel="All Education Backgrounds"
+          />
 
           {/* 8. Government Employee */}
           <div>
@@ -659,21 +661,14 @@ export const DiscoverPage = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* District */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">District / जिल्हा</label>
-                <select
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs font-semibold"
-                >
-                  <option value="All">All Districts / सर्व जिल्हे</option>
-                  <option value="Ichalkaranji">Ichalkaranji / इचलकरंजी</option>
-                  {DISTRICTS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
+              {/* District (Multi-Select) */}
+              <MultiSelectDropdown
+                label="District / जिल्हा"
+                options={districtOptions}
+                selectedValues={selectedDistrict}
+                onChange={setSelectedDistrict}
+                allLabel="All Districts / सर्व जिल्हे"
+              />
 
               {/* Religion */}
               <div>
@@ -705,20 +700,14 @@ export const DiscoverPage = ({ onNavigate }) => {
                 </select>
               </div>
 
-              {/* Education */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Education / शिक्षण</label>
-                <select
-                  value={selectedEducation}
-                  onChange={(e) => setSelectedEducation(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="All">All Education Backgrounds</option>
-                  {EDUCATION_LEVELS.map((edu) => (
-                    <option key={edu} value={edu}>{edu}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Education (Multi-Select) */}
+              <MultiSelectDropdown
+                label="Education / शिक्षण"
+                options={EDUCATION_LEVELS}
+                selectedValues={selectedEducation}
+                onChange={setSelectedEducation}
+                allLabel="All Education Backgrounds"
+              />
 
               {/* Government Employee */}
               <div>

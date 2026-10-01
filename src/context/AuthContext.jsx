@@ -223,6 +223,24 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Register FCM device token via Android Native bridge when running inside Android WebView
+  useEffect(() => {
+    if (user?.id) {
+      try {
+        if (
+          typeof window !== 'undefined' &&
+          window.AndroidNative &&
+          typeof window.AndroidNative.registerUserToken === 'function'
+        ) {
+          window.AndroidNative.registerUserToken(String(user.id));
+          console.log('[FCM] Native Android token registered for user:', user.id);
+        }
+      } catch (err) {
+        console.warn('[FCM] Native Android token registration call failed:', err);
+      }
+    }
+  }, [user?.id]);
+
   // Real-time Firestore sync for logged-in user profile, subscription & unlocked profiles
   useEffect(() => {
     if (!user?.id || user.id === 'admin_1' || !isFirebaseConfigured) return;
