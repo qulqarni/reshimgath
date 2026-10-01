@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
 import { VerificationBadge } from '../components/common/VerificationBadge';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
+import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
@@ -164,7 +164,7 @@ export const MyProfilePage = ({ onNavigate }) => {
     caste: initCaste,
     customCaste: initCustomCaste,
     motherTongue: user?.motherTongue || 'Marathi',
-    district: user?.district || 'Pune',
+    district: normalizeDistrict(user?.district) || user?.district || 'Pune/पुणे',
     nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
     city: user?.city || 'Kothrud, Pune',
     pincode: user?.pincode || '411038',
@@ -201,7 +201,7 @@ export const MyProfilePage = ({ onNavigate }) => {
         caste: MAHARASHTRA_COMMUNITIES.includes(user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user.caste) ? (user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : (user.caste || 'Brahmin (Deshastha / Kokanastha)')) : 'Other',
         customCaste: MAHARASHTRA_COMMUNITIES.includes(user.caste?.toLowerCase() === 'bauddha' ? 'Buddhist' : user.caste) ? '' : (user.caste || ''),
         motherTongue: user.motherTongue || 'Marathi',
-        district: user.district || 'Pune',
+        district: normalizeDistrict(user.district) || user.district || 'Pune/पुणे',
         nativePlace: user.nativePlace || 'Ichalkaranji / Sangli',
         city: user.city || 'Kothrud, Pune',
         pincode: user.pincode || '411038',
@@ -317,7 +317,7 @@ export const MyProfilePage = ({ onNavigate }) => {
       caste: cSel,
       customCaste: cCust,
       motherTongue: user?.motherTongue || 'Marathi',
-      district: user?.district || 'Pune',
+      district: normalizeDistrict(user?.district) || user?.district || 'Pune/पुणे',
       nativePlace: user?.nativePlace || 'Ichalkaranji / Sangli',
       city: user?.city || 'Kothrud, Pune',
       pincode: user?.pincode || '411038',
@@ -453,7 +453,7 @@ export const MyProfilePage = ({ onNavigate }) => {
               </span>
             </div>
             <p className="text-xs text-brand-gray mt-0.5">
-              {user?.district || 'Pune'}, Maharashtra • {user?.religion || 'Hindu'} ({user?.caste || 'Brahmin'})
+              {user?.district || 'Pune'} • {user?.religion || 'Hindu'} ({user?.caste || 'Brahmin'})
             </p>
           </div>
         </div>
@@ -1099,17 +1099,21 @@ export const MyProfilePage = ({ onNavigate }) => {
                   2. Location & Address Details (पत्ता व मूळ गाव)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Maharashtra District */}
+                  {/* District */}
                   <div>
-                    <label className="block font-semibold mb-1 text-brand-charcoal">Maharashtra District (जिल्हा)</label>
+                    <label className="block font-semibold mb-1 text-brand-charcoal">District (जिल्हा)</label>
                     <select
-                      value={editFormData.district}
+                      value={normalizeDistrict(editFormData.district) || editFormData.district}
                       onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20"
                     >
-                      {MAHARASHTRA_DISTRICTS.map(d => (
+                      <option value="">SELECT</option>
+                      {DISTRICTS.map(d => (
                         <option key={d} value={d}>{d}</option>
                       ))}
+                      {editFormData.district && !DISTRICTS.includes(editFormData.district) && !DISTRICTS.includes(normalizeDistrict(editFormData.district)) && (
+                        <option value={editFormData.district}>{editFormData.district}</option>
+                      )}
                     </select>
                   </div>
 

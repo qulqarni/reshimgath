@@ -1,4 +1,4 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
 // Initialize Firebase Admin SDK
@@ -60,14 +60,35 @@ async function getTokensForUser(targetUserId) {
   }
 
   try {
-    // Strategy A: Direct Document Lookup by ID in 'profiles' and 'users'
+    // Strategy A: Query 'fcm_tokens' collection by userId (Android app device tokens)
+    const fcmTokensQueries = [
+      db.collection('fcm_tokens').where('userId', '==', targetUserId)
+    ];
+    if (idStr && idStr !== targetUserId) {
+      fcmTokensQueries.push(db.collection('fcm_tokens').where('userId', '==', idStr));
+    }
+
+    const fcmSnapshots = await Promise.all(fcmTokensQueries.map(q => q.get().catch(() => null)));
+    fcmSnapshots.forEach(snap => {
+      if (snap && !snap.empty) {
+        snap.forEach(docSnap => {
+          const data = docSnap.data() || {};
+          docRefsMap.set(docSnap.ref.path, docSnap.ref);
+          if (data.token && typeof data.token === 'string' && data.token.trim()) {
+            tokensSet.add(data.token.trim());
+          }
+        });
+      }
+    });
+
+    // Strategy B: Direct Document Lookup by ID in 'profiles' and 'users'
     const profileDirectDoc = await db.collection('profiles').doc(idStr).get();
     if (profileDirectDoc.exists) extractTokens(profileDirectDoc);
 
     const userDirectDoc = await db.collection('users').doc(idStr).get();
     if (userDirectDoc.exists) extractTokens(userDirectDoc);
 
-    // Strategy B: Query 'profiles' collection by matching fields
+    // Strategy C: Query 'profiles' collection by matching fields
     const profileQueries = [
       db.collection('profiles').where('id', '==', idStr),
       db.collection('profiles').where('id', '==', isNaN(Number(idStr)) ? idStr : Number(idStr)),
@@ -84,7 +105,7 @@ async function getTokensForUser(targetUserId) {
       }
     });
 
-    // Strategy C: Query 'users' collection by matching fields
+    // Strategy D: Query 'users' collection by matching fields
     const userQueries = [
       db.collection('users').where('id', '==', idStr),
       db.collection('users').where('id', '==', isNaN(Number(idStr)) ? idStr : Number(idStr)),
@@ -196,6 +217,34 @@ exports.onNotificationCreated = functions.firestore
     const senderId = notificationData.senderId || notificationData.visitorId || notificationData.profileId || '';
     const senderAvatar = notificationData.senderAvatar || notificationData.senderPhoto || '';
 
+    // Determine deep link navigation target based on notification type and sender
+    let targetRoute = '/';
+    let targetScreen = 'home';
+    const targetProfileId = senderId || '';
+
+    if (type === 'view') {
+      // Profile Visited -> open the candidate's profile directly
+      targetRoute = senderId ? `/profile/${senderId}` : '/notifications';
+      targetScreen = 'profile';
+    } else if (type === 'interest') {
+      // New Interest -> open the candidate's profile directly (view photos, biodata & accept/decline)
+      targetRoute = senderId ? `/profile/${senderId}` : '/interests';
+      targetScreen = 'profile';
+    } else if (type === 'accepted') {
+      // Interest Accepted -> open the candidate's profile or interests
+      targetRoute = senderId ? `/profile/${senderId}` : '/interests';
+      targetScreen = senderId ? 'profile' : 'interests';
+    } else if (type === 'message') {
+      // New Message -> open messages
+      targetRoute = '/messages';
+      targetScreen = 'messages';
+    } else {
+      targetRoute = '/notifications';
+      targetScreen = 'notifications';
+    }
+
+    const fullUrl = `https://sambodhisarang.com${targetRoute}`;
+
     // Construct FCM Multicast Message Payload
     const payload = {
       tokens: tokens,
@@ -210,8 +259,20 @@ exports.onNotificationCreated = functions.firestore
         targetUserId: String(targetUserId),
         senderId: String(senderId),
         senderName: String(senderName),
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        profileId: String(targetProfileId),
+        targetProfileId: String(targetProfileId),
+        route: String(targetRoute),
+        path: String(targetRoute),
+        screen: String(targetScreen),
+        targetScreen: String(targetScreen),
+        url: String(fullUrl),
+        link: String(fullUrl),
         timestamp: String(Date.now())
+      },
+      webpush: {
+        fcmOptions: {
+          link: fullUrl
+        }
       },
       android: {
         priority: 'high',
@@ -311,6 +372,8 @@ exports.onChatUpdated = functions.firestore
     const { tokens, docRefs } = await getTokensForUser(recipientId);
     if (tokens.length === 0) return null;
 
+    const chatUrl = 'https://sambodhisarang.com/messages';
+
     // Privacy-Safe FCM Payload (Generic Title & Body)
     const payload = {
       tokens: tokens,
@@ -324,8 +387,18 @@ exports.onChatUpdated = functions.firestore
         senderId: String(latestMsg.senderId),
         senderName: String(senderName),
         targetUserId: String(recipientId),
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        route: '/messages',
+        path: '/messages',
+        screen: 'messages',
+        targetScreen: 'messages',
+        url: chatUrl,
+        link: chatUrl,
         timestamp: String(Date.now())
+      },
+      webpush: {
+        fcmOptions: {
+          link: chatUrl
+        }
       },
       android: {
         priority: 'high',
@@ -340,6 +413,9 @@ exports.onChatUpdated = functions.firestore
             sound: 'default',
             badge: 1
           }
+        },
+        fcmOptions: {
+          link: chatUrl
         }
       }
     };
@@ -392,8 +468,7 @@ exports.sendDirectPushNotification = functions.https.onCall(async (data, context
     tokens: tokens,
     notification: { title, body },
     data: Object.assign({}, customData || {}, {
-      targetUserId: String(targetUserId),
-      click_action: 'FLUTTER_NOTIFICATION_CLICK'
+      targetUserId: String(targetUserId)
     }),
     android: {
       priority: 'high',

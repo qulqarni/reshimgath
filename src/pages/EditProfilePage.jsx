@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES } from '../data/maharashtraData';
+import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, EDUCATION_LEVELS } from '../data/maharashtraData';
 import { uploadBiodataPdfToFirebase } from '../services/firebaseService';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { 
@@ -28,7 +28,7 @@ export const EditProfilePage = ({ onNavigate }) => {
     gender: user?.gender || 'female',
     dob: user?.dob || '',
     age: user?.age || (user?.dob ? calculateAgeFromDob(user.dob) : ''),
-    district: user?.district || '',
+    district: normalizeDistrict(user?.district) || user?.district || '',
     city: user?.city || '',
     nativePlace: user?.nativePlace || '',
     education: user?.education || '',
@@ -59,7 +59,7 @@ export const EditProfilePage = ({ onNavigate }) => {
         gender: user.gender || 'female',
         dob: user.dob || '',
         age: user.age || (user.dob ? calculateAgeFromDob(user.dob) : ''),
-        district: user.district || '',
+        district: normalizeDistrict(user.district) || user.district || '',
         city: user.city || '',
         nativePlace: user.nativePlace || '',
         education: user.education || '',
@@ -246,16 +246,19 @@ export const EditProfilePage = ({ onNavigate }) => {
             </div>
 
             <div>
-              <label className="block font-semibold mb-1">Maharashtra District</label>
+              <label className="block font-semibold mb-1">District (जिल्हा)</label>
               <select
-                value={formData.district}
+                value={normalizeDistrict(formData.district) || formData.district}
                 onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                 className="w-full p-2.5 rounded-xl border border-gray-200"
               >
-                <option value="">Select District</option>
-                {MAHARASHTRA_DISTRICTS.map(d => (
+                <option value="">SELECT</option>
+                {DISTRICTS.map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
+                {formData.district && !DISTRICTS.includes(formData.district) && !DISTRICTS.includes(normalizeDistrict(formData.district)) && (
+                  <option value={formData.district}>{formData.district}</option>
+                )}
               </select>
             </div>
 
@@ -284,13 +287,29 @@ export const EditProfilePage = ({ onNavigate }) => {
             </div>
 
             <div>
-              <label className="block font-semibold mb-1">Education</label>
-              <input
-                type="text"
-                value={formData.education}
-                onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+              <label className="block font-semibold mb-1">Education (शिक्षण)</label>
+              <select
+                value={EDUCATION_LEVELS.includes(formData.education) ? formData.education : (formData.education ? 'Other' : '')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({ ...formData, education: val });
+                }}
                 className="w-full p-2.5 rounded-xl border border-gray-200"
-              />
+              >
+                <option value="">Select Education (शिक्षण निवडा)</option>
+                {EDUCATION_LEVELS.map(ed => (
+                  <option key={ed} value={ed}>{ed}</option>
+                ))}
+              </select>
+              {(formData.education === 'Other' || (!EDUCATION_LEVELS.includes(formData.education) && formData.education)) && (
+                <input
+                  type="text"
+                  placeholder="Specify Highest Education (शिक्षण सांगा)"
+                  value={formData.education === 'Other' ? '' : formData.education}
+                  onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                  className="w-full mt-2 p-2.5 rounded-xl border border-gray-200 text-xs"
+                />
+              )}
             </div>
 
             <div>

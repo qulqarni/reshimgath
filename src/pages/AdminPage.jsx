@@ -6,7 +6,7 @@ import { VerificationBadge } from '../components/common/VerificationBadge';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
+import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase } from '../services/firebaseService';
@@ -577,7 +577,11 @@ export const AdminPage = ({ onNavigate }) => {
       (verificationFilter === 'verified' && p.verified) || 
       (verificationFilter === 'unverified' && !p.verified);
 
-    const matchesDistrict = districtFilter === 'all' || p.district === districtFilter;
+    const matchesDistrict = districtFilter === 'all' || 
+      p.district === districtFilter || 
+      (p.district && districtFilter.toLowerCase().includes(p.district.toLowerCase())) ||
+      (p.district && p.district.toLowerCase().includes(districtFilter.toLowerCase())) ||
+      (p.district && normalizeDistrict(p.district) === districtFilter);
     const matchesBlockStatus = 
       blockStatusFilter === 'all' || 
       (blockStatusFilter === 'active' && !p.blocked) || 
@@ -1379,7 +1383,7 @@ export const AdminPage = ({ onNavigate }) => {
                 >
                   <option value="all">All Districts</option>
                   <option value="Ichalkaranji">Ichalkaranji</option>
-                  {MAHARASHTRA_DISTRICTS.map((d) => (
+                  {DISTRICTS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
@@ -2805,14 +2809,17 @@ export const AdminPage = ({ onNavigate }) => {
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">District *</label>
                     <select
-                      value={editingProfile.district || ''}
+                      value={normalizeDistrict(editingProfile.district) || editingProfile.district || ''}
                       onChange={(e) => setEditingProfile({ ...editingProfile, district: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
                     >
-                      <option value="">Select District</option>
-                      {MAHARASHTRA_DISTRICTS.map((d) => (
+                      <option value="">SELECT</option>
+                      {DISTRICTS.map((d) => (
                         <option key={d} value={d}>{d}</option>
                       ))}
+                      {editingProfile.district && !DISTRICTS.includes(editingProfile.district) && !DISTRICTS.includes(normalizeDistrict(editingProfile.district)) && (
+                        <option value={editingProfile.district}>{editingProfile.district}</option>
+                      )}
                     </select>
                   </div>
 
@@ -3665,11 +3672,12 @@ export const AdminPage = ({ onNavigate }) => {
                   <div>
                     <label className="block font-semibold mb-1 text-gray-700">District *</label>
                     <select
-                      value={newProfileForm.district}
+                      value={normalizeDistrict(newProfileForm.district) || newProfileForm.district || ''}
                       onChange={(e) => setNewProfileForm({ ...newProfileForm, district: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
                     >
-                      {MAHARASHTRA_DISTRICTS.map((d) => (
+                      <option value="">SELECT</option>
+                      {DISTRICTS.map((d) => (
                         <option key={d} value={d}>{d}</option>
                       ))}
                     </select>

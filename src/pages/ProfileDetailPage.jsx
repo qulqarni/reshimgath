@@ -61,7 +61,7 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
         {hasValue(profile.age) && hasValue(profile.height) && <span> • </span>}
         {hasValue(profile.height) && <span>{profile.height}</span>}
         {(hasValue(profile.age) || hasValue(profile.height)) && hasValue(profile.district) && <span> • </span>}
-        {hasValue(profile.district) && <span>{profile.district}, Maharashtra</span>}
+        {hasValue(profile.district) && <span>{profile.district}</span>}
       </p>
     </div>
 
@@ -94,7 +94,7 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
       {hasValue(profile.district) && (
         <div className="space-y-0.5 min-w-0">
           <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Location</span>
-          <p className="font-bold text-xs text-brand-plum truncate">{profile.district}, MH</p>
+          <p className="font-bold text-xs text-brand-plum truncate">{profile.district}</p>
         </div>
       )}
     </div>
@@ -725,7 +725,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               )}
               <div className="flex justify-between py-1 border-b border-gray-100 gap-2">
                 <span className="text-brand-gray font-medium shrink-0">नोकरीचे शहर / जिल्हा:</span>
-                <span className="font-bold text-brand-plum text-right truncate">{profile.district ? `${profile.district}, महाराष्ट्र` : 'महाराष्ट्र'}</span>
+                <span className="font-bold text-brand-plum text-right truncate">{profile.district || 'महाराष्ट्र'}</span>
               </div>
             </div>
           </div>
@@ -1068,7 +1068,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                     </div>
                     <div>
                       <span className="text-[10px] text-brand-gray font-medium block">Work Location</span>
-                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district}, Maharashtra</p>
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district}</p>
                     </div>
                   </div>
                 )}

@@ -70,6 +70,10 @@ export const Footer = ({ onNavigate }) => {
               <button onClick={() => onNavigate('/login')} className="hidden md:block hover:text-brand-plum font-medium transition-colors">
                 {t('login')} / {t('signup')}
               </button>
+              <button onClick={() => onNavigate('/admin')} className="hover:text-brand-plum font-medium transition-colors flex items-center space-x-1">
+                <Lock className="w-3 h-3 text-brand-plum/70 inline" />
+                <span>Admin Login</span>
+              </button>
             </div>
           </div>
 
@@ -105,6 +109,11 @@ export const Footer = ({ onNavigate }) => {
             <button onClick={() => onNavigate('/privacy-policy')} className="hover:text-brand-plum transition-colors font-medium">Privacy Policy</button>
             <span>•</span>
             <button onClick={() => onNavigate('/terms-of-service')} className="hover:text-brand-plum transition-colors font-medium">Terms of Service</button>
+            <span>•</span>
+            <button onClick={() => onNavigate('/admin')} className="hover:text-brand-plum transition-colors font-medium flex items-center space-x-1">
+              <Lock className="w-3 h-3 text-brand-plum/70 inline" />
+              <span>Admin Login</span>
+            </button>
           </div>
           <p className="order-2 sm:order-1">© 2026 Sambodhi Sarang Marriage Bureau. All rights reserved.</p>
         </div>

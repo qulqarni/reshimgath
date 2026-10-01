@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
+import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { BiodataPdfSection } from '../components/profile/BiodataPdfSection';
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
@@ -37,7 +37,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     motherTongue: user?.motherTongue || '',
     bloodGroup: user?.bloodGroup || '',
     state: user?.state || 'Maharashtra',
-    district: user?.district || '',
+    district: normalizeDistrict(user?.district) || user?.district || '',
     city: user?.city || '',
     nativePlace: user?.nativePlace || '',
     education: initEdu,
@@ -233,14 +233,17 @@ export const ProfileSetupPage = ({ onNavigate }) => {
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1">District (जिल्हा)</label>
                 <select
-                  value={formData.district}
+                  value={normalizeDistrict(formData.district) || formData.district}
                   onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
                 >
-                  <option value="">Select District (जिल्हा निवडा)</option>
-                  {MAHARASHTRA_DISTRICTS.map(d => (
+                  <option value="">SELECT</option>
+                  {DISTRICTS.map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
+                  {formData.district && !DISTRICTS.includes(formData.district) && !DISTRICTS.includes(normalizeDistrict(formData.district)) && (
+                    <option value={formData.district}>{formData.district}</option>
+                  )}
                 </select>
               </div>
 

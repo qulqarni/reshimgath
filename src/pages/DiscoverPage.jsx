@@ -6,7 +6,7 @@ import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { ProfileCard } from '../components/discovery/ProfileCard';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
-import { MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
+import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
 import { Search, Filter, ShieldCheck, X, Lock, RotateCcw, SlidersHorizontal } from 'lucide-react';
 
 const AGE_OPTIONS = Array.from({ length: 53 }, (_, i) => 18 + i);
@@ -144,7 +144,12 @@ export const DiscoverPage = ({ onNavigate }) => {
       if (selectedDistrict !== 'All') {
         const d = (p.district || '').toLowerCase().trim();
         const targetD = selectedDistrict.toLowerCase().trim();
-        if (d !== targetD && !d.includes(targetD) && !targetD.includes(d)) return false;
+        const parts = targetD.split('/').map(s => s.trim()).filter(Boolean);
+        const matches = d === targetD || 
+          d.includes(targetD) || 
+          targetD.includes(d) || 
+          parts.some(part => d === part || d.includes(part) || part.includes(d));
+        if (!matches) return false;
       }
 
       // 8. Religion Filter
@@ -452,9 +457,9 @@ export const DiscoverPage = ({ onNavigate }) => {
               onChange={(e) => setSelectedDistrict(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
             >
-              <option value="All">All Maharashtra Districts</option>
-              <option value="Ichalkaranji">Ichalkaranji</option>
-              {MAHARASHTRA_DISTRICTS.map((d) => (
+              <option value="All">All Districts / सर्व जिल्हे</option>
+              <option value="Ichalkaranji">Ichalkaranji / इचलकरंजी</option>
+              {DISTRICTS.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
@@ -660,11 +665,11 @@ export const DiscoverPage = ({ onNavigate }) => {
                 <select
                   value={selectedDistrict}
                   onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  className="w-full p-3 rounded-xl border border-gray-200 text-xs font-semibold"
                 >
-                  <option value="All">All Maharashtra Districts</option>
-                  <option value="Ichalkaranji">Ichalkaranji</option>
-                  {MAHARASHTRA_DISTRICTS.map((d) => (
+                  <option value="All">All Districts / सर्व जिल्हे</option>
+                  <option value="Ichalkaranji">Ichalkaranji / इचलकरंजी</option>
+                  {DISTRICTS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
