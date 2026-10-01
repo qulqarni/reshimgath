@@ -88,16 +88,23 @@ export const MultiSelectDropdown = ({
             : 'border-gray-200 bg-gray-50/50 text-brand-charcoal hover:border-gray-300'
         }`}
       >
-        <span className="truncate pr-2 font-medium">
-          {getDisplayText()}
-        </span>
+        <div className="flex items-center space-x-1.5 truncate pr-2 font-medium">
+          {selectedCount > 0 && (
+            <span className="px-1.5 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full shrink-0">
+              {selectedCount}
+            </span>
+          )}
+          <span className="truncate">
+            {getDisplayText()}
+          </span>
+        </div>
 
         <div className="flex items-center space-x-1 shrink-0">
           {selectedCount > 0 && (
             <span
               onClick={handleClear}
               className="p-0.5 rounded-full hover:bg-brand-rose/20 text-brand-plum transition-colors mr-0.5"
-              title="Clear selection"
+              title="Clear all"
             >
               <X className="w-3.5 h-3.5" />
             </span>
@@ -106,9 +113,33 @@ export const MultiSelectDropdown = ({
         </div>
       </button>
 
+      {/* Selected Items Removable Pills */}
+      {selectedCount > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5 max-h-16 overflow-y-auto">
+          {selectedValues.map((val) => {
+            const displayName = val.split('/')[0];
+            return (
+              <span
+                key={val}
+                className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-brand-plum/10 text-brand-plum text-[11px] font-semibold border border-brand-plum/20"
+              >
+                <span>{displayName}</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggle(val)}
+                  className="hover:text-red-600 transition-colors ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {/* Popover Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl shadow-2xl border border-brand-rose/20 p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150 max-h-72 flex flex-col min-w-[200px]">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl shadow-2xl border border-brand-rose/20 p-2.5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150 max-h-80 flex flex-col min-w-[220px]">
           
           {/* Search Box */}
           <div className="relative shrink-0">
@@ -131,13 +162,7 @@ export const MultiSelectDropdown = ({
 
           {/* Quick Header Actions */}
           <div className="flex items-center justify-between px-2 py-1 border-b border-gray-100 text-[11px] font-semibold shrink-0">
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className={`hover:underline flex items-center space-x-1 ${selectedCount === 0 ? 'text-brand-plum font-bold' : 'text-gray-500'}`}
-            >
-              <span>{allLabel}</span>
-            </button>
+            <span className="text-gray-400 font-normal">Select multiple items below</span>
             {selectedCount > 0 && (
               <button
                 type="button"
@@ -145,7 +170,7 @@ export const MultiSelectDropdown = ({
                 className="text-brand-kesari hover:underline flex items-center space-x-1"
               >
                 <RotateCcw className="w-3 h-3" />
-                <span>Reset</span>
+                <span>Clear All</span>
               </button>
             )}
           </div>
@@ -171,16 +196,16 @@ export const MultiSelectDropdown = ({
                   <div
                     key={opt}
                     onClick={() => handleToggle(opt)}
-                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors select-none ${
                       checked ? 'bg-brand-rose/15 text-brand-plum font-bold' : 'hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <div className="flex items-center space-x-2 truncate">
+                    <div className="flex items-center space-x-2 truncate pointer-events-none">
                       <input
                         type="checkbox"
                         checked={checked}
-                        onChange={() => {}} // handled by row click
-                        className="rounded text-brand-plum focus:ring-brand-plum/20 w-3.5 h-3.5 shrink-0"
+                        readOnly
+                        className="rounded text-brand-plum focus:ring-brand-plum/20 w-3.5 h-3.5 shrink-0 pointer-events-none"
                       />
                       <span className="truncate">{opt}</span>
                     </div>
@@ -191,6 +216,20 @@ export const MultiSelectDropdown = ({
             ) : (
               <p className="p-3 text-center text-gray-400 text-xs font-normal">No matching options</p>
             )}
+          </div>
+
+          {/* Footer Action Bar */}
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-between shrink-0">
+            <span className="text-[11px] text-gray-500 font-medium">
+              {selectedCount > 0 ? `${selectedCount} selected` : 'No items selected'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="px-4 py-1.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all"
+            >
+              Done / Apply
+            </button>
           </div>
 
         </div>
