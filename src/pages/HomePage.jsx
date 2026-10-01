@@ -279,6 +279,23 @@ export const HomePage = ({ onNavigate }) => {
     return filteredProfiles.slice(startIndex, startIndex + PROFILES_PER_PAGE);
   }, [filteredProfiles, currentPage]);
 
+  const visiblePageNumbers = useMemo(() => {
+    if (totalPages <= 3) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, currentPage - 1);
+    let end = start + 2;
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - 2);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }, [currentPage, totalPages]);
+
   const handleReset = () => {
     setSearchQuery('');
     setSelectedDistrict([]);
@@ -716,7 +733,7 @@ export const HomePage = ({ onNavigate }) => {
                   </button>
 
                   <div className="flex items-center space-x-1.5 px-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    {visiblePageNumbers.map((pageNum) => (
                       <button
                         key={pageNum}
                         onClick={() => {
