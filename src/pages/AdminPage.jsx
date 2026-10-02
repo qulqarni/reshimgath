@@ -558,17 +558,54 @@ export const AdminPage = ({ onNavigate }) => {
   // Filtered profiles logic (latest profiles appear on top)
   const filteredProfiles = sortProfilesByLatest(profiles.filter((p) => {
     const q = searchQuery.toLowerCase().trim();
-    const digitsQ = q.replace(/[^0-9]/g, '');
-    const pDigits = (String(p.regId || '') + String(p.registrationId || '') + String(p.id || '')).replace(/[^0-9]/g, '');
 
-    const matchesSearch = 
-      p.name?.toLowerCase().includes(q) ||
-      p.caste?.toLowerCase().includes(q) ||
-      p.district?.toLowerCase().includes(q) ||
-      p.occupation?.toLowerCase().includes(q) ||
-      (p.regId && p.regId.toLowerCase().includes(q)) ||
-      (p.registrationId && String(p.registrationId).includes(q)) ||
-      (digitsQ.length > 0 && pDigits.includes(digitsQ));
+    let matchesSearch = true;
+    if (q) {
+      const tokens = q.split(/\s+/).filter(Boolean);
+      const digitsQ = q.replace(/[^0-9]/g, '');
+      const pDigits = (String(p.regId || '') + String(p.registrationId || '') + String(p.id || '') + String(p.phone || '')).replace(/[^0-9]/g, '');
+
+      // 1. Direct ID or contact digits match
+      const matchesDigits = digitsQ.length > 0 && pDigits.includes(digitsQ);
+
+      // 2. Direct full string substring match
+      const nameEn = String(p.name || '').toLowerCase();
+      const nameMr = String(p.nameMr || p.marathiName || '').toLowerCase();
+      const fullName = `${nameEn} ${nameMr}`.trim();
+
+      const directSubstringMatch = 
+        fullName.includes(q) ||
+        String(p.caste || '').toLowerCase().includes(q) ||
+        String(p.district || '').toLowerCase().includes(q) ||
+        String(p.occupation || '').toLowerCase().includes(q) ||
+        String(p.education || '').toLowerCase().includes(q) ||
+        String(p.regId || '').toLowerCase().includes(q) ||
+        String(p.registrationId || '').toLowerCase().includes(q);
+
+      // 3. Multi-word / Name + Surname matching (e.g. "Rahul Patil" matches "Rahul Ramesh Patil")
+      // Check if all tokens entered by admin are found in the candidate's name (in any order)
+      const allTokensInName = tokens.length > 0 && tokens.every(token => fullName.includes(token));
+
+      // 4. Combined profile searchable fields matching (e.g. "Rahul Kolhapur" matches Rahul from Kolhapur)
+      const searchableProfileText = [
+        fullName,
+        p.caste,
+        p.subcaste,
+        p.district,
+        p.city,
+        p.nativePlace,
+        p.occupation,
+        p.education,
+        p.regId,
+        p.registrationId,
+        p.phone,
+        p.email
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const allTokensInProfile = tokens.length > 0 && tokens.every(token => searchableProfileText.includes(token));
+
+      matchesSearch = matchesDigits || directSubstringMatch || allTokensInName || allTokensInProfile;
+    }
 
     const pGender = (p.gender || '').toLowerCase().trim();
     const matchesGender = genderFilter === 'all' || pGender === genderFilter.toLowerCase();
