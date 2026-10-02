@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, normalizeProfile, sortProfilesByLatest } from './AuthContext';
 export { sortProfilesByLatest } from './AuthContext';
 import { MOCK_PROFILES } from '../data/mockProfiles';
@@ -767,7 +767,7 @@ export const ProfileProvider = ({ children }) => {
     });
   };
 
-  const sendMessage = (partnerProfileId, text) => {
+  const sendMessage = useCallback((partnerProfileId, text) => {
     if (!text.trim() || !user) return false;
 
     const senderId = String(user.id);
@@ -799,9 +799,9 @@ export const ProfileProvider = ({ children }) => {
     });
 
     return true;
-  };
+  }, [user]);
 
-  const markChatAsRead = (partnerProfileId) => {
+  const markChatAsRead = useCallback((partnerProfileId) => {
     if (!user || !partnerProfileId) return;
 
     const meId = String(user.id);
@@ -830,36 +830,42 @@ export const ProfileProvider = ({ children }) => {
 
       return prev;
     });
-  };
+  }, [user]);
 
   // Calculate total unread messages count across all conversations for current user
-  const totalUnreadMessagesCount = (() => {
+  const totalUnreadMessagesCount = useMemo(() => {
     if (!user) return 0;
     const meId = String(user.id).toLowerCase();
     const isMeAdmin = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
     let total = 0;
 
+    // Fast blocked check map
+    const blockedMap = new Map();
+    if (!isMeAdmin) {
+      profiles.forEach((p) => {
+        if (p.blocked) blockedMap.set(String(p.id).toLowerCase(), true);
+      });
+    }
+
     Object.keys(chats).forEach((convoKey) => {
       const parts = convoKey.split('_').map((id) => id.toLowerCase());
       if (parts.includes(meId)) {
         const otherId = parts.find((id) => id !== meId);
-        if (otherId) {
-          const partner = profiles.find((p) => String(p.id).toLowerCase() === otherId);
-          if (!isMeAdmin && partner && partner.blocked) {
-            return;
-          }
+        if (otherId && blockedMap.has(otherId)) {
+          return;
         }
 
         const thread = chats[convoKey] || [];
-        thread.forEach((msg) => {
+        for (let i = 0; i < thread.length; i++) {
+          const msg = thread[i];
           if (String(msg.senderId).toLowerCase() !== meId && msg.status !== 'read') {
             total++;
           }
-        });
+        }
       }
     });
     return total;
-  })();
+  }, [user, chats, profiles]);
 
   const markNotificationRead = (id) => {
     try {

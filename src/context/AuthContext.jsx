@@ -556,17 +556,63 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+// In-memory cache for fast profile, connection, and interest lookups without blocking JSON.parse loops
+let cachedProfilesRaw = null;
+let cachedProfilesParsed = null;
+const getStoredProfilesFast = () => {
+  try {
+    const raw = localStorage.getItem('reshimgath_profiles');
+    if (!raw) return DEMO_PROFILES || [];
+    if (raw === cachedProfilesRaw && cachedProfilesParsed) {
+      return cachedProfilesParsed;
+    }
+    cachedProfilesRaw = raw;
+    cachedProfilesParsed = [...(DEMO_PROFILES || []), ...JSON.parse(raw)];
+    return cachedProfilesParsed;
+  } catch (e) {
+    return DEMO_PROFILES || [];
+  }
+};
+
+let cachedConnsRaw = null;
+let cachedConnsParsed = null;
+const getStoredConnectionsFast = () => {
+  try {
+    const raw = localStorage.getItem('reshimgath_unlocked_connections');
+    if (!raw) return [];
+    if (raw === cachedConnsRaw && cachedConnsParsed) {
+      return cachedConnsParsed;
+    }
+    cachedConnsRaw = raw;
+    cachedConnsParsed = JSON.parse(raw);
+    return cachedConnsParsed;
+  } catch (e) {
+    return [];
+  }
+};
+
+let cachedInterestsRaw = null;
+let cachedInterestsParsed = null;
+const getStoredInterestsFast = () => {
+  try {
+    const raw = localStorage.getItem('reshimgath_interests');
+    if (!raw) return null;
+    if (raw === cachedInterestsRaw && cachedInterestsParsed) {
+      return cachedInterestsParsed;
+    }
+    cachedInterestsRaw = raw;
+    cachedInterestsParsed = JSON.parse(raw);
+    return cachedInterestsParsed;
+  } catch (e) {
+    return null;
+  }
+};
+
   const getProfileIdentifiers = (profileId) => {
     if (!profileId) return [];
     const searchStr = String(profileId).toLowerCase().trim();
 
-    let allProfiles = DEMO_PROFILES || [];
-    try {
-      const stored = localStorage.getItem('reshimgath_profiles');
-      if (stored) {
-        allProfiles = [...allProfiles, ...JSON.parse(stored)];
-      }
-    } catch (e) {}
+    const allProfiles = getStoredProfilesFast();
 
     const found = allProfiles.find((p) => {
       if (!p) return false;
@@ -615,8 +661,7 @@ export const AuthProvider = ({ children }) => {
     // Mutual Unlock Check 1: Check if candidate has unlocked current user in their profile
     if (!isAlreadyUnlocked) {
       try {
-        const stored = localStorage.getItem('reshimgath_profiles');
-        const allProfiles = stored ? JSON.parse(stored) : DEMO_PROFILES;
+        const allProfiles = getStoredProfilesFast();
         const targetProfile = allProfiles.find(p => {
           if (!p) return false;
           const pId = String(p.id || '').toLowerCase();
@@ -642,8 +687,7 @@ export const AuthProvider = ({ children }) => {
     // Mutual Unlock Check 2: Check global unlockedConnections records in localStorage
     if (!isAlreadyUnlocked) {
       try {
-        const connsRaw = localStorage.getItem('reshimgath_unlocked_connections');
-        const conns = connsRaw ? JSON.parse(connsRaw) : [];
+        const conns = getStoredConnectionsFast();
         const myIdentifiers = getProfileIdentifiers(user.id);
         const hasMutual = conns.some(c => {
           if (!c) return false;
@@ -661,8 +705,7 @@ export const AuthProvider = ({ children }) => {
     // Mutual Unlock Check 3: Check interests in localStorage for unlockedConnections
     if (!isAlreadyUnlocked) {
       try {
-        const interestsRaw = localStorage.getItem('reshimgath_interests');
-        const interestsObj = interestsRaw ? JSON.parse(interestsRaw) : null;
+        const interestsObj = getStoredInterestsFast();
         if (interestsObj?.unlockedConnections && Array.isArray(interestsObj.unlockedConnections)) {
           const myIdentifiers = getProfileIdentifiers(user.id);
           const hasMutual = interestsObj.unlockedConnections.some(c => {
