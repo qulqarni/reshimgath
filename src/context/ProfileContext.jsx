@@ -580,16 +580,19 @@ export const ProfileProvider = ({ children }) => {
       return false;
     }
 
+    const myId = String(user.id).toLowerCase();
+    const targetId = String(profileId).toLowerCase();
+
     // Check if already sent
     const alreadySent = (interests.sent || []).some((item) =>
       typeof item === 'string'
-        ? item === profileId
-        : (String(item.profileId) === String(profileId) && String(item.senderId) === String(user.id))
+        ? String(item).toLowerCase() === targetId
+        : (String(item.profileId || item.targetUserId || '').toLowerCase() === targetId && String(item.senderId || '').toLowerCase() === myId)
     );
     if (alreadySent) return true;
 
     const senderName = user.name || 'A verified member';
-    const senderPhoto = user.avatar || user.photos?.[0] || null;
+    const senderPhoto = user.avatar || user.photo || user.photos?.[0] || null;
 
     const sentEntry = { 
       profileId: profileId, 
@@ -616,10 +619,10 @@ export const ProfileProvider = ({ children }) => {
     setInterests((prev) => {
       const updated = {
         ...prev,
-        sent: [...prev.sent, sentEntry],
+        sent: [...(prev.sent || []), sentEntry],
         received: [
-          ...prev.received.filter(
-            (item) => !(String(item.profileId) === String(user.id) && String(item.targetUserId) === String(profileId))
+          ...(prev.received || []).filter(
+            (item) => !(String(item.profileId || item.senderId).toLowerCase() === myId && String(item.targetUserId || item.profileId).toLowerCase() === targetId)
           ),
           receivedEntry
         ]

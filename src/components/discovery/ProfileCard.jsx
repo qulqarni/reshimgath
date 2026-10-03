@@ -52,28 +52,32 @@ export const ProfileCard = ({ profile, onSelect }) => {
   };
 
   const isSent = Boolean(myId && targetId) && (interests.sent || []).some(s => {
-    if (typeof s !== 'object' || !s) return false;
+    if (!s) return false;
+    if (typeof s === 'string') return String(s).toLowerCase() === targetId;
     const sender = String(s.senderId || s.user1 || '').toLowerCase();
     const target = String(s.profileId || s.targetUserId || s.user2 || '').toLowerCase();
-    return sender === myId && target === targetId;
+    return (sender === myId || !sender) && target === targetId;
   });
 
   const isReceived = Boolean(myId && targetId) && (interests.received || []).some(r => {
-    if (typeof r !== 'object' || !r) return false;
+    if (!r) return false;
+    if (typeof r === 'string') return String(r).toLowerCase() === targetId;
     const sender = String(r.senderId || r.user1 || '').toLowerCase();
     const target = String(r.targetUserId || r.profileId || r.user2 || '').toLowerCase();
-    return sender === targetId && target === myId;
+    return (sender === targetId || !sender) && (target === myId || !target);
   });
 
   const isAccepted = Boolean(myId && targetId) && (interests.accepted || []).some(a => {
-    if (typeof a !== 'object' || !a) return false;
+    if (!a) return false;
+    if (typeof a === 'string') return String(a).toLowerCase() === targetId;
     const u1 = String(a.user1 || a.senderId || '').toLowerCase();
     const u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
     return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
   });
 
   const isDeclined = Boolean(myId && targetId) && (interests.declined || []).some(d => {
-    if (typeof d !== 'object' || !d) return false;
+    if (!d) return false;
+    if (typeof d === 'string') return String(d).toLowerCase() === targetId;
     const u1 = String(d.user1 || d.senderId || '').toLowerCase();
     const u2 = String(d.user2 || d.targetUserId || d.profileId || '').toLowerCase();
     return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
