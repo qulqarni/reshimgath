@@ -18,6 +18,7 @@ import {
   saveChatToFirestore,
   fetchInterestsFromFirestore,
   saveInterestsToFirestore,
+  isProfileVisitedInFirestore,
   saveProfileViewToFirestore,
   saveNotificationToFirestore,
   subscribeToProfilesFromFirestore,
@@ -32,6 +33,51 @@ import {
 import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
+
+const normalizeVisitorTargetId = (id) => {
+  if (!id) return '';
+  return String(id).toLowerCase().trim().replace(/^ss-/, '');
+};
+
+const deduplicateViewNotifications = (notifsList) => {
+  if (!Array.isArray(notifsList)) return [];
+  const seenPairs = new Set();
+  const result = [];
+
+  for (const n of notifsList) {
+    if (!n) continue;
+    if (n.type === 'view') {
+      const vId = normalizeVisitorTargetId(n.visitor_user_id || n.visitorId || n.profileId);
+      const tId = normalizeVisitorTargetId(n.profile_owner_user_id || n.targetUserId);
+      if (vId && tId && vId === tId) continue;
+      const key = `${vId}_${tId}`;
+      if (key !== '_' && seenPairs.has(key)) continue;
+      if (key !== '_') seenPairs.add(key);
+    }
+    result.push(n);
+  }
+
+  return result;
+};
+
+const deduplicateProfileViews = (viewsList) => {
+  if (!Array.isArray(viewsList)) return [];
+  const seenPairs = new Set();
+  const result = [];
+
+  for (const v of viewsList) {
+    if (!v) continue;
+    const vId = normalizeVisitorTargetId(v.visitor_user_id || v.visitorId);
+    const tId = normalizeVisitorTargetId(v.profile_owner_user_id || v.targetId || v.targetUserId);
+    if (vId && tId && vId === tId) continue;
+    const key = `${vId}_${tId}`;
+    if (key !== '_' && seenPairs.has(key)) continue;
+    if (key !== '_') seenPairs.add(key);
+    result.push(v);
+  }
+
+  return result;
+};
 
 export const resolveNotificationProfile = (notification, profiles = []) => {
   if (!notification) return null;
@@ -344,7 +390,7 @@ export const ProfileProvider = ({ children }) => {
 
     const unsubViews = subscribeToProfileViewsFromFirestore((firestoreViews) => {
       if (firestoreViews && firestoreViews.length > 0) {
-        setProfileViews(firestoreViews);
+        setProfileViews(deduplicateProfileViews(firestoreViews));
       }
     });
 
@@ -360,7 +406,7 @@ export const ProfileProvider = ({ children }) => {
         const updated = firestoreNotifs.map((n) =>
           readIds.includes(n.id) ? { ...n, unread: false } : n
         );
-        setNotifications(updated);
+        setNotifications(deduplicateViewNotifications(updated));
       }
     });
 
@@ -483,9 +529,10 @@ export const ProfileProvider = ({ children }) => {
 
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed
+      const cleaned = parsed
         .filter((n) => !(n.type === 'view' && String(n.profileId) === String(n.targetUserId)))
         .map((n) => (readIds.includes(n.id) ? { ...n, unread: false } : n));
+      return deduplicateViewNotifications(cleaned);
     }
     return [];
   });
@@ -495,7 +542,7 @@ export const ProfileProvider = ({ children }) => {
     const saved = localStorage.getItem('reshimgath_profile_views');
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.filter((v) => String(v.visitorId) !== String(v.targetId));
+      return deduplicateProfileViews(parsed);
     }
     return [];
   });
@@ -519,40 +566,73 @@ export const ProfileProvider = ({ children }) => {
     localStorage.setItem('reshimgath_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  const recordProfileView = (targetProfile, viewerUser) => {
+  const recordProfileView = async (targetProfile, viewerUser) => {
     if (!targetProfile || !viewerUser) return;
 
-    // DO NOT record view if user is viewing their own profile
-    if (
-      String(viewerUser.id) === String(targetProfile.id) ||
-      (viewerUser.email && targetProfile.email && viewerUser.email === targetProfile.email)
-    ) {
+    const cleanVisitorId = normalizeVisitorTargetId(viewerUser.id);
+    const cleanTargetId = normalizeVisitorTargetId(targetProfile.id);
+
+    // Rule 1: Do NOT record view or create notification if user is viewing their own profile
+    if (!cleanVisitorId || !cleanTargetId || cleanVisitorId === cleanTargetId) {
+      return;
+    }
+    if (viewerUser.email && targetProfile.email && viewerUser.email === targetProfile.email) {
       return;
     }
 
+    // Rule 2: Check if visitor_user_id + profile_owner_user_id pair already exists in local profileViews state
+    const alreadyVisitedLocally = (profileViews || []).some((v) => {
+      if (!v) return false;
+      const vId = normalizeVisitorTargetId(v.visitor_user_id || v.visitorId);
+      const tId = normalizeVisitorTargetId(v.profile_owner_user_id || v.targetId || v.targetUserId);
+      return vId === cleanVisitorId && tId === cleanTargetId;
+    });
+
+    // Rule 3: Check if visitor_user_id + profile_owner_user_id pair already exists in local notifications state
+    const alreadyNotifiedLocally = (notifications || []).some((n) => {
+      if (!n || n.type !== 'view') return false;
+      const vId = normalizeVisitorTargetId(n.visitor_user_id || n.visitorId || n.profileId);
+      const tId = normalizeVisitorTargetId(n.profile_owner_user_id || n.targetUserId);
+      return vId === cleanVisitorId && tId === cleanTargetId;
+    });
+
+    if (alreadyVisitedLocally || alreadyNotifiedLocally) {
+      // Exactly 1 notification per (visitor_user_id + profile_owner_user_id). Do nothing!
+      return;
+    }
+
+    // Rule 4: Database-level check to prevent duplicate records/notifications from concurrent requests or page refreshes
+    const existsInDb = await isProfileVisitedInFirestore(cleanVisitorId, cleanTargetId);
+    if (existsInDb) {
+      return;
+    }
+
+    const docKey = `${cleanVisitorId}_${cleanTargetId}`;
+
     const viewEntry = {
-      id: Date.now(),
+      id: docKey,
+      visitor_user_id: viewerUser.id,
       visitorId: viewerUser.id,
+      profile_owner_user_id: targetProfile.id,
+      targetUserId: targetProfile.id,
+      targetId: targetProfile.id,
       visitorName: viewerUser.name || 'A Member',
       occupation: viewerUser.occupation || 'Professional',
       location: viewerUser.district || 'Maharashtra',
       avatar: viewerUser.avatar || null,
+      first_visited_at: new Date().toISOString(),
       timestamp: 'Just now',
-      targetId: targetProfile.id
+      updatedAt: new Date().toISOString()
     };
-
-    setProfileViews((prev) => [
-      viewEntry,
-      ...prev.filter((v) => !(String(v.visitorId) === String(viewEntry.visitorId) && String(v.targetId) === String(viewEntry.targetId)))
-    ]);
-    saveProfileViewToFirestore(viewEntry);
 
     const viewNotif = {
       id: Date.now(),
       type: 'view',
       profileId: viewerUser.id,
       visitorId: viewerUser.id,
+      visitor_user_id: viewerUser.id,
       targetUserId: targetProfile.id,
+      profile_owner_user_id: targetProfile.id,
       senderName: viewerUser.name || 'A verified member',
       senderRegId: viewerUser.regId || (viewerUser.registrationId ? `SS-${viewerUser.registrationId}` : null),
       senderAvatar: viewerUser.avatar || viewerUser.photos?.[0] || null,
@@ -562,8 +642,11 @@ export const ProfileProvider = ({ children }) => {
       unread: true
     };
 
-    setNotifications((prev) => [viewNotif, ...prev]);
-    saveNotificationToFirestore(viewNotif);
+    setProfileViews((prev) => deduplicateProfileViews([viewEntry, ...prev]));
+
+    setNotifications((prev) => deduplicateViewNotifications([viewNotif, ...prev]));
+
+    saveProfileViewToFirestore(viewEntry, viewNotif);
   };
 
   const addToast = (message, type = 'info') => {

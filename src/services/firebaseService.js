@@ -435,16 +435,83 @@ export const saveUnlockedConnectionToFirestore = async (connectionEntry) => {
 // -------------------------------------------------------------
 
 /**
- * Save a profile view record to Firestore
+ * Check whether a visitor has already visited a target profile in Firestore
  */
-export const saveProfileViewToFirestore = async (viewEntry) => {
+export const isProfileVisitedInFirestore = async (visitorId, targetId) => {
+  if (!isFirebaseConfigured || !visitorId || !targetId) return false;
+  try {
+    const cleanV = String(visitorId).toLowerCase().trim().replace(/^ss-/, '');
+    const cleanT = String(targetId).toLowerCase().trim().replace(/^ss-/, '');
+    if (!cleanV || !cleanT || cleanV === cleanT) return true;
+
+    const docId = `${cleanV}_${cleanT}`;
+    const docRef = doc(db, PROFILE_VIEWS_COLLECTION, docId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) return true;
+
+    const notifDocSnap = await getDoc(doc(db, NOTIFICATIONS_COLLECTION, `view_${cleanV}_${cleanT}`));
+    return notifDocSnap.exists();
+  } catch (error) {
+    console.error('Error checking profile view in Firestore:', error);
+    return false;
+  }
+};
+
+/**
+ * Save a unique profile view record (and optional notification) to Firestore.
+ * Enforces visitor_user_id + profile_owner_user_id unique constraint.
+ */
+export const saveProfileViewToFirestore = async (viewEntry, notificationData = null) => {
   if (!isFirebaseConfigured || !viewEntry) return true;
   try {
-    const docId = `${viewEntry.visitorId}_${viewEntry.targetId}`;
-    await setDoc(doc(db, PROFILE_VIEWS_COLLECTION, docId), {
-      ...viewEntry,
+    const cleanV = String(viewEntry.visitor_user_id || viewEntry.visitorId || '').toLowerCase().trim().replace(/^ss-/, '');
+    const cleanT = String(viewEntry.profile_owner_user_id || viewEntry.targetId || viewEntry.targetUserId || '').toLowerCase().trim().replace(/^ss-/, '');
+
+    if (!cleanV || !cleanT || cleanV === cleanT) return false;
+
+    const docId = `${cleanV}_${cleanT}`;
+    const viewDocRef = doc(db, PROFILE_VIEWS_COLLECTION, docId);
+
+    // Database-level check before writing
+    const existingSnap = await getDoc(viewDocRef);
+    if (existingSnap.exists()) {
+      return false;
+    }
+
+    const payload = {
+      id: docId,
+      visitor_user_id: viewEntry.visitor_user_id || viewEntry.visitorId,
+      visitorId: viewEntry.visitorId || viewEntry.visitor_user_id,
+      profile_owner_user_id: viewEntry.profile_owner_user_id || viewEntry.targetId || viewEntry.targetUserId,
+      targetUserId: viewEntry.targetId || viewEntry.targetUserId || viewEntry.profile_owner_user_id,
+      targetId: viewEntry.targetId || viewEntry.targetUserId || viewEntry.profile_owner_user_id,
+      visitorName: viewEntry.visitorName || 'A Member',
+      occupation: viewEntry.occupation || 'Professional',
+      location: viewEntry.location || 'Maharashtra',
+      avatar: viewEntry.avatar || null,
+      first_visited_at: viewEntry.first_visited_at || new Date().toISOString(),
+      timestamp: viewEntry.timestamp || 'Just now',
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    };
+
+    await setDoc(viewDocRef, payload, { merge: true });
+
+    if (notificationData) {
+      const notifDocId = `view_${cleanV}_${cleanT}`;
+      const notifDocRef = doc(db, NOTIFICATIONS_COLLECTION, notifDocId);
+      const notifSnap = await getDoc(notifDocRef);
+      if (!notifSnap.exists()) {
+        await setDoc(notifDocRef, {
+          ...notificationData,
+          id: notificationData.id || notifDocId,
+          docId: notifDocId,
+          visitor_user_id: viewEntry.visitor_user_id || viewEntry.visitorId,
+          profile_owner_user_id: viewEntry.profile_owner_user_id || viewEntry.targetId || viewEntry.targetUserId,
+          createdAt: new Date().toISOString()
+        }, { merge: true });
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error saving profile view to Firestore:', error);
