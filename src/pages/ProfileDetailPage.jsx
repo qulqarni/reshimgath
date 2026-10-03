@@ -601,9 +601,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       return;
     }
 
-    if (!isSent && !isDeclined) {
-      sendInterest(profile.id);
-    }
+    sendInterest(profile.id);
   };
 
   const handleShare = () => {

@@ -574,22 +574,42 @@ export const ProfileProvider = ({ children }) => {
     }, 4000);
   };
 
+  const matchId = (a, b) => {
+    if (!a || !b) return false;
+    const strA = String(a).toLowerCase().trim();
+    const strB = String(b).toLowerCase().trim();
+    const cleanA = strA.replace(/^ss-/, '');
+    const cleanB = strB.replace(/^ss-/, '');
+    return strA === strB || cleanA === cleanB;
+  };
+
   const sendInterest = (profileId) => {
     if (!user) {
       addToast('Please log in to send an interest.', 'warning');
       return false;
     }
 
-    const myId = String(user.id).toLowerCase();
-    const targetId = String(profileId).toLowerCase();
+    if (!profileId) {
+      addToast('Invalid profile selection.', 'error');
+      return false;
+    }
+
+    const myId = user.id;
+    const targetId = profileId;
 
     // Check if already sent
-    const alreadySent = (interests.sent || []).some((item) =>
-      typeof item === 'string'
-        ? String(item).toLowerCase() === targetId
-        : (String(item.profileId || item.targetUserId || '').toLowerCase() === targetId && String(item.senderId || '').toLowerCase() === myId)
-    );
-    if (alreadySent) return true;
+    const alreadySent = (interests.sent || []).some((item) => {
+      if (!item) return false;
+      if (typeof item === 'string') return matchId(item, targetId);
+      const sId = item.senderId || item.user1;
+      const pId = item.profileId || item.targetUserId || item.user2;
+      return (matchId(sId, myId) || !sId) && matchId(pId, targetId);
+    });
+
+    if (alreadySent) {
+      addToast('Interest request is already pending.', 'info');
+      return true;
+    }
 
     const senderName = user.name || 'A verified member';
     const senderPhoto = user.avatar || user.photo || user.photos?.[0] || null;
@@ -619,15 +639,28 @@ export const ProfileProvider = ({ children }) => {
     setInterests((prev) => {
       const updated = {
         ...prev,
-        sent: [...(prev.sent || []), sentEntry],
+        sent: [
+          ...(prev.sent || []).filter(item => {
+            if (!item) return false;
+            const pId = typeof item === 'string' ? item : (item.profileId || item.targetUserId || item.user2);
+            return !matchId(pId, targetId);
+          }),
+          sentEntry
+        ],
         received: [
-          ...(prev.received || []).filter(
-            (item) => !(String(item.profileId || item.senderId).toLowerCase() === myId && String(item.targetUserId || item.profileId).toLowerCase() === targetId)
-          ),
+          ...(prev.received || []).filter((item) => {
+            if (!item) return false;
+            const sId = typeof item === 'string' ? item : (item.senderId || item.user1);
+            const tId = typeof item === 'string' ? item : (item.targetUserId || item.profileId || item.user2);
+            return !(matchId(sId, myId) && matchId(tId, targetId));
+          }),
           receivedEntry
         ]
       };
       saveInterestsToFirestore(updated);
+      try {
+        localStorage.setItem('reshimgath_interests', JSON.stringify(updated));
+      } catch (e) {}
       return updated;
     });
 
@@ -649,7 +682,7 @@ export const ProfileProvider = ({ children }) => {
     setNotifications((prev) => [interestNotif, ...prev]);
     saveNotificationToFirestore(interestNotif);
 
-    addToast('Interest sent successfully!', 'success');
+    addToast('Interest sent successfully! ❤️', 'success');
     return true;
   };
 
@@ -665,11 +698,18 @@ export const ProfileProvider = ({ children }) => {
       const updated = {
         ...prev,
         received: (prev.received || []).filter((item) => {
+          if (!item) return false;
           const pid = typeof item === 'string' ? item : item.profileId || item.senderId;
-          return String(pid).toLowerCase() !== String(profileId).toLowerCase();
+          return !matchId(pid, profileId);
         }),
         accepted: [
-          ...(prev.accepted || []).filter(a => typeof a === 'object' && a !== null),
+          ...(prev.accepted || []).filter(a => {
+            if (!a) return false;
+            if (typeof a === 'string') return !matchId(a, profileId);
+            const u1 = a.user1 || a.senderId;
+            const u2 = a.user2 || a.targetUserId || a.profileId;
+            return !( (matchId(u1, user.id) && matchId(u2, profileId)) || (matchId(u1, profileId) && matchId(u2, user.id)) );
+          }),
           acceptedEntry
         ]
       };
@@ -717,10 +757,26 @@ export const ProfileProvider = ({ children }) => {
     setInterests((prev) => {
       const updated = {
         ...prev,
-        received: prev.received.filter((item) => String(item.profileId) !== String(profileId)),
-        declined: [...prev.declined, { user1: user.id, user2: profileId, profileId: profileId }]
+        received: (prev.received || []).filter((item) => {
+          if (!item) return false;
+          const pid = typeof item === 'string' ? item : item.profileId || item.senderId;
+          return !matchId(pid, profileId);
+        }),
+        declined: [
+          ...(prev.declined || []).filter(d => {
+            if (!d) return false;
+            if (typeof d === 'string') return !matchId(d, profileId);
+            const u1 = d.user1 || d.senderId;
+            const u2 = d.user2 || d.targetUserId || d.profileId;
+            return !( (matchId(u1, user.id) && matchId(u2, profileId)) || (matchId(u1, profileId) && matchId(u2, user.id)) );
+          }),
+          { user1: user.id, user2: profileId, profileId: profileId }
+        ]
       };
       saveInterestsToFirestore(updated);
+      try {
+        localStorage.setItem('reshimgath_interests', JSON.stringify(updated));
+      } catch (e) {}
       return updated;
     });
     addToast('Interest declined.', 'info');
@@ -733,17 +789,22 @@ export const ProfileProvider = ({ children }) => {
       const updated = {
         ...prev,
         sent: (prev.sent || []).filter((item) => {
+          if (!item) return false;
           const pid = typeof item === 'string' ? item : (item.profileId || item.targetUserId);
           const sid = typeof item === 'string' ? user.id : (item.senderId || item.user1);
-          return !(String(pid).toLowerCase() === String(profileId).toLowerCase() && String(sid).toLowerCase() === String(user.id).toLowerCase());
+          return !(matchId(pid, profileId) && (matchId(sid, user.id) || !sid));
         }),
         received: (prev.received || []).filter((item) => {
+          if (!item) return false;
           const pid = typeof item === 'string' ? item : (item.profileId || item.senderId);
           const tid = typeof item === 'string' ? '' : (item.targetUserId || item.user2);
-          return !(String(pid).toLowerCase() === String(user.id).toLowerCase() && String(tid).toLowerCase() === String(profileId).toLowerCase());
+          return !(matchId(pid, user.id) && matchId(tid, profileId));
         })
       };
       saveInterestsToFirestore(updated);
+      try {
+        localStorage.setItem('reshimgath_interests', JSON.stringify(updated));
+      } catch (e) {}
       return updated;
     });
 

@@ -145,9 +145,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
       return;
     }
 
-    if (!isSent && !isDeclined) {
-      sendInterest(profile.id);
-    }
+    sendInterest(profile.id);
   };
 
   const handleBookmark = (e) => {
