@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
-import { Bell, Heart, CheckCircle, Eye, ShieldCheck } from 'lucide-react';
+import { Bell, Heart, CheckCircle, Eye, ShieldCheck, MessageSquare } from 'lucide-react';
 
 export const NotificationsPage = ({ onNavigate }) => {
   const { user, isAuthenticated, triggerPrivacyAlert } = useAuth();
@@ -68,6 +68,16 @@ export const NotificationsPage = ({ onNavigate }) => {
                 key={n.id}
                 onClick={() => {
                   markNotificationRead(n.id);
+                  if (n.type === 'message') {
+                    const chatPartnerId = n.senderId || n.profileId || targetSlug;
+                    if (chatPartnerId) {
+                      try {
+                        sessionStorage.setItem('reshimgath_target_chat', chatPartnerId);
+                      } catch (e) {}
+                    }
+                    onNavigate('/messages');
+                    return;
+                  }
                   if ((isProfileVisit || isInterest) && targetSlug) {
                     onNavigate(`/profile/${targetSlug}`);
                     return;
@@ -94,6 +104,8 @@ export const NotificationsPage = ({ onNavigate }) => {
                     <Eye className="w-5 h-5 text-blue-600" />
                   ) : n.type === 'interest' || isInterest ? (
                     <Heart className="w-5 h-5 text-brand-rose fill-brand-rose" />
+                  ) : n.type === 'message' ? (
+                    <MessageSquare className="w-5 h-5 text-emerald-600" />
                   ) : (
                     <CheckCircle className="w-5 h-5 text-brand-kesari" />
                   )}

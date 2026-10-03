@@ -525,9 +525,21 @@ export const saveProfileViewToFirestore = async (viewEntry, notificationData = n
 export const saveNotificationToFirestore = async (notificationData) => {
   if (!isFirebaseConfigured || !notificationData) return true;
   try {
-    const docId = String(notificationData.id || Date.now());
+    let docId = String(notificationData.docId || notificationData.id || Date.now());
+
+    if (notificationData.type === 'message' && notificationData.messageId) {
+      docId = `msg_notif_${notificationData.messageId}`;
+      const notifRef = doc(db, NOTIFICATIONS_COLLECTION, docId);
+      const notifSnap = await getDoc(notifRef);
+      if (notifSnap.exists()) {
+        return false;
+      }
+    }
+
     await setDoc(doc(db, NOTIFICATIONS_COLLECTION, docId), {
       ...notificationData,
+      id: notificationData.id || docId,
+      docId: docId,
       createdAt: new Date().toISOString()
     }, { merge: true });
     return true;

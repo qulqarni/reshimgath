@@ -229,6 +229,16 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                                   onClick={() => {
                                     markNotificationRead(n.id);
                                     setShowNotifications(false);
+                                    if (n.type === 'message') {
+                                      const chatPartnerId = n.senderId || n.profileId || targetSlug;
+                                      if (chatPartnerId) {
+                                        try {
+                                          sessionStorage.setItem('reshimgath_target_chat', chatPartnerId);
+                                        } catch (e) {}
+                                      }
+                                      handleNav('/messages');
+                                      return;
+                                    }
                                     if ((isProfileVisit || isInterest) && targetSlug) {
                                       handleNav(`/profile/${targetSlug}`);
                                       return;
@@ -255,6 +265,8 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                                       <Eye className="w-4 h-4 text-blue-600" />
                                     ) : n.type === 'interest' || isInterest ? (
                                       <Heart className="w-4 h-4 text-brand-rose fill-brand-rose" />
+                                    ) : n.type === 'message' ? (
+                                      <MessageSquare className="w-4 h-4 text-emerald-600" />
                                     ) : (
                                       <CheckCircle className="w-4 h-4 text-brand-kesari" />
                                     )}

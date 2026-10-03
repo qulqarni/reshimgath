@@ -42,6 +42,7 @@ const normalizeVisitorTargetId = (id) => {
 const deduplicateViewNotifications = (notifsList) => {
   if (!Array.isArray(notifsList)) return [];
   const seenPairs = new Set();
+  const seenMsgIds = new Set();
   const result = [];
 
   for (const n of notifsList) {
@@ -53,6 +54,10 @@ const deduplicateViewNotifications = (notifsList) => {
       const key = `${vId}_${tId}`;
       if (key !== '_' && seenPairs.has(key)) continue;
       if (key !== '_') seenPairs.add(key);
+    } else if (n.type === 'message') {
+      const mId = String(n.messageId || n.id || '');
+      if (mId && seenMsgIds.has(mId)) continue;
+      if (mId) seenMsgIds.add(mId);
     }
     result.push(n);
   }
@@ -915,15 +920,19 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const sendMessage = useCallback((partnerProfileId, text) => {
-    if (!text.trim() || !user) return false;
+    if (!text || !text.trim() || !user) return false;
 
     const senderId = String(user.id);
     const targetId = String(partnerProfileId);
+    const cleanSenderId = senderId.toLowerCase().trim().replace(/^ss-/, '');
+    const cleanTargetId = targetId.toLowerCase().trim().replace(/^ss-/, '');
+
     const combinedKey = [senderId, targetId].sort().join('_');
     const now = new Date();
+    const msgId = Date.now();
 
     const newMsg = {
-      id: Date.now(),
+      id: msgId,
       senderId: senderId,
       sender: 'user',
       text: text.trim(),
@@ -945,23 +954,46 @@ export const ProfileProvider = ({ children }) => {
       };
     });
 
-    // Create notification document for message recipient to trigger in-app notification & Cloud Function FCM push notification
+    // Rule: Do NOT create message notification for self-messages
+    if (cleanSenderId === cleanTargetId || (user.email && user.email === partnerProfileId)) {
+      return true;
+    }
+
+    // Create privacy-safe notification document (NEVER includes message body/content)
     const senderName = user.name || 'A verified member';
-    const senderPhoto = user.photo || user.photos?.[0] || '';
+    const senderPhoto = user.photo || user.photos?.[0] || user.avatar || null;
+    const notifId = `msg_notif_${msgId}`;
+
     const messageNotif = {
-      id: Date.now(),
+      id: notifId,
+      docId: notifId,
+      messageId: msgId,
+      chatId: combinedKey,
+      conversationId: combinedKey,
       type: 'message',
       profileId: senderId,
       senderId: senderId,
+      visitor_user_id: senderId,
       targetUserId: targetId,
+      profile_owner_user_id: targetId,
       senderName: senderName,
       senderRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : null),
       senderAvatar: senderPhoto,
-      title: 'New Message 💬',
+      title: 'New Message',
       text: `${senderName} sent you a message.`,
       time: 'Just now',
       unread: true
     };
+
+    setNotifications((prev) => {
+      const exists = (prev || []).some((n) => {
+        if (!n || n.type !== 'message') return false;
+        return String(n.messageId || n.id) === String(msgId) || String(n.id) === notifId;
+      });
+      if (exists) return prev;
+      return [messageNotif, ...prev];
+    });
+
     saveNotificationToFirestore(messageNotif);
 
     return true;
