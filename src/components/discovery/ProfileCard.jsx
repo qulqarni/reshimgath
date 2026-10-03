@@ -51,36 +51,62 @@ export const ProfileCard = ({ profile, onSelect }) => {
     setCurrentPhotoIndex(prev => (prev + 1) % photosList.length);
   };
 
+  const matchesProfile = (testId) => {
+    if (!testId || !profile) return false;
+    const t = String(testId).toLowerCase().trim();
+    const pId = String(profile.id || '').toLowerCase().trim();
+    const pRegId = String(profile.regId || '').toLowerCase().trim();
+    const pRegistrationId = String(profile.registrationId || '').toLowerCase().trim();
+    const pSSId = pRegistrationId ? `ss-${pRegistrationId}` : '';
+    const cleanT = t.replace(/^ss-/, '');
+    const cleanPId = pId.replace(/^ss-/, '');
+
+    return t === pId || t === pRegId || t === pRegistrationId || t === pSSId || cleanT === cleanPId;
+  };
+
+  const matchesUser = (testId) => {
+    if (!testId || !user) return false;
+    const t = String(testId).toLowerCase().trim();
+    const uId = String(user.id || '').toLowerCase().trim();
+    const uRegId = String(user.regId || '').toLowerCase().trim();
+    const uRegistrationId = String(user.registrationId || '').toLowerCase().trim();
+    const uSSId = uRegistrationId ? `ss-${uRegistrationId}` : '';
+    const cleanT = t.replace(/^ss-/, '');
+    const cleanUId = uId.replace(/^ss-/, '');
+
+    return t === uId || t === uRegId || t === uRegistrationId || t === uSSId || cleanT === cleanUId;
+  };
+
   const isSent = Boolean(myId && targetId) && (interests.sent || []).some(s => {
     if (!s) return false;
-    if (typeof s === 'string') return String(s).toLowerCase() === targetId;
-    const sender = String(s.senderId || s.user1 || '').toLowerCase();
-    const target = String(s.profileId || s.targetUserId || s.user2 || '').toLowerCase();
-    return (sender === myId || !sender) && target === targetId;
+    if (typeof s === 'string') return matchesProfile(s);
+    const sender = s.senderId || s.user1;
+    const target = s.profileId || s.targetUserId || s.user2;
+    return (matchesUser(sender) || !sender) && matchesProfile(target);
   });
 
   const isReceived = Boolean(myId && targetId) && (interests.received || []).some(r => {
     if (!r) return false;
-    if (typeof r === 'string') return String(r).toLowerCase() === targetId;
-    const sender = String(r.senderId || r.user1 || '').toLowerCase();
-    const target = String(r.targetUserId || r.profileId || r.user2 || '').toLowerCase();
-    return (sender === targetId || !sender) && (target === myId || !target);
+    if (typeof r === 'string') return matchesProfile(r);
+    const sender = r.senderId || r.user1;
+    const target = r.targetUserId || r.profileId || r.user2;
+    return (matchesProfile(sender) || !sender) && (matchesUser(target) || !target);
   });
 
   const isAccepted = Boolean(myId && targetId) && (interests.accepted || []).some(a => {
     if (!a) return false;
-    if (typeof a === 'string') return String(a).toLowerCase() === targetId;
-    const u1 = String(a.user1 || a.senderId || '').toLowerCase();
-    const u2 = String(a.user2 || a.targetUserId || a.profileId || '').toLowerCase();
-    return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
+    if (typeof a === 'string') return matchesProfile(a);
+    const u1 = a.user1 || a.senderId;
+    const u2 = a.user2 || a.targetUserId || a.profileId;
+    return (matchesUser(u1) && matchesProfile(u2)) || (matchesUser(u2) && matchesProfile(u1));
   });
 
   const isDeclined = Boolean(myId && targetId) && (interests.declined || []).some(d => {
     if (!d) return false;
-    if (typeof d === 'string') return String(d).toLowerCase() === targetId;
-    const u1 = String(d.user1 || d.senderId || '').toLowerCase();
-    const u2 = String(d.user2 || d.targetUserId || d.profileId || '').toLowerCase();
-    return (u1 === myId && u2 === targetId) || (u1 === targetId && u2 === myId);
+    if (typeof d === 'string') return matchesProfile(d);
+    const u1 = d.user1 || d.senderId;
+    const u2 = d.user2 || d.targetUserId || d.profileId;
+    return (matchesUser(u1) && matchesProfile(u2)) || (matchesUser(u2) && matchesProfile(u1));
   });
 
   const isShortlisted = (interests.shortlisted || []).includes(profile.id);
