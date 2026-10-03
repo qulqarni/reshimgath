@@ -798,6 +798,25 @@ export const ProfileProvider = ({ children }) => {
       };
     });
 
+    // Create notification document for message recipient to trigger in-app notification & Cloud Function FCM push notification
+    const senderName = user.name || 'A verified member';
+    const senderPhoto = user.photo || user.photos?.[0] || '';
+    const messageNotif = {
+      id: Date.now(),
+      type: 'message',
+      profileId: senderId,
+      senderId: senderId,
+      targetUserId: targetId,
+      senderName: senderName,
+      senderRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : null),
+      senderAvatar: senderPhoto,
+      title: 'New Message 💬',
+      text: `${senderName} sent you a message.`,
+      time: 'Just now',
+      unread: true
+    };
+    saveNotificationToFirestore(messageNotif);
+
     return true;
   }, [user]);
 
