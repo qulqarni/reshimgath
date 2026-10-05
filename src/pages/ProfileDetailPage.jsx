@@ -42,7 +42,7 @@ import {
   Copy
 } from 'lucide-react';
 
-const HeroHeaderCard = ({ profile, hasValue }) => (
+const HeroHeaderCard = ({ profile, hasValue, isContactUnlocked, onUnlockClick }) => (
   <div className="bg-white p-5 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-5 w-full max-w-full overflow-hidden">
     {/* Candidate Name & Tagline */}
     <div className="space-y-1 min-w-0">
@@ -56,13 +56,25 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
         </span>
       </div>
 
-      <p className="text-xs sm:text-sm font-semibold text-brand-gray leading-relaxed">
+      <div className="flex items-center flex-wrap gap-1.5 text-xs sm:text-sm font-semibold text-brand-gray leading-relaxed pt-0.5">
         {hasValue(profile.age) && <span className="text-brand-plum font-bold">{profile.age} Years</span>}
         {hasValue(profile.age) && hasValue(profile.height) && <span> • </span>}
         {hasValue(profile.height) && <span>{profile.height}</span>}
-        {(hasValue(profile.age) || hasValue(profile.height)) && hasValue(profile.district) && <span> • </span>}
-        {hasValue(profile.district) && <span>{profile.district}</span>}
-      </p>
+        {(hasValue(profile.age) || hasValue(profile.height)) && <span> • </span>}
+        {isContactUnlocked ? (
+          <span className="text-brand-plum font-bold">{profile.district || 'Maharashtra'}</span>
+        ) : (
+          <button
+            type="button"
+            onClick={onUnlockClick}
+            className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs"
+            title="Location is hidden. Click to unlock with credit."
+          >
+            <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+            <span>Location Locked (क्रेडिट वापरा)</span>
+          </button>
+        )}
+      </div>
     </div>
 
     {/* About Me Box (If present) */}
@@ -91,12 +103,22 @@ const HeroHeaderCard = ({ profile, hasValue }) => (
           <p className="font-bold text-xs text-brand-plum truncate">{profile.height}</p>
         </div>
       )}
-      {hasValue(profile.district) && (
-        <div className="space-y-0.5 min-w-0">
-          <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Location</span>
-          <p className="font-bold text-xs text-brand-plum truncate">{profile.district}</p>
-        </div>
-      )}
+      <div className="space-y-0.5 min-w-0 flex flex-col justify-center items-center">
+        <span className="text-[10px] text-amber-900/70 font-semibold block uppercase truncate">Location</span>
+        {isContactUnlocked ? (
+          <p className="font-bold text-xs text-brand-plum truncate">{profile.district || 'Maharashtra'}</p>
+        ) : (
+          <button
+            type="button"
+            onClick={onUnlockClick}
+            className="inline-flex items-center justify-center space-x-1 text-amber-800 hover:text-amber-900 font-bold text-xs py-0.5 transition-colors cursor-pointer"
+            title="Location is hidden. Click to unlock with credit."
+          >
+            <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+            <span className="truncate text-[11px] underline">Locked (क्रेडिट)</span>
+          </button>
+        )}
+      </div>
     </div>
   </div>
 );
@@ -385,6 +407,35 @@ const ContactDetailsModal = ({ isOpen, onClose, profile, onCopy, copiedField }) 
               <Mail className="w-3.5 h-3.5" />
               <span>Send Email</span>
             </a>
+          </div>
+
+          {/* Location & Address section */}
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-brand-gray uppercase tracking-wider block">
+              Location & Residential Address (पत्ता व मूळ गाव)
+            </label>
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2">
+              <div className="flex items-start space-x-2.5">
+                <MapPin className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-1 text-xs">
+                  {(profile.address || profile.fullAddress || profile.residentialAddress) && (
+                    <p className="font-bold text-brand-plum leading-snug">
+                      {profile.address || profile.fullAddress || profile.residentialAddress}
+                    </p>
+                  )}
+                  <p className="text-brand-charcoal font-medium">
+                    <span className="font-semibold text-brand-plum">District / City: </span>
+                    {profile.district || profile.city || 'Maharashtra'}
+                  </p>
+                  {profile.nativePlace && (
+                    <p className="text-brand-charcoal font-medium">
+                      <span className="font-semibold text-brand-plum">Native Place (मूळ गाव): </span>
+                      {profile.nativePlace}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Security note */}
@@ -716,9 +767,21 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                 <span className="text-brand-gray font-medium shrink-0">मातृभाषा:</span>
                 <span className="font-bold text-brand-plum text-right truncate">{profile.motherTongue || '-'}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-gray-100 gap-2">
+              <div className="flex justify-between py-1 border-b border-gray-100 gap-2 items-center">
                 <span className="text-brand-gray font-medium shrink-0">मूळ गाव (Native Place):</span>
-                <span className="font-bold text-brand-plum text-right truncate">{profile.nativePlace || '-'}</span>
+                {isContactUnlocked ? (
+                  <span className="font-bold text-brand-plum text-right truncate">{profile.nativePlace || '-'}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlockContactClick('contact')}
+                    className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs"
+                    title="Location is hidden. Click to unlock with credit."
+                  >
+                    <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>Locked (क्रेडिट वापरा)</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -751,9 +814,21 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   <span className="font-bold text-brand-plum text-right truncate">{profile.income}</span>
                 </div>
               )}
-              <div className="flex justify-between py-1 border-b border-gray-100 gap-2">
+              <div className="flex justify-between py-1 border-b border-gray-100 gap-2 items-center">
                 <span className="text-brand-gray font-medium shrink-0">नोकरीचे शहर / जिल्हा:</span>
-                <span className="font-bold text-brand-plum text-right truncate">{profile.district || 'महाराष्ट्र'}</span>
+                {isContactUnlocked ? (
+                  <span className="font-bold text-brand-plum text-right truncate">{profile.district || 'महाराष्ट्र'}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlockContactClick('contact')}
+                    className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs"
+                    title="Location is hidden. Click to unlock with credit."
+                  >
+                    <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>Locked (क्रेडिट वापरा)</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -887,9 +962,21 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
 
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-brand-lightBg/50 border border-gray-100">
                 <span className="text-brand-gray font-medium">Native Location:</span>
-                <span className="font-bold text-brand-plum truncate">
-                  {profile.nativePlace || profile.district || 'Maharashtra'}
-                </span>
+                {isContactUnlocked ? (
+                  <span className="font-bold text-brand-plum truncate">
+                    {profile.nativePlace || profile.district || 'Maharashtra'}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlockContactClick('contact')}
+                    className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs"
+                    title="Location is hidden. Click to unlock with credit."
+                  >
+                    <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>Locked (क्रेडिट वापरा)</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -909,7 +996,12 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           
           {/* Hero Header Card (Desktop Only: Rendered at top of main column) */}
           <div className="hidden lg:block w-full max-w-full overflow-hidden">
-            <HeroHeaderCard profile={profile} hasValue={hasValue} />
+            <HeroHeaderCard 
+              profile={profile} 
+              hasValue={hasValue} 
+              isContactUnlocked={isContactUnlocked}
+              onUnlockClick={() => handleUnlockContactClick('contact')}
+            />
           </div>
 
 
@@ -989,14 +1081,26 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   </div>
                 )}
 
-                {hasValue(profile.nativePlace) && (
+                {(hasValue(profile.nativePlace) || !isContactUnlocked) && (
                   <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
                     <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
                       <MapPin className="w-4 h-4 text-brand-kesari" />
                     </div>
                     <div>
                       <span className="text-[10px] text-brand-gray font-medium block">Native Place (मूळ गाव)</span>
-                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.nativePlace}</p>
+                      {isContactUnlocked ? (
+                        <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.nativePlace || 'Not specified'}</p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleUnlockContactClick('contact')}
+                          className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs mt-0.5"
+                          title="Location is hidden. Click to unlock with credit."
+                        >
+                          <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span>Locked (क्रेडिट वापरा)</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1089,14 +1193,26 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   </div>
                 )}
 
-                {hasValue(profile.district) && (
+                {(hasValue(profile.district) || !isContactUnlocked) && (
                   <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
                     <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
                       <MapPin className="w-4 h-4 text-brand-kesari" />
                     </div>
                     <div>
                       <span className="text-[10px] text-brand-gray font-medium block">Work Location</span>
-                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district}</p>
+                      {isContactUnlocked ? (
+                        <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district || 'Not specified'}</p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleUnlockContactClick('contact')}
+                          className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs mt-0.5"
+                          title="Location is hidden. Click to unlock with credit."
+                        >
+                          <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span>Locked (क्रेडिट वापरा)</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

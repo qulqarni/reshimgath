@@ -76,7 +76,7 @@ export const UnlockConfirmationModal = ({
               {profile.name}
             </h3>
             <p className="text-xs font-semibold text-brand-gray mt-0.5">
-              Profile No. {profile.registrationId || (profile.regId ? String(profile.regId).replace(/^SS-?/i, '') : '1001')} • {profile.district || 'Maharashtra'}
+              Profile No. {profile.registrationId || (profile.regId ? String(profile.regId).replace(/^SS-?/i, '') : '1001')} • <span className="inline-flex items-center text-amber-700 font-bold">🔒 Location Locked</span>
             </p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export const UnlockConfirmationModal = ({
           </div>
 
           <p className="text-xs text-brand-charcoal leading-relaxed pt-1">
-            Do you want to unlock <strong className="text-brand-plum">{profile.name}</strong>? Using 1 credit will instantly unlock <strong>Messaging</strong>, <strong>Contact Details</strong>, and <strong>Full Biodata</strong> for BOTH of you.
+            Do you want to unlock <strong className="text-brand-plum">{profile.name}</strong>? Using 1 credit will instantly unlock <strong>Location & Address</strong>, <strong>Contact Details</strong>, <strong>Messaging</strong>, and <strong>Full Biodata</strong> for BOTH of you.
           </p>
           
           <div className="text-[11px] text-emerald-800 font-medium flex items-center space-x-1.5 pt-1 bg-emerald-50/90 border border-emerald-200 p-2 rounded-xl text-left">
@@ -111,7 +111,7 @@ export const UnlockConfirmationModal = ({
             className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center justify-center space-x-2 border border-emerald-400/40"
           >
             <UserCheck className="w-4 h-4 text-brand-gold" />
-            <span>Use 1 Credit (Unlocks Message, Contact Details & Biodata)</span>
+            <span>Use 1 Credit (Unlocks Location, Contact Details & Biodata)</span>
           </button>
 
           <button
