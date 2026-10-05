@@ -10,6 +10,8 @@ import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUN
 import { compressImage } from '../utils/imageCompressor';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase, optimizeAndCompressExistingProfileMedia } from '../services/firebaseService';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -1117,6 +1119,128 @@ export const AdminPage = ({ onNavigate }) => {
     }
   };
 
+  // Export to PDF handler (.pdf)
+  const handleExportToPdf = () => {
+    if (!filteredExportProfiles || filteredExportProfiles.length === 0) {
+      alert('No profiles match the selected filters to export.');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'pt',
+        format: 'a4'
+      });
+
+      const totalProfiles = filteredExportProfiles.length;
+      const dateStr = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+
+      // Top Header Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(74, 21, 56); // #4a1538 Brand Plum
+      doc.text('Sambodhi Sarang Marriage Bureau (इचलकरंजी)', 40, 36);
+
+      // Subtitle & Filter summary
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(90, 90, 90);
+      doc.text(`Official Member Directory Export  |  Date: ${dateStr}  |  Total Records: ${totalProfiles} Profiles`, 40, 52);
+
+      const filterDesc = `Filters: Gender: ${exportGenderFilter.toUpperCase()} | Caste: ${exportCasteFilter === 'custom' ? (exportCasteQuery || 'Custom') : exportCasteFilter.toUpperCase()} | Age Range: ${exportMinAge} - ${exportMaxAge} yrs`;
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(filterDesc, 40, 64);
+
+      // Table Header and Rows
+      const head = [['ID', 'Gender', 'Full Name', 'District / City', 'Education', 'Occupation', 'Age', 'Contact Number']];
+
+      const rows = filteredExportProfiles.map((p) => {
+        const rawId = String(p.registrationId || p.regId || p.id || '');
+        const formattedId = rawId.replace(/^SS-?/i, '');
+        const genderRaw = p.gender ? (p.gender.charAt(0).toUpperCase() + p.gender.slice(1).toLowerCase()) : 'N/A';
+        const formattedName = p.name || p.nameMr || 'N/A';
+        const formattedCity = p.city || p.district || p.nativePlace || p.location || p.address || 'N/A';
+        const formattedEducation = p.education || p.degree || p.qualification || 'N/A';
+        const formattedJob = p.occupation || p.job || p.designation || p.company || 'N/A';
+        const parsedAge = getAgeNum(p);
+        const formattedAge = parsedAge !== null ? String(parsedAge) : (p.age ? String(p.age) : 'N/A');
+        const formattedContact = p.phone || p.contactNumber || p.mobile || p.contact || 'N/A';
+
+        return [
+          `SS-${formattedId}`,
+          genderRaw,
+          formattedName,
+          formattedCity,
+          formattedEducation,
+          formattedJob,
+          formattedAge,
+          formattedContact
+        ];
+      });
+
+      autoTable(doc, {
+        head: head,
+        body: rows,
+        startY: 74,
+        margin: { top: 74, left: 40, right: 40, bottom: 30 },
+        theme: 'grid',
+        styles: {
+          font: 'helvetica',
+          fontSize: 8,
+          cellPadding: 4,
+          overflow: 'linebreak',
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: [74, 21, 56], // Brand Plum
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 8.5
+        },
+        alternateRowStyles: {
+          fillColor: [252, 247, 249]
+        },
+        columnStyles: {
+          0: { cellWidth: 55 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 120 },
+          3: { cellWidth: 100 },
+          4: { cellWidth: 110 },
+          5: { cellWidth: 110 },
+          6: { cellWidth: 35, halign: 'center' },
+          7: { cellWidth: 95 }
+        },
+        didDrawPage: (data) => {
+          const totalPages = doc.internal.getNumberOfPages();
+          const pageSize = doc.internal.pageSize;
+          const pageHeight = pageSize.height || pageSize.getHeight();
+          const pageWidth = pageSize.width || pageSize.getWidth();
+
+          doc.setFontSize(8);
+          doc.setTextColor(140, 140, 140);
+          doc.text(`Page ${data.pageNumber} of ${totalPages}`, data.settings.margin.left, pageHeight - 12);
+          doc.text('Sambodhi Sarang Matrimony (Ichalkaranji) - Confidential Admin Export', pageWidth - 260, pageHeight - 12);
+        }
+      });
+
+      const fileName = `Sambodhi_Sarang_Profiles_${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+
+      if (addToast) {
+        addToast(`Exported ${filteredExportProfiles.length} profiles to PDF (${fileName})`, 'success');
+      }
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
@@ -2153,26 +2277,44 @@ export const AdminPage = ({ onNavigate }) => {
                 <span>Admin Data Export Utility</span>
               </div>
               <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                Profile Filter & Excel Export (माहिती एक्सपोर्ट करा)
+                Profile Filter, Excel & PDF Export (माहिती एक्सपोर्ट करा)
               </h2>
               <p className="text-xs text-emerald-100 max-w-2xl">
-                Filter registered profiles by Caste, Gender, and Age range (18 to 60). Export the filtered dataset directly into Microsoft Excel (.xlsx / .csv format).
+                Filter registered profiles by Caste, Gender, and Age range (18 to 60). Export the filtered dataset directly into Microsoft Excel (.csv) or formatted PDF document (.pdf).
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleExportToExcel}
-              disabled={filteredExportProfiles.length === 0}
-              className={`px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center space-x-2.5 shadow-lg border transition-all shrink-0 ${
-                filteredExportProfiles.length > 0
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-400/40 hover:scale-105 cursor-pointer'
-                  : 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed'
-              }`}
-            >
-              <Download className="w-4 h-4 text-white stroke-[2.5]" />
-              <span>Download Excel Sheet ({filteredExportProfiles.length} Members)</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={handleExportToExcel}
+                disabled={filteredExportProfiles.length === 0}
+                className={`px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg border transition-all ${
+                  filteredExportProfiles.length > 0
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-400/40 hover:scale-105 cursor-pointer'
+                    : 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed'
+                }`}
+                title="Download filtered profiles as Microsoft Excel sheet (.csv)"
+              >
+                <Download className="w-4 h-4 text-white stroke-[2.5]" />
+                <span>Download Excel Sheet ({filteredExportProfiles.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportToPdf}
+                disabled={filteredExportProfiles.length === 0}
+                className={`px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg border transition-all ${
+                  filteredExportProfiles.length > 0
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-400/40 hover:scale-105 cursor-pointer'
+                    : 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed'
+                }`}
+                title="Download filtered profiles as formatted PDF document (.pdf)"
+              >
+                <FileText className="w-4 h-4 text-white stroke-[2.5]" />
+                <span>Download PDF Document ({filteredExportProfiles.length})</span>
+              </button>
+            </div>
           </div>
 
           {/* Filter Controls Card */}
@@ -2311,25 +2453,39 @@ export const AdminPage = ({ onNavigate }) => {
 
           {/* Filtered Data Preview Table */}
           <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-brand-lightBg/30">
+            <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-lightBg/30">
               <div>
                 <h3 className="font-serif font-bold text-base sm:text-lg text-brand-plum">
-                  Filtered Data Preview (एक्सेल डेटा पूर्वावलोकन)
+                  Filtered Data Preview (डेटा पूर्वावलोकन)
                 </h3>
                 <p className="text-[11px] text-brand-gray">
                   Data to be exported: ID, Gender, Name, City, Education, Job, Age, Contact Number
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleExportToExcel}
-                disabled={filteredExportProfiles.length === 0}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 shadow-sm shrink-0"
-              >
-                <Download className="w-3.5 h-3.5 text-white" />
-                <span>Download Excel</span>
-              </button>
+              <div className="flex items-center space-x-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportToExcel}
+                  disabled={filteredExportProfiles.length === 0}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 shadow-sm"
+                  title="Download Excel Sheet (.csv)"
+                >
+                  <Download className="w-3.5 h-3.5 text-white" />
+                  <span>Download Excel</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportToPdf}
+                  disabled={filteredExportProfiles.length === 0}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 shadow-sm"
+                  title="Download PDF Document (.pdf)"
+                >
+                  <FileText className="w-3.5 h-3.5 text-white" />
+                  <span>Download PDF</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
