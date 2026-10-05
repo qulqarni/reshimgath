@@ -1144,7 +1144,7 @@ export const AdminPage = ({ onNavigate }) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
       doc.setTextColor(74, 21, 56); // #4a1538 Brand Plum
-      doc.text('Sambodhi Sarang Marriage Bureau (इचलकरंजी)', 40, 36);
+      doc.text('Sambodhi Sarang Marriage Bureau (Ichalkaranji)', 40, 36);
 
       // Subtitle & Filter summary
       doc.setFont('helvetica', 'normal');
