@@ -6,7 +6,7 @@ import { VerificationBadge } from '../common/VerificationBadge';
 import { WatermarkOverlay } from '../common/WatermarkOverlay';
 import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler, Eye, ChevronLeft, ChevronRight, Crown, Lock } from 'lucide-react';
 
-export const ProfileCard = ({ profile, onSelect }) => {
+export const ProfileCard = ({ profile, onSelect, priority = false }) => {
   const { user, isAuthenticated, hasActiveSubscription, canViewProfile, triggerPrivacyAlert } = useAuth();
   const { interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, openSubscriptionModal } = useProfiles();
   const { t } = useLanguage();
@@ -28,27 +28,25 @@ export const ProfileCard = ({ profile, onSelect }) => {
   }, [profile?.avatar, profile?.photos]);
 
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-
-  // Preload all candidate photos immediately so sliding is instantaneous with zero delay
-  useEffect(() => {
-    if (photosList.length > 1) {
-      photosList.forEach((url) => {
-        if (url && typeof url === 'string' && url !== '/default-avatar.png') {
-          const img = new Image();
-          img.src = url;
-        }
-      });
-    }
-  }, [photosList]);
+  const [loadedPhotoIndices, setLoadedPhotoIndices] = useState(() => [0]);
+  const [imagesLoadedMap, setImagesLoadedMap] = useState({});
 
   const handlePrevPhoto = (e) => {
     e.stopPropagation();
-    setCurrentPhotoIndex(prev => (prev - 1 + photosList.length) % photosList.length);
+    setCurrentPhotoIndex(prev => {
+      const nextIdx = (prev - 1 + photosList.length) % photosList.length;
+      setLoadedPhotoIndices(current => current.includes(nextIdx) ? current : [...current, nextIdx]);
+      return nextIdx;
+    });
   };
 
   const handleNextPhoto = (e) => {
     e.stopPropagation();
-    setCurrentPhotoIndex(prev => (prev + 1) % photosList.length);
+    setCurrentPhotoIndex(prev => {
+      const nextIdx = (prev + 1) % photosList.length;
+      setLoadedPhotoIndices(current => current.includes(nextIdx) ? current : [...current, nextIdx]);
+      return nextIdx;
+    });
   };
 
   const matchesProfile = (testId) => {
@@ -168,19 +166,39 @@ export const ProfileCard = ({ profile, onSelect }) => {
     >
       {/* Top Image Container with Slideshow */}
       <div className="relative h-96 sm:h-[420px] w-full overflow-hidden bg-brand-lightBg">
-        {photosList.map((photo, idx) => (
-          <img
-            key={photo || idx}
-            src={photo}
-            alt={`${profile.name} ${idx + 1}`}
-            loading={idx === 0 ? "eager" : "lazy"}
-            fetchPriority={idx === 0 ? "high" : "auto"}
-            decoding="async"
-            className={`absolute inset-0 w-full h-full object-cover object-[center_top] transition-opacity duration-150 ease-out ${
-              idx === currentPhotoIndex ? 'opacity-100 z-[1]' : 'opacity-0 pointer-events-none z-0'
-            }`}
-          />
-        ))}
+        {/* Shimmer Placeholder while current active image is loading */}
+        {!imagesLoadedMap[currentPhotoIndex] && (
+          <div className="absolute inset-0 bg-slate-100 flex items-center justify-center animate-pulse z-[2]">
+            <div className="w-16 h-16 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-400">
+              <User className="w-8 h-8 opacity-50" />
+            </div>
+          </div>
+        )}
+
+        {photosList.map((photo, idx) => {
+          if (!loadedPhotoIndices.includes(idx)) return null;
+          const isCurrent = idx === currentPhotoIndex;
+          const isLoaded = Boolean(imagesLoadedMap[idx]);
+
+          return (
+            <img
+              key={photo || idx}
+              src={photo}
+              alt={`${profile.name} ${idx + 1}`}
+              loading={priority && idx === 0 ? "eager" : "lazy"}
+              fetchPriority={priority && idx === 0 ? "high" : "low"}
+              decoding="async"
+              onLoad={() => setImagesLoadedMap(prev => ({ ...prev, [idx]: true }))}
+              onError={(e) => {
+                setImagesLoadedMap(prev => ({ ...prev, [idx]: true }));
+                e.currentTarget.src = '/default-avatar.png';
+              }}
+              className={`absolute inset-0 w-full h-full object-cover object-[center_top] transition-opacity duration-300 ease-out ${
+                isCurrent && isLoaded ? 'opacity-100 z-[1]' : 'opacity-0 pointer-events-none z-0'
+              }`}
+            />
+          );
+        })}
 
         {/* Centered Watermark Logo */}
         <WatermarkOverlay size="medium" />
@@ -213,6 +231,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
                   key={idx}
                   onClick={(e) => {
                     e.stopPropagation();
+                    setLoadedPhotoIndices(current => current.includes(idx) ? current : [...current, idx]);
                     setCurrentPhotoIndex(idx);
                   }}
                   className={`h-1.5 rounded-full transition-all ${

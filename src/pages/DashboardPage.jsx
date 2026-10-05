@@ -216,10 +216,11 @@ export const DashboardPage = ({ onNavigate }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {recommendedMatches.map((profile) => (
+          {recommendedMatches.map((profile, idx) => (
             <ProfileCard
               key={profile.id}
               profile={profile}
+              priority={idx < 3}
               onSelect={(id, action) => {
                 if (action === 'chat') {
                   onNavigate('/messages');

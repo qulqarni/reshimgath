@@ -40,17 +40,8 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
     validPhotos.push('/default-avatar.png');
   }
 
-  // Preload all candidate photos immediately so switching is instantaneous
-  useEffect(() => {
-    if (validPhotos.length > 1) {
-      validPhotos.forEach((url) => {
-        if (url && typeof url === 'string' && url !== '/default-avatar.png') {
-          const img = new Image();
-          img.src = url;
-        }
-      });
-    }
-  }, [validPhotos]);
+  const [loadedIndices, setLoadedIndices] = useState(() => [0]);
+  const [imagesLoadedMap, setImagesLoadedMap] = useState({});
 
   const currentPhoto = validPhotos[activeIndex] || validPhotos[0];
 
@@ -58,19 +49,39 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
     <div className="space-y-4">
       {/* Main Feature Photo */}
       <div className="relative h-96 sm:h-[480px] w-full rounded-3xl overflow-hidden bg-brand-charcoal group shadow-luxury">
-        {validPhotos.map((img, idx) => (
-          <img
-            key={img || idx}
-            src={img}
-            alt={`${name} photo ${idx + 1}`}
-            loading={idx === 0 ? "eager" : "lazy"}
-            fetchPriority={idx === 0 ? "high" : "auto"}
-            decoding="async"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ease-out ${
-              idx === activeIndex ? 'opacity-100 z-[1]' : 'opacity-0 pointer-events-none z-0'
-            }`}
-          />
-        ))}
+        {/* Shimmer Placeholder while current active image is loading */}
+        {!imagesLoadedMap[activeIndex] && (
+          <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center animate-pulse z-[2]">
+            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-white/50">
+              <Camera className="w-8 h-8 opacity-60" />
+            </div>
+          </div>
+        )}
+
+        {validPhotos.map((img, idx) => {
+          if (!loadedIndices.includes(idx)) return null;
+          const isCurrent = idx === activeIndex;
+          const isLoaded = Boolean(imagesLoadedMap[idx]);
+
+          return (
+            <img
+              key={img || idx}
+              src={img}
+              alt={`${name} photo ${idx + 1}`}
+              loading={idx === 0 ? "eager" : "lazy"}
+              fetchPriority={idx === 0 ? "high" : "low"}
+              decoding="async"
+              onLoad={() => setImagesLoadedMap(prev => ({ ...prev, [idx]: true }))}
+              onError={(e) => {
+                setImagesLoadedMap(prev => ({ ...prev, [idx]: true }));
+                e.currentTarget.src = '/default-avatar.png';
+              }}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ease-out ${
+                isCurrent && isLoaded ? 'opacity-100 z-[1]' : 'opacity-0 pointer-events-none z-0'
+              }`}
+            />
+          );
+        })}
 
         <WatermarkOverlay size="medium" />
 
@@ -95,14 +106,23 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
           {validPhotos.map((img, idx) => (
             <button
               key={idx}
-              onClick={() => setActiveIndex(idx)}
+              onClick={() => {
+                setLoadedIndices(current => current.includes(idx) ? current : [...current, idx]);
+                setActiveIndex(idx);
+              }}
               className={`relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all ${
                 activeIndex === idx
                   ? 'border-brand-plum ring-2 ring-brand-gold shadow-md scale-105'
                   : 'border-transparent opacity-70 hover:opacity-100'
               }`}
             >
-              <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+              <img
+                src={img}
+                alt={`Thumb ${idx + 1}`}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
               <WatermarkOverlay size="small" />
             </button>
           ))}

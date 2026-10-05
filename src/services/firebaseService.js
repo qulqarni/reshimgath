@@ -873,3 +873,85 @@ export const migrateExistingProfilesToFirebaseStorage = async (profilesList = []
 
   return { updatedProfiles, migratedCount: totalMigratedFiles };
 };
+
+/**
+ * Scans all existing profiles in Firestore and compresses existing uncompressed photos
+ * Fetches the photo, runs it through compressImageToFile, uploads compressed file, and saves to Firestore.
+ * @param {Array} profilesList - List of profiles to check
+ * @param {Function} onProgress - Callback (curr, total, name)
+ * @returns {Promise<{ updatedCount: number, errorCount: number }>}
+ */
+export const optimizeAndCompressExistingProfileMedia = async (profilesList = [], onProgress = null) => {
+  if (!isFirebaseConfigured || !Array.isArray(profilesList) || profilesList.length === 0) {
+    return { updatedCount: 0, errorCount: 0 };
+  }
+
+  let updatedCount = 0;
+  let errorCount = 0;
+
+  for (let i = 0; i < profilesList.length; i++) {
+    const profile = { ...profilesList[i] };
+    const pId = profile.id || profile.regId || `profile_${i + 1}`;
+    let profileModified = false;
+
+    if (onProgress) {
+      onProgress(i + 1, profilesList.length, profile.name || `Profile ${pId}`);
+    }
+
+    // 1. Optimize Avatar if present and large
+    if (profile.avatar && typeof profile.avatar === 'string' && profile.avatar.startsWith('http') && !profile.avatar.includes('_compressed_')) {
+      try {
+        const file = await urlOrBase64ToFile(profile.avatar, `avatar_${pId}.jpg`);
+        if (file && file.size > 200 * 1024) {
+          const compressed = await compressImageToFile(file, { maxWidth: 800, maxHeight: 800, quality: 0.82 });
+          const newUrl = await uploadFileToFirebaseStorage(compressed, `avatars/${pId}/${Date.now()}_compressed_avatar.jpg`, 'image/jpeg');
+          profile.avatar = newUrl;
+          profileModified = true;
+          updatedCount++;
+        }
+      } catch (err) {
+        console.warn(`Could not optimize avatar for ${pId}:`, err);
+        errorCount++;
+      }
+    }
+
+    // 2. Optimize Gallery Photos if large
+    if (Array.isArray(profile.photos) && profile.photos.length > 0) {
+      const newPhotos = [];
+      for (let j = 0; j < profile.photos.length; j++) {
+        const photoUrl = typeof profile.photos[j] === 'string' ? profile.photos[j] : profile.photos[j]?.url;
+        if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http') && !photoUrl.includes('_compressed_')) {
+          try {
+            const file = await urlOrBase64ToFile(photoUrl, `photo_${pId}_${j + 1}.jpg`);
+            if (file && file.size > 250 * 1024) {
+              const compressed = await compressImageToFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.82 });
+              const newUrl = await uploadFileToFirebaseStorage(compressed, `photos/${pId}/${Date.now()}_compressed_photo_${j + 1}.jpg`, 'image/jpeg');
+              newPhotos.push(newUrl);
+              profileModified = true;
+              updatedCount++;
+            } else {
+              newPhotos.push(photoUrl);
+            }
+          } catch (err) {
+            console.warn(`Could not optimize gallery photo for ${pId}:`, err);
+            newPhotos.push(photoUrl);
+            errorCount++;
+          }
+        } else if (photoUrl) {
+          newPhotos.push(photoUrl);
+        }
+      }
+      profile.photos = newPhotos;
+    }
+
+    if (profileModified) {
+      try {
+        await saveProfileToFirestore(profile.id || String(pId), profile);
+      } catch (saveErr) {
+        console.error(`Failed to save updated profile ${pId} to Firestore:`, saveErr);
+      }
+    }
+  }
+
+  return { updatedCount, errorCount };
+};

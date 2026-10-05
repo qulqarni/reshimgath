@@ -9,7 +9,7 @@ import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
-import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase } from '../services/firebaseService';
+import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase, optimizeAndCompressExistingProfileMedia } from '../services/firebaseService';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -175,6 +175,34 @@ export const AdminPage = ({ onNavigate }) => {
     if (window.confirm('Reset all subscription plan rates to original default values?')) {
       setEditablePlans(SUBSCRIPTION_PLANS);
       updateSubscriptionPlans(SUBSCRIPTION_PLANS);
+    }
+  };
+
+  // Photo Optimization State
+  const [isOptimizingPhotos, setIsOptimizingPhotos] = useState(false);
+  const [optimizingProgress, setOptimizingProgress] = useState('');
+
+  const handleOptimizeAllPhotos = async () => {
+    if (!window.confirm('Optimize & compress all existing candidate photos? This scans profiles in Firestore and compresses large photos down to ~100KB for lightning-fast loading.')) {
+      return;
+    }
+
+    setIsOptimizingPhotos(true);
+    setOptimizingProgress('Starting...');
+    addToast('Starting candidate photo optimization...', 'info');
+
+    try {
+      const res = await optimizeAndCompressExistingProfileMedia(profiles, (curr, total, name) => {
+        setOptimizingProgress(`${curr}/${total}`);
+      });
+      addToast(`Optimization finished! ${res.updatedCount} photos compressed.`, 'success');
+      alert(`Optimization complete! ${res.updatedCount} photos were compressed and updated.`);
+    } catch (err) {
+      console.error('Optimization error:', err);
+      addToast('Error during optimization: ' + err.message, 'error');
+    } finally {
+      setIsOptimizingPhotos(false);
+      setOptimizingProgress('');
     }
   };
 
@@ -1312,7 +1340,17 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
 
               {/* Status Badge, Reset & Create Button */}
-              <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center space-x-2.5 w-full sm:w-auto justify-between sm:justify-end flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleOptimizeAllPhotos}
+                  disabled={isOptimizingPhotos}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-1.5 shrink-0 disabled:opacity-60"
+                  title="Scan & compress all existing profile photos in database to ~100KB for lightning-fast loading"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{isOptimizingPhotos ? (optimizingProgress ? `Compressing (${optimizingProgress})` : 'Compressing...') : '⚡ Compress All Photos'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}

@@ -574,10 +574,11 @@ export const DiscoverPage = ({ onNavigate }) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProfiles.map((profile) => (
+            {filteredProfiles.map((profile, idx) => (
               <ProfileCard
                 key={profile.id}
                 profile={profile}
+                priority={idx < 4}
                 onSelect={(id, action) => {
                   if (action === 'chat') {
                     onNavigate('/messages');
