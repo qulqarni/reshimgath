@@ -18,6 +18,7 @@ import {
   getDownloadURL, 
   deleteObject 
 } from 'firebase/storage';
+import { compressImageToFile, compressBiodataImageToFile } from '../utils/imageCompressor';
 
 // Collection Constants
 const PROFILES_COLLECTION = 'profiles';
@@ -128,45 +129,88 @@ export const uploadFileToFirebaseStorage = async (file, storagePath, customConte
  * @returns {Promise<string>} - Public Download URL of the uploaded file
  */
 export const uploadBiodataPdfToFirebase = async (file, userId = 'guest') => {
-  const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  let fileToUpload = file;
+  const isPdf = file.type === 'application/pdf' || (file.name && file.name.toLowerCase().endsWith('.pdf'));
+
+  // If biodata is an image (JPG/PNG/WEBP), compress with high resolution so fine text remains sharp
+  if (!isPdf && file && (file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(file.name || ''))) {
+    try {
+      fileToUpload = await compressBiodataImageToFile(file);
+    } catch (compressErr) {
+      console.warn('Biodata image compression fallback:', compressErr);
+    }
+  }
+
+  const cleanName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'biodata';
   const fileName = `${Date.now()}_${cleanName}`;
   const storagePath = `biodatas/${userId}/${fileName}`;
-  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-  const contentType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
+  const contentType = isPdf ? 'application/pdf' : (fileToUpload.type || 'image/jpeg');
 
-  return await uploadFileToFirebaseStorage(file, storagePath, contentType);
+  return await uploadFileToFirebaseStorage(fileToUpload, storagePath, contentType);
 };
 
 /**
  * Upload a Member Profile Photo or Gallery Image to Firebase Storage
  * Store location: {folder}/{userId}/{timestamp}_{fileName}
+ * Automatically compresses raw photos to lightweight high-fidelity images (~80KB-200KB)
  * @param {File} file - Image file object
  * @param {string} userId - Member user ID
  * @param {string} folder - 'photos' or 'avatars'
  * @returns {Promise<string>} - Public Download URL of the uploaded photo
  */
 export const uploadPhotoToFirebase = async (file, userId = 'guest', folder = 'photos') => {
-  const cleanName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
+  let fileToUpload = file;
+
+  // Compress image before uploading - keeps page load fast without compromising visual quality
+  if (file && (file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(file.name || ''))) {
+    try {
+      const isAvatar = folder === 'avatars';
+      fileToUpload = await compressImageToFile(file, {
+        maxWidth: isAvatar ? 800 : 1200,
+        maxHeight: isAvatar ? 800 : 1200,
+        quality: 0.82
+      });
+    } catch (compressErr) {
+      console.warn('Photo compression fallback to original file:', compressErr);
+    }
+  }
+
+  const cleanName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
   const fileName = `${Date.now()}_${cleanName}`;
   const storagePath = `${folder}/${userId}/${fileName}`;
-  const contentType = file.type || 'image/jpeg';
+  const contentType = fileToUpload.type || 'image/jpeg';
 
-  return await uploadFileToFirebaseStorage(file, storagePath, contentType);
+  return await uploadFileToFirebaseStorage(fileToUpload, storagePath, contentType);
 };
 
 /**
  * Upload a Success Story Photo to Firebase Storage
  * Store location: stories/{timestamp}_{fileName}
+ * Automatically compresses story photos to lightweight high-fidelity images (~120KB)
  * @param {File} file - Image file object
  * @returns {Promise<string>} - Public Download URL of the uploaded story photo
  */
 export const uploadStoryPhotoToFirebase = async (file) => {
-  const cleanName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'story.jpg';
+  let fileToUpload = file;
+
+  if (file && (file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(file.name || ''))) {
+    try {
+      fileToUpload = await compressImageToFile(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.82
+      });
+    } catch (compressErr) {
+      console.warn('Story photo compression fallback:', compressErr);
+    }
+  }
+
+  const cleanName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'story.jpg';
   const fileName = `${Date.now()}_${cleanName}`;
   const storagePath = `stories/${fileName}`;
-  const contentType = file.type || 'image/jpeg';
+  const contentType = fileToUpload.type || 'image/jpeg';
 
-  return await uploadFileToFirebaseStorage(file, storagePath, contentType);
+  return await uploadFileToFirebaseStorage(fileToUpload, storagePath, contentType);
 };
 
 /**

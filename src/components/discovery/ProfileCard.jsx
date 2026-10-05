@@ -173,6 +173,7 @@ export const ProfileCard = ({ profile, onSelect }) => {
             key={photo || idx}
             src={photo}
             alt={`${profile.name} ${idx + 1}`}
+            loading={idx === 0 ? "eager" : "lazy"}
             fetchPriority={idx === 0 ? "high" : "auto"}
             decoding="async"
             className={`absolute inset-0 w-full h-full object-cover object-[center_top] transition-opacity duration-150 ease-out ${

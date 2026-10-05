@@ -63,6 +63,7 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
             key={img || idx}
             src={img}
             alt={`${name} photo ${idx + 1}`}
+            loading={idx === 0 ? "eager" : "lazy"}
             fetchPriority={idx === 0 ? "high" : "auto"}
             decoding="async"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ease-out ${
