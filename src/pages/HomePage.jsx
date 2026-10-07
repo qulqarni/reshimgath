@@ -54,7 +54,7 @@ export const HomePage = ({ onNavigate }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const PROFILES_PER_PAGE = 12;
+  const PROFILES_PER_PAGE = 24;
 
   const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
 
