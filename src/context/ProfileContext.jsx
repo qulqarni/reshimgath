@@ -560,7 +560,12 @@ export const ProfileProvider = ({ children }) => {
   }, [interests]);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_chats', JSON.stringify(chats));
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem('reshimgath_chats', JSON.stringify(chats));
+      } catch (e) {}
+    }, 400);
+    return () => clearTimeout(timer);
   }, [chats]);
 
   useEffect(() => {
