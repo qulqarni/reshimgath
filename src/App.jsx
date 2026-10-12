@@ -75,7 +75,8 @@ function AppContent() {
       return { path: cleanHash, selectedId: null };
     }
 
-    return { path: pathname === '' ? '/' : pathname, selectedId: null };
+    const cleanPathname = pathname === '' ? '/' : pathname.split('?')[0];
+    return { path: cleanPathname, selectedId: null };
   };
 
   const [currentPath, setCurrentPath] = useState(() => getInitialRoute().path);
@@ -85,9 +86,7 @@ function AppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const route = getInitialRoute();
-      if (route.selectedId) {
-        setSelectedProfileId(route.selectedId);
-      }
+      setSelectedProfileId(route.selectedId || null);
       setCurrentPath(route.path);
     };
 
@@ -118,19 +117,20 @@ function AppContent() {
 
   // Centralized Navigation Function that updates both React state & Browser URL address bar slug
   const handleNavigate = (targetPath) => {
-    let cleanPath = targetPath;
+    const [pathPart, queryPart] = (targetPath || '/').split('?');
+    let cleanPath = pathPart || '/';
     let profId = null;
 
     // Handle dynamic profile route like /profile/demo_m1 or /profile?id=demo_m1
     if (targetPath.startsWith('/profile/')) {
-      const idStr = targetPath.replace('/profile/', '').split('?')[0];
+      const idStr = targetPath.replace('/profile/', '').split('/')[0].split('?')[0];
       if (idStr) {
         profId = idStr;
         cleanPath = '/profile';
       }
     } else if (targetPath.startsWith('/profile?')) {
       try {
-        const params = new URLSearchParams(targetPath.split('?')[1]);
+        const params = new URLSearchParams(queryPart || '');
         const idStr = params.get('id') || params.get('profileId');
         if (idStr) {
           profId = idStr;
@@ -141,14 +141,17 @@ function AppContent() {
 
     if (profId !== null) {
       setSelectedProfileId(profId);
+    } else if (cleanPath !== '/profile') {
+      setSelectedProfileId(null);
     }
 
     // Redirect dashboard requests directly to my-profile
     const pushUrl = targetPath === '/dashboard' ? '/my-profile' : targetPath;
 
     // Update browser URL address bar dynamically without full page reload
-    if (window.location.pathname !== pushUrl) {
-      window.history.pushState({}, '', pushUrl);
+    const currentFull = (window.location.pathname || '/') + (window.location.search || '');
+    if (currentFull !== pushUrl) {
+      window.history.pushState({ fromApp: true, path: pushUrl }, '', pushUrl);
     }
 
     setCurrentPath(cleanPath === '/dashboard' ? '/my-profile' : cleanPath);
@@ -158,6 +161,7 @@ function AppContent() {
   const renderPage = () => {
     switch (currentPath) {
       case '/':
+      case '/profiles':
         return <HomePage onNavigate={handleNavigate} />;
       case '/login':
         return <LoginPage onNavigate={handleNavigate} />;

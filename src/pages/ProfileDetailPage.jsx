@@ -531,13 +531,33 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     }
   }, [profileId, user]);
 
+  const handleBack = () => {
+    // 1. If we navigated from within the app, use browser history back
+    if (window.history.length > 1 && window.history.state?.fromApp) {
+      window.history.back();
+      return;
+    }
+
+    // 2. If a previous filtered listing URL was saved, restore it
+    try {
+      const savedListingUrl = sessionStorage.getItem('reshimgath_last_listing_url');
+      if (savedListingUrl) {
+        onNavigate(savedListingUrl);
+        return;
+      }
+    } catch (e) {}
+
+    // 3. Safe fallback to default home route
+    onNavigate('/');
+  };
+
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
         <h2 className="font-serif text-2xl font-bold text-brand-plum">Profile Not Found</h2>
         <p className="text-xs text-brand-gray">The requested matrimonial profile is not available.</p>
         <button
-          onClick={() => onNavigate('/')}
+          onClick={handleBack}
           className="px-6 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"
         >
           Back to Home
@@ -555,7 +575,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         <h2 className="font-serif text-2xl font-bold text-brand-plum">Profile Account Blocked</h2>
         <p className="text-xs text-brand-gray">This matrimonial profile has been suspended or blocked by bureau administration.</p>
         <button
-          onClick={() => onNavigate('/')}
+          onClick={handleBack}
           className="px-6 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"
         >
           Back to Home
@@ -686,7 +706,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
       {/* Top Header Navigation Row */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => onNavigate('/')}
+          onClick={handleBack}
           className="inline-flex items-center space-x-1.5 text-xs font-bold text-brand-plum hover:text-brand-kesari transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

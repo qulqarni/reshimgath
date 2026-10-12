@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -7,6 +7,7 @@ import { PaithaniDivider } from '../components/common/PaithaniDivider';
 import { ProfileCard } from '../components/discovery/ProfileCard';
 import { MultiSelectDropdown } from '../components/common/MultiSelectDropdown';
 import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
+import { parseListingStateFromSearch, serializeListingStateToQuery } from '../utils/listingFilterState';
 import { 
   Heart, 
   Search, 
@@ -39,21 +40,24 @@ export const HomePage = ({ onNavigate }) => {
   const [selectedStory, setSelectedStory] = useState(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
 
+  // Restore filter, search, and pagination state from URL params or sessionStorage
+  const initialListingState = useMemo(() => parseListingStateFromSearch(), []);
+
   // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState([]);
-  const [selectedReligion, setSelectedReligion] = useState('All');
-  const [selectedCaste, setSelectedCaste] = useState('All');
-  const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('All');
-  const [selectedEducation, setSelectedEducation] = useState([]);
-  const [govtEmployeeFilter, setGovtEmployeeFilter] = useState('All');
-  const [minAge, setMinAge] = useState('18');
-  const [maxAge, setMaxAge] = useState('60');
-  const [genderFilter, setGenderFilter] = useState('all');
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(() => initialListingState.searchQuery);
+  const [selectedDistrict, setSelectedDistrict] = useState(() => initialListingState.selectedDistrict);
+  const [selectedReligion, setSelectedReligion] = useState(() => initialListingState.selectedReligion);
+  const [selectedCaste, setSelectedCaste] = useState(() => initialListingState.selectedCaste);
+  const [selectedMaritalStatus, setSelectedMaritalStatus] = useState(() => initialListingState.selectedMaritalStatus);
+  const [selectedEducation, setSelectedEducation] = useState(() => initialListingState.selectedEducation);
+  const [govtEmployeeFilter, setGovtEmployeeFilter] = useState(() => initialListingState.govtEmployeeFilter);
+  const [minAge, setMinAge] = useState(() => initialListingState.minAge);
+  const [maxAge, setMaxAge] = useState(() => initialListingState.maxAge);
+  const [genderFilter, setGenderFilter] = useState(() => initialListingState.genderFilter);
+  const [verifiedOnly, setVerifiedOnly] = useState(() => initialListingState.verifiedOnly);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => initialListingState.currentPage);
   const PROFILES_PER_PAGE = 24;
 
   const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
@@ -268,9 +272,88 @@ export const HomePage = ({ onNavigate }) => {
     return count;
   }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
+  const isInitialFilterMount = useRef(true);
   useEffect(() => {
+    if (isInitialFilterMount.current) {
+      isInitialFilterMount.current = false;
+      return;
+    }
     setCurrentPage(1);
   }, [searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly]);
+
+  // Synchronize active filters, search query, and pagination with URL and sessionStorage
+  useEffect(() => {
+    const stateObj = {
+      searchQuery,
+      selectedDistrict,
+      selectedReligion,
+      selectedCaste,
+      selectedMaritalStatus,
+      selectedEducation,
+      govtEmployeeFilter,
+      minAge,
+      maxAge,
+      genderFilter,
+      verifiedOnly,
+      currentPage
+    };
+
+    try {
+      sessionStorage.setItem('reshimgath_listing_state', JSON.stringify(stateObj));
+      const queryStr = serializeListingStateToQuery(stateObj);
+      const pathname = window.location.pathname || '/';
+      const fullUrl = pathname + queryStr;
+      sessionStorage.setItem('reshimgath_last_listing_url', fullUrl);
+
+      // Keep address bar in sync without reloading
+      if (pathname === '/' || pathname === '/profiles' || pathname === '') {
+        const currentFull = (window.location.pathname || '/') + (window.location.search || '');
+        if (currentFull !== fullUrl) {
+          window.history.replaceState({ ...window.history.state, path: fullUrl }, '', fullUrl);
+        }
+      }
+    } catch (e) {
+      console.warn('Listing state synchronization error:', e);
+    }
+  }, [searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly, currentPage]);
+
+  // Listen to popstate for browser back/forward buttons when returning or navigating history
+  useEffect(() => {
+    const handleUrlStateChange = () => {
+      const parsed = parseListingStateFromSearch(window.location.search, false);
+      setSearchQuery(parsed.searchQuery);
+      setSelectedDistrict(parsed.selectedDistrict);
+      setSelectedReligion(parsed.selectedReligion);
+      setSelectedCaste(parsed.selectedCaste);
+      setSelectedMaritalStatus(parsed.selectedMaritalStatus);
+      setSelectedEducation(parsed.selectedEducation);
+      setGovtEmployeeFilter(parsed.govtEmployeeFilter);
+      setMinAge(parsed.minAge);
+      setMaxAge(parsed.maxAge);
+      setGenderFilter(parsed.genderFilter);
+      setVerifiedOnly(parsed.verifiedOnly);
+      setCurrentPage(parsed.currentPage);
+    };
+
+    window.addEventListener('popstate', handleUrlStateChange);
+    return () => window.removeEventListener('popstate', handleUrlStateChange);
+  }, []);
+
+  // Restore scroll position after returning from a profile
+  useEffect(() => {
+    try {
+      const savedScroll = sessionStorage.getItem('reshimgath_listing_scroll_y');
+      if (savedScroll) {
+        const y = parseInt(savedScroll, 10);
+        if (!isNaN(y) && y > 0) {
+          const timer = setTimeout(() => {
+            window.scrollTo({ top: y, behavior: 'instant' });
+          }, 80);
+          return () => clearTimeout(timer);
+        }
+      }
+    } catch (e) {}
+  }, []);
 
   const totalPages = Math.ceil(filteredProfiles.length / PROFILES_PER_PAGE) || 1;
 
@@ -309,6 +392,13 @@ export const HomePage = ({ onNavigate }) => {
     setGenderFilter('all');
     setVerifiedOnly(false);
     setCurrentPage(1);
+    try {
+      sessionStorage.removeItem('reshimgath_listing_state');
+      sessionStorage.removeItem('reshimgath_last_listing_url');
+      sessionStorage.removeItem('reshimgath_listing_scroll_y');
+      const cleanPath = window.location.pathname || '/';
+      window.history.replaceState({ ...window.history.state, path: cleanPath }, '', cleanPath);
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -698,6 +788,9 @@ export const HomePage = ({ onNavigate }) => {
                     if (action === 'chat') {
                       onNavigate('/messages');
                     } else {
+                      try {
+                        sessionStorage.setItem('reshimgath_listing_scroll_y', String(window.scrollY));
+                      } catch (e) {}
                       onNavigate(`/profile/${id}`);
                     }
                   }}
