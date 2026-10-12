@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
-import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore } from '../services/firebaseService';
+import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore, checkExistingUserInFirestore } from '../services/firebaseService';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
+import { doesProfileHavePhone, isSamePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 
 const AuthContext = createContext();
 
@@ -308,7 +309,7 @@ export const AuthProvider = ({ children }) => {
 
     // 2. Demo Profiles credentials check
     const matchedDemo = DEMO_PROFILES.find(
-      (p) => (p.email && p.email.toLowerCase() === input) || (p.phone && p.phone === input)
+      (p) => (p.email && p.email.toLowerCase() === input) || doesProfileHavePhone(p, input)
     );
 
     if (matchedDemo) {
@@ -337,7 +338,7 @@ export const AuthProvider = ({ children }) => {
     const matchedProfile = savedProfiles.find(
       (p) =>
         (p.email && p.email.toLowerCase() === input) ||
-        (p.phone && String(p.phone).trim() === input) ||
+        doesProfileHavePhone(p, input) ||
         (p.id && String(p.id).toLowerCase() === input) ||
         (p.regId && String(p.regId).toLowerCase() === input) ||
         (p.registrationId && String(p.registrationId) === input)
@@ -415,7 +416,6 @@ export const AuthProvider = ({ children }) => {
   const checkExistingUser = (email, phone) => {
     const inputEmail = (email || '').trim().toLowerCase();
     const inputPhone = (phone || '').trim();
-    const cleanInputPhone = inputPhone.replace(/[^0-9]/g, '').slice(-10);
 
     const savedProfiles = (() => {
       try {
@@ -437,23 +437,48 @@ export const AuthProvider = ({ children }) => {
 
     let phoneExists = false;
     if (inputPhone) {
-      phoneExists = allRegistered.some((p) => {
-        if (!p.phone) return false;
-        const pPhone = String(p.phone).trim();
-        if (pPhone === inputPhone) return true;
-        const cleanPPhone = pPhone.replace(/[^0-9]/g, '').slice(-10);
-        return cleanInputPhone.length >= 10 && cleanPPhone.length >= 10 && cleanPPhone === cleanInputPhone;
-      });
+      phoneExists = allRegistered.some((p) => doesProfileHavePhone(p, inputPhone));
     }
 
     return { emailExists, phoneExists };
   };
 
-  const signup = (signupData) => {
+  const checkExistingUserAsync = async (email, phone) => {
+    // 1. Local synchronous check
+    const localCheck = checkExistingUser(email, phone);
+    if (localCheck.emailExists && localCheck.phoneExists) {
+      return localCheck;
+    }
+
+    // 2. Remote Firestore check to guarantee single mobile number registration
+    if (isFirebaseConfigured) {
+      try {
+        const firestoreCheck = await checkExistingUserInFirestore(email, phone);
+        return {
+          emailExists: localCheck.emailExists || firestoreCheck.emailExists,
+          phoneExists: localCheck.phoneExists || firestoreCheck.phoneExists
+        };
+      } catch (err) {
+        console.warn('Async Firestore existing user check error:', err);
+      }
+    }
+
+    return localCheck;
+  };
+
+  const signup = async (signupData) => {
     const inputEmail = (signupData.email || '').trim();
     const inputPhone = (signupData.phone || '').trim();
 
-    const { emailExists, phoneExists } = checkExistingUser(inputEmail, inputPhone);
+    if (!inputPhone) {
+      return {
+        success: false,
+        message: 'Mobile Number is required for registration.'
+      };
+    }
+
+    // Comprehensive local + Firestore check to guarantee 1 mobile number = 1 registration
+    const { emailExists, phoneExists } = await checkExistingUserAsync(inputEmail, inputPhone);
 
     if (emailExists && phoneExists) {
       return {
@@ -502,7 +527,7 @@ export const AuthProvider = ({ children }) => {
       console.warn('localStorage quota or write error:', e);
     }
     // Push newly created user profile directly to Firebase Firestore Database!
-    saveProfileToFirestore(newUser.id, newUser);
+    await saveProfileToFirestore(newUser.id, newUser);
     return { success: true, user: newUser };
   };
 
@@ -937,6 +962,7 @@ const getStoredInterestsFast = () => {
         loginAsAdmin,
         signup,
         checkExistingUser,
+        checkExistingUserAsync,
         logout,
         updateProfile,
         subscribeUserToPlan,

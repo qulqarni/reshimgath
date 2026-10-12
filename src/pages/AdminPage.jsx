@@ -10,6 +10,7 @@ import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUN
 import { compressImage } from '../utils/imageCompressor';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase, optimizeAndCompressExistingProfileMedia } from '../services/firebaseService';
+import { doesProfileHavePhone } from '../utils/phoneUtils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { 
@@ -441,12 +442,24 @@ export const AdminPage = ({ onNavigate }) => {
       };
     }
 
+    const candidatePhone = (newProfileForm.phone || newProfileForm.mobile || '').trim();
+    if (candidatePhone) {
+      const isDuplicate = profiles.some(p => doesProfileHavePhone(p, candidatePhone));
+      if (isDuplicate) {
+        alert('This Mobile Number is already registered with an existing profile! Only 1 registration per mobile number is allowed.');
+        return;
+      }
+    }
+
     const profilePayload = {
       ...newProfileForm,
       subscription
     };
 
-    await createAdminProfile(profilePayload);
+    const created = await createAdminProfile(profilePayload);
+    if (!created) {
+      return;
+    }
     setShowCreateModal(false);
     setNewProfileForm(INITIAL_NEW_PROFILE);
   };

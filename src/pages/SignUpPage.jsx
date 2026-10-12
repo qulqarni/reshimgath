@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff, Calendar } from 'lucide-react';
+import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff, Calendar, Loader2 } from 'lucide-react';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 
 export const SignUpPage = ({ onNavigate }) => {
-  const { signup, checkExistingUser } = useAuth();
+  const { signup, checkExistingUser, checkExistingUserAsync } = useAuth();
   const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
@@ -22,15 +22,53 @@ export const SignUpPage = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [asyncCheck, setAsyncCheck] = useState({ emailExists: false, phoneExists: false });
 
-  const existingCheck = React.useMemo(() => {
+  // 1. Instant synchronous check against local memory & stored profiles
+  const localCheck = React.useMemo(() => {
     if (!checkExistingUser) return { emailExists: false, phoneExists: false };
     return checkExistingUser(formData.email, formData.phone);
   }, [formData.email, formData.phone, checkExistingUser]);
 
-  const handleSubmit = (e) => {
+  // 2. Debounced asynchronous check against Firestore database
+  useEffect(() => {
+    let isCancelled = false;
+    const cleanPhone = (formData.phone || '').trim();
+    const cleanEmail = (formData.email || '').trim();
+
+    if (!cleanPhone && !cleanEmail) {
+      setAsyncCheck({ emailExists: false, phoneExists: false });
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      if (checkExistingUserAsync) {
+        try {
+          const res = await checkExistingUserAsync(cleanEmail, cleanPhone);
+          if (!isCancelled && res) {
+            setAsyncCheck(res);
+          }
+        } catch (e) {}
+      }
+    }, 350);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.phone, formData.email, checkExistingUserAsync]);
+
+  const existingCheck = {
+    emailExists: localCheck.emailExists || asyncCheck.emailExists,
+    phoneExists: localCheck.phoneExists || asyncCheck.phoneExists
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (isSubmitting) return;
 
     if (!formData.name.trim()) {
       setError('Please enter your full name.');
@@ -74,7 +112,7 @@ export const SignUpPage = ({ onNavigate }) => {
     }
 
     if (existingCheck.phoneExists) {
-      setError('This Mobile Number is already registered. Please login or use a different phone number.');
+      setError('This Mobile Number is already registered. Each mobile number can only be used for one registration.');
       return;
     }
 
@@ -88,23 +126,31 @@ export const SignUpPage = ({ onNavigate }) => {
       return;
     }
 
-    const res = signup(formData);
-    if (res && res.success) {
-      let redirectPath = null;
-      try {
-        redirectPath = sessionStorage.getItem('reshimgath_redirect_after_auth');
-        if (redirectPath) {
-          sessionStorage.removeItem('reshimgath_redirect_after_auth');
-        }
-      } catch (e) {}
+    setIsSubmitting(true);
+    try {
+      const res = await signup(formData);
+      if (res && res.success) {
+        let redirectPath = null;
+        try {
+          redirectPath = sessionStorage.getItem('reshimgath_redirect_after_auth');
+          if (redirectPath) {
+            sessionStorage.removeItem('reshimgath_redirect_after_auth');
+          }
+        } catch (e) {}
 
-      if (redirectPath) {
-        onNavigate(redirectPath);
+        if (redirectPath) {
+          onNavigate(redirectPath);
+        } else {
+          onNavigate('/profile-setup');
+        }
       } else {
-        onNavigate('/profile-setup');
+        setError(res?.message || 'Failed to create profile. Please try again.');
       }
-    } else {
-      setError(res?.message || 'Failed to create profile. Please try again.');
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError('An error occurred during registration. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -242,7 +288,7 @@ export const SignUpPage = ({ onNavigate }) => {
               </div>
               {existingCheck.phoneExists && (
                 <div className="text-[11px] text-rose-600 font-bold mt-1 flex items-center justify-between bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                  <span>⚠️ Mobile already registered!</span>
+                  <span>⚠️ Mobile already registered! (Only 1 registration allowed per number)</span>
                   <button
                     type="button"
                     onClick={() => onNavigate('/login')}
@@ -344,10 +390,24 @@ export const SignUpPage = ({ onNavigate }) => {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all border border-brand-gold/30 flex items-center justify-center space-x-2"
+            disabled={isSubmitting || existingCheck.phoneExists || existingCheck.emailExists}
+            className={`w-full py-3.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all border border-brand-gold/30 flex items-center justify-center space-x-2 ${
+              isSubmitting || existingCheck.phoneExists || existingCheck.emailExists
+                ? 'opacity-60 cursor-not-allowed'
+                : 'hover:brightness-105 active:scale-[0.99]'
+            }`}
           >
-            <Sparkles className="w-4 h-4 text-brand-gold" />
-            <span>Create Profile & Proceed to Setup</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 text-brand-gold animate-spin" />
+                <span>Checking & Creating Profile...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 text-brand-gold" />
+                <span>Create Profile & Proceed to Setup</span>
+              </>
+            )}
           </button>
         </form>
 

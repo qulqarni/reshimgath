@@ -19,6 +19,7 @@ import {
   deleteObject 
 } from 'firebase/storage';
 import { compressImageToFile, compressBiodataImageToFile } from '../utils/imageCompressor';
+import { doesProfileHavePhone, isSamePhoneNumber } from '../utils/phoneUtils';
 
 // Collection Constants
 const PROFILES_COLLECTION = 'profiles';
@@ -84,6 +85,51 @@ export const deleteProfileFromFirestore = async (profileId) => {
     return true;
   } catch (error) {
     console.error('Error deleting profile from Firestore:', error);
+    return false;
+  }
+};
+
+/**
+ * Check if a phone number or email is already registered in Firestore profiles collection
+ */
+export const checkExistingUserInFirestore = async (email, phone) => {
+  if (!isFirebaseConfigured) return { emailExists: false, phoneExists: false };
+  try {
+    const profiles = await fetchProfilesFromFirestore();
+    if (!profiles || !Array.isArray(profiles)) {
+      return { emailExists: false, phoneExists: false };
+    }
+    const cleanEmail = email ? String(email).trim().toLowerCase() : '';
+    let emailExists = false;
+    let phoneExists = false;
+
+    for (const p of profiles) {
+      if (cleanEmail && p.email && String(p.email).trim().toLowerCase() === cleanEmail) {
+        emailExists = true;
+      }
+      if (phone && doesProfileHavePhone(p, phone)) {
+        phoneExists = true;
+      }
+      if (emailExists && phoneExists) break;
+    }
+    return { emailExists, phoneExists };
+  } catch (error) {
+    console.error('Error checking existing user in Firestore:', error);
+    return { emailExists: false, phoneExists: false };
+  }
+};
+
+/**
+ * Check if a mobile number is already registered in Firestore
+ */
+export const isPhoneNumberRegisteredInFirestore = async (phoneNumber) => {
+  if (!isFirebaseConfigured || !phoneNumber) return false;
+  try {
+    const profiles = await fetchProfilesFromFirestore();
+    if (!profiles || !Array.isArray(profiles)) return false;
+    return profiles.some((p) => doesProfileHavePhone(p, phoneNumber));
+  } catch (error) {
+    console.error('Error checking phone registration in Firestore:', error);
     return false;
   }
 };

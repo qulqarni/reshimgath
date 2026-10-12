@@ -30,6 +30,7 @@ import {
   deleteInquiryFromFirestore,
   subscribeToInquiriesFromFirestore
 } from '../services/firebaseService';
+import { doesProfileHavePhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
@@ -1152,6 +1153,15 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const addProfile = (newProfileData) => {
+    const candidatePhone = (newProfileData.phone || newProfileData.mobile || newProfileData.contactNumber || '').trim();
+    if (candidatePhone) {
+      const isDuplicate = profiles.some(p => doesProfileHavePhone(p, candidatePhone));
+      if (isDuplicate) {
+        addToast('This Mobile Number is already registered with another profile! Only 1 registration allowed per mobile number.', 'error');
+        return null;
+      }
+    }
+
     const id = 'p_' + Date.now();
     const createdProfile = normalizeProfile({
       id,
@@ -1232,6 +1242,15 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const createAdminProfile = async (newProfileData) => {
+    const candidatePhone = (newProfileData.phone || newProfileData.mobile || newProfileData.contactNumber || '').trim();
+    if (candidatePhone) {
+      const isDuplicate = profiles.some(p => doesProfileHavePhone(p, candidatePhone));
+      if (isDuplicate) {
+        addToast('This Mobile Number is already registered with another profile! Only 1 registration allowed per mobile number.', 'error');
+        return null;
+      }
+    }
+
     const timeStamp = Date.now();
     const newId = `p_${timeStamp}`;
     
