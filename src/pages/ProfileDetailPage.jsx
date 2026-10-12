@@ -816,19 +816,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
               )}
               <div className="flex justify-between py-1 border-b border-gray-100 gap-2 items-center">
                 <span className="text-brand-gray font-medium shrink-0">नोकरीचे शहर / जिल्हा:</span>
-                {isContactUnlocked ? (
-                  <span className="font-bold text-brand-plum text-right truncate">{profile.district || 'महाराष्ट्र'}</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleUnlockContactClick('contact')}
-                    className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs"
-                    title="Location is hidden. Click to unlock with credit."
-                  >
-                    <Lock className="w-3 h-3 text-amber-600 shrink-0" />
-                    <span>Locked (क्रेडिट वापरा)</span>
-                  </button>
-                )}
+                <span className="font-bold text-brand-plum text-right truncate">{profile.district || 'महाराष्ट्र'}</span>
               </div>
             </div>
           </div>
@@ -1193,26 +1181,14 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                   </div>
                 )}
 
-                {(hasValue(profile.district) || !isContactUnlocked) && (
+                {hasValue(profile.district) && (
                   <div className="flex items-center space-x-3 p-2.5 rounded-2xl bg-brand-lightBg/40">
                     <div className="w-8 h-8 rounded-xl bg-rose-100/60 text-brand-plum flex items-center justify-center shrink-0">
                       <MapPin className="w-4 h-4 text-brand-kesari" />
                     </div>
                     <div>
                       <span className="text-[10px] text-brand-gray font-medium block">Work Location</span>
-                      {isContactUnlocked ? (
-                        <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district || 'Not specified'}</p>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleUnlockContactClick('contact')}
-                          className="inline-flex items-center space-x-1 text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-xs mt-0.5"
-                          title="Location is hidden. Click to unlock with credit."
-                        >
-                          <Lock className="w-3 h-3 text-amber-600 shrink-0" />
-                          <span>Locked (क्रेडिट वापरा)</span>
-                        </button>
-                      )}
+                      <p className="font-bold text-brand-plum text-xs mt-0.5">{profile.district || 'Not specified'}</p>
                     </div>
                   </div>
                 )}
