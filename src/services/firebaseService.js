@@ -31,6 +31,7 @@ const CHATS_COLLECTION = 'chats';
 const INTERESTS_COLLECTION = 'interests';
 const PROFILE_VIEWS_COLLECTION = 'profile_views';
 const NOTIFICATIONS_COLLECTION = 'notifications';
+const REPORTS_COLLECTION = 'reports';
 
 // -------------------------------------------------------------
 // FIRESTORE PROFILES API
@@ -778,6 +779,146 @@ export const subscribeToInquiriesFromFirestore = (callback) => {
   } catch (error) {
     console.error('Error subscribing to inquiries in Firestore:', error);
     return () => {};
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE REPORTS & MODERATION API
+// -------------------------------------------------------------
+
+export const fetchReportsFromFirestore = async () => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const querySnapshot = await getDocs(collection(db, REPORTS_COLLECTION));
+    const list = [];
+    querySnapshot.forEach((docSnap) => {
+      list.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return list;
+  } catch (error) {
+    console.error('Error fetching reports from Firestore:', error);
+    return null;
+  }
+};
+
+export const saveReportToFirestore = async (reportData) => {
+  if (!isFirebaseConfigured || !reportData) return true;
+  try {
+    const docId = String(reportData.id || `rep_${Date.now()}`);
+    const reportRef = doc(db, REPORTS_COLLECTION, docId);
+    await setDoc(reportRef, {
+      ...reportData,
+      id: docId,
+      status: reportData.status || 'pending',
+      createdAt: reportData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return docId;
+  } catch (error) {
+    console.error('Error saving report to Firestore:', error);
+    return false;
+  }
+};
+
+export const updateReportInFirestore = async (reportId, updateData) => {
+  if (!isFirebaseConfigured || !reportId) return true;
+  try {
+    const reportRef = doc(db, REPORTS_COLLECTION, String(reportId));
+    await setDoc(reportRef, {
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error updating report in Firestore:', error);
+    return false;
+  }
+};
+
+export const deleteReportFromFirestore = async (reportId) => {
+  if (!isFirebaseConfigured || !reportId) return true;
+  try {
+    const reportRef = doc(db, REPORTS_COLLECTION, String(reportId));
+    await deleteDoc(reportRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting report from Firestore:', error);
+    return false;
+  }
+};
+
+export const subscribeToReportsFromFirestore = (callback) => {
+  if (!isFirebaseConfigured) return () => {};
+  try {
+    return onSnapshot(collection(db, REPORTS_COLLECTION), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      callback(list);
+    });
+  } catch (error) {
+    console.error('Error subscribing to reports in Firestore:', error);
+    return () => {};
+  }
+};
+
+export const saveUserBlockedListToFirestore = async (userId, blockedUsers) => {
+  if (!isFirebaseConfigured || !userId) return true;
+  try {
+    const profileRef = doc(db, PROFILES_COLLECTION, String(userId));
+    await setDoc(profileRef, {
+      blockedUsers: Array.isArray(blockedUsers) ? blockedUsers : [],
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error updating blockedUsers in Firestore:', error);
+    return false;
+  }
+};
+
+export const removePhotoFromProfileInFirestore = async (profileId, photoUrl) => {
+  if (!isFirebaseConfigured || !profileId || !photoUrl) return true;
+  try {
+    const profileRef = doc(db, PROFILES_COLLECTION, String(profileId));
+    const snap = await getDoc(profileRef);
+    if (!snap.exists()) return false;
+    const data = snap.data();
+    const updatedPhotos = (data.photos || []).filter(p => {
+      const url = typeof p === 'string' ? p : p?.url;
+      return url !== photoUrl;
+    });
+    const updates = { photos: updatedPhotos, updatedAt: new Date().toISOString() };
+    if (data.avatar === photoUrl) {
+      updates.avatar = updatedPhotos.length > 0 ? (typeof updatedPhotos[0] === 'string' ? updatedPhotos[0] : updatedPhotos[0]?.url) : null;
+    }
+    await setDoc(profileRef, updates, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error removing photo from profile in Firestore:', error);
+    return false;
+  }
+};
+
+export const deleteChatMessageFromFirestore = async (chatId, messageId) => {
+  if (!isFirebaseConfigured || !chatId || !messageId) return true;
+  try {
+    const chatRef = doc(db, CHATS_COLLECTION, String(chatId));
+    const snap = await getDoc(chatRef);
+    if (!snap.exists()) return false;
+    const messages = snap.data().messages || [];
+    const updatedMessages = messages.filter(m => String(m.id) !== String(messageId));
+    await setDoc(chatRef, {
+      messages: updatedMessages,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error deleting chat message from Firestore:', error);
+    return false;
   }
 };
 

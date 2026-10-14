@@ -167,6 +167,44 @@ async function removeInvalidTokens(docRefs, invalidTokens) {
 }
 
 /**
+ * Helper: Check if communication between two users is blocked or suspended.
+ * Returns true if:
+ * 1. userA has userB in blockedUsers list.
+ * 2. userB has userA in blockedUsers list.
+ * 3. userA has blocked: true (suspended account).
+ * 4. userB has blocked: true (suspended account).
+ */
+async function isCommunicationBlocked(userAId, userBId) {
+  if (!userAId || !userBId) return false;
+  try {
+    const cleanA = String(userAId).toLowerCase().trim().replace(/^ss-/, '');
+    const cleanB = String(userBId).toLowerCase().trim().replace(/^ss-/, '');
+
+    const [docA, docB] = await Promise.all([
+      db.collection('profiles').doc(cleanA).get().catch(() => null),
+      db.collection('profiles').doc(cleanB).get().catch(() => null)
+    ]);
+
+    const dataA = docA && docA.exists ? docA.data() : null;
+    const dataB = docB && docB.exists ? docB.data() : null;
+
+    if (dataA && dataA.blocked === true) return true;
+    if (dataB && dataB.blocked === true) return true;
+
+    const listA = (dataA && Array.isArray(dataA.blockedUsers)) ? dataA.blockedUsers : [];
+    const listB = (dataB && Array.isArray(dataB.blockedUsers)) ? dataB.blockedUsers : [];
+
+    const aBlockedB = listA.some(id => String(id).toLowerCase().trim().replace(/^ss-/, '') === cleanB);
+    const bBlockedA = listB.some(id => String(id).toLowerCase().trim().replace(/^ss-/, '') === cleanA);
+
+    return aBlockedB || bBlockedA;
+  } catch (err) {
+    functions.logger.warn('Error checking communication block status:', err);
+    return false;
+  }
+}
+
+/**
  * ---------------------------------------------------------------------------------
  * TRIGGER 1: Automatic FCM Push Notification when a document is created in
  * 'notifications/{notificationId}' collection.
@@ -194,6 +232,17 @@ exports.onNotificationCreated = functions.firestore
     if (!targetUserId) {
       functions.logger.warn('Notification missing targetUserId:', notificationId, notificationData);
       return null;
+    }
+
+    const senderId = notificationData.senderId || notificationData.visitorId || notificationData.profileId || '';
+
+    // Enforce blocking & suspension: Skip push notification if sender or recipient is blocked or suspended
+    if (senderId && targetUserId && senderId !== 'admin_1') {
+      const isBlocked = await isCommunicationBlocked(senderId, targetUserId);
+      if (isBlocked) {
+        functions.logger.info(`Notification ${notificationId} skipped due to block/suspension between ${senderId} and ${targetUserId}`);
+        return null;
+      }
     }
 
     // Retrieve FCM tokens for the recipient
@@ -356,9 +405,14 @@ exports.onChatUpdated = functions.firestore
     // Calculate recipient ID from chatId (which is structured as user1_user2)
     const chatParticipants = chatId.split('_');
     const senderId = String(latestMsg.senderId).toLowerCase();
-    const recipientId = chatParticipants.find(id => String(id).toLowerCase() !== senderId);
-
     if (!recipientId) return null;
+
+    // Enforce blocking & suspension: Skip push notification if either participant has blocked the other or is suspended
+    const isBlocked = await isCommunicationBlocked(latestMsg.senderId, recipientId);
+    if (isBlocked) {
+      functions.logger.info(`Chat FCM push skipped due to block/suspension between ${latestMsg.senderId} and ${recipientId}`);
+      return null;
+    }
 
     // Fetch sender profile details for data payload routing
     let senderName = '';

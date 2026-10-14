@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
-import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore, checkExistingUserInFirestore } from '../services/firebaseService';
+import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore, checkExistingUserInFirestore, saveUserBlockedListToFirestore } from '../services/firebaseService';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
@@ -194,7 +194,8 @@ export const normalizeProfile = (p, defaultIndex = 0) => {
     gender: genderVal,
     lookingFor: genderVal,
     registrationId: numId,
-    regId: `SS-${numId}`
+    regId: `SS-${numId}`,
+    blockedUsers: Array.isArray(p.blockedUsers) ? p.blockedUsers : []
   };
 };
 
@@ -951,6 +952,115 @@ const getStoredInterestsFast = () => {
     return (planId !== 'none' && planId !== 'free' && planName !== 'Free / Inactive') || remaining > 0 || total > 0;
   };
 
+  const isUserBlocked = (targetUserId) => {
+    if (!user || !user.blockedUsers || !targetUserId) return false;
+    const cleanTarget = String(targetUserId).toLowerCase().trim().replace(/^ss-/, '');
+    return user.blockedUsers.some(b => {
+      const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+      const bReg = String(typeof b === 'object' ? (b.regId || '') : '').toLowerCase().trim().replace(/^ss-/, '');
+      return bId === cleanTarget || (bReg && bReg === cleanTarget);
+    });
+  };
+
+  const blockUser = async (targetProfileOrId) => {
+    if (!user || !targetProfileOrId) return false;
+    const targetId = typeof targetProfileOrId === 'object' ? targetProfileOrId.id : targetProfileOrId;
+    if (String(targetId) === String(user.id)) return false;
+
+    const targetEntry = typeof targetProfileOrId === 'object' ? {
+      id: String(targetProfileOrId.id),
+      regId: targetProfileOrId.regId || (targetProfileOrId.registrationId ? `SS-${targetProfileOrId.registrationId}` : `SS-${targetProfileOrId.id}`),
+      name: targetProfileOrId.name || 'Member',
+      avatar: targetProfileOrId.avatar || targetProfileOrId.photos?.[0] || null,
+      district: targetProfileOrId.district || '',
+      blockedAt: new Date().toISOString()
+    } : {
+      id: String(targetId),
+      regId: String(targetId).startsWith('SS-') ? targetId : `SS-${targetId}`,
+      name: 'Member',
+      avatar: null,
+      district: '',
+      blockedAt: new Date().toISOString()
+    };
+
+    const currentList = Array.isArray(user.blockedUsers) ? user.blockedUsers : [];
+    const alreadyBlocked = currentList.some(b => {
+      const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+      const tId = String(targetEntry.id).toLowerCase().trim().replace(/^ss-/, '');
+      return bId === tId;
+    });
+
+    if (alreadyBlocked) return true;
+
+    const updatedBlocked = [...currentList, targetEntry];
+    const updatedUser = {
+      ...user,
+      blockedUsers: updatedBlocked
+    };
+
+    setUser(updatedUser);
+
+    try {
+      localStorage.setItem('reshimgath_user', JSON.stringify(updatedUser));
+      const storedProfiles = localStorage.getItem('reshimgath_profiles');
+      if (storedProfiles) {
+        const parsed = JSON.parse(storedProfiles);
+        const nextProfiles = parsed.map(p => {
+          if (String(p.id) === String(user.id)) {
+            return { ...p, blockedUsers: updatedBlocked };
+          }
+          return p;
+        });
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(nextProfiles));
+      }
+    } catch (e) {}
+
+    if (isFirebaseConfigured && user.id && user.id !== 'admin_1') {
+      saveUserBlockedListToFirestore(user.id, updatedBlocked);
+    }
+
+    return true;
+  };
+
+  const unblockUser = async (targetUserId) => {
+    if (!user || !targetUserId) return false;
+    const cleanTarget = String(targetUserId).toLowerCase().trim().replace(/^ss-/, '');
+    const currentList = Array.isArray(user.blockedUsers) ? user.blockedUsers : [];
+    const updatedBlocked = currentList.filter(b => {
+      const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+      const bReg = String(typeof b === 'object' ? (b.regId || '') : '').toLowerCase().trim().replace(/^ss-/, '');
+      return bId !== cleanTarget && bReg !== cleanTarget;
+    });
+
+    const updatedUser = {
+      ...user,
+      blockedUsers: updatedBlocked
+    };
+
+    setUser(updatedUser);
+
+    try {
+      localStorage.setItem('reshimgath_user', JSON.stringify(updatedUser));
+      const storedProfiles = localStorage.getItem('reshimgath_profiles');
+      if (storedProfiles) {
+        const parsed = JSON.parse(storedProfiles);
+        const nextProfiles = parsed.map(p => {
+          if (String(p.id) === String(user.id)) {
+            return { ...p, blockedUsers: updatedBlocked };
+          }
+          return p;
+        });
+        localStorage.setItem('reshimgath_profiles', JSON.stringify(nextProfiles));
+      }
+    } catch (e) {}
+
+    if (isFirebaseConfigured && user.id && user.id !== 'admin_1') {
+      saveUserBlockedListToFirestore(user.id, updatedBlocked);
+    }
+
+    return true;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -970,7 +1080,11 @@ const getStoredInterestsFast = () => {
         canViewProfile,
         hasActiveSubscription,
         privacyAlert,
-        triggerPrivacyAlert
+        triggerPrivacyAlert,
+        blockedUsers: user?.blockedUsers || [],
+        blockUser,
+        unblockUser,
+        isUserBlocked
       }}
     >
       {children}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Maximize2, X, ChevronLeft, ChevronRight, Image as ImageIcon, User, Camera } from 'lucide-react';
+import { Maximize2, X, ChevronLeft, ChevronRight, Image as ImageIcon, User, Camera, Flag } from 'lucide-react';
 import { WatermarkOverlay } from '../common/WatermarkOverlay';
 
-export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
+export const PhotoGallery = ({ photos = [], avatar = null, name = "", onReportPhoto = null }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -85,6 +85,21 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
 
         <WatermarkOverlay size="medium" />
 
+        {/* Report Photo Button */}
+        {onReportPhoto && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onReportPhoto(currentPhoto, activeIndex);
+            }}
+            className="absolute top-4 left-4 p-2.5 rounded-full bg-black/40 text-white/90 hover:text-white backdrop-blur-md hover:bg-rose-600 transition-all z-20"
+            title="Report this photo (फोटोची तक्रार करा)"
+          >
+            <Flag className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Expand Lightbox Overlay Button */}
         <button
           onClick={() => setLightboxOpen(true)}
@@ -157,6 +172,22 @@ export const PhotoGallery = ({ photos = [], avatar = null, name = "" }) => {
             />
             <WatermarkOverlay size="large" />
           </div>
+
+          {/* Report Button in Lightbox */}
+          {onReportPhoto && (
+            <button
+              type="button"
+              onClick={() => {
+                setLightboxOpen(false);
+                onReportPhoto(currentPhoto, activeIndex);
+              }}
+              className="absolute bottom-6 right-6 px-4 py-2.5 rounded-full bg-white/10 hover:bg-rose-600 text-white text-xs font-semibold backdrop-blur-md transition-all z-50 flex items-center space-x-2"
+              title="Report this photo"
+            >
+              <Flag className="w-3.5 h-3.5 text-rose-300" />
+              <span>Report Photo</span>
+            </button>
+          )}
 
           {/* Next Arrow */}
           {validPhotos.length > 1 && (

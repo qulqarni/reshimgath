@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProfiles } from '../context/ProfileContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Trash2, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Trash2, AlertTriangle, ArrowLeft, Ban } from 'lucide-react';
 
 export const SettingsPage = ({ onNavigate }) => {
   const { user, logout } = useAuth();
@@ -40,7 +40,33 @@ export const SettingsPage = ({ onNavigate }) => {
         </button>
         <div>
           <h1 className="font-serif text-2xl font-bold text-brand-plum">Account Settings</h1>
-          <p className="text-xs text-brand-gray">Manage account settings and permanent data deletion.</p>
+          <p className="text-xs text-brand-gray">Manage account settings, privacy, and preferences.</p>
+        </div>
+      </div>
+
+      {/* Privacy & Safety: Blocked Members Card */}
+      <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury p-6 sm:p-8 space-y-4">
+        <div className="flex items-start space-x-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 text-brand-plum flex items-center justify-center shrink-0 border border-amber-200/60">
+            <Ban className="w-5 h-5 text-rose-500" />
+          </div>
+          <div className="space-y-1 flex-1">
+            <h3 className="font-serif font-bold text-base text-brand-plum">Privacy & Safety: Blocked Members</h3>
+            <p className="text-xs text-brand-gray leading-relaxed">
+              Review and manage members you have blocked. Blocked members cannot see your profile, send you messages, or send connection interests.
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-gray-100 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onNavigate('/blocked-users')}
+            className="w-full sm:w-auto px-5 py-2.5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2 border border-brand-gold/40"
+          >
+            <Ban className="w-4 h-4 text-brand-gold" />
+            <span>Manage Blocked Members</span>
+          </button>
         </div>
       </div>
 

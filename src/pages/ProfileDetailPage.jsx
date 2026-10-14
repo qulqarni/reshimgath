@@ -8,6 +8,8 @@ import { VerificationBadge } from '../components/common/VerificationBadge';
 import { BiodataPdfSection, BiodataViewerModal } from '../components/profile/BiodataPdfSection';
 import { SubscriptionModal } from '../components/subscription/SubscriptionModal';
 import { UnlockConfirmationModal } from '../components/subscription/UnlockConfirmationModal';
+import { ReportModal } from '../components/moderation/ReportModal';
+import { BlockConfirmModal } from '../components/moderation/BlockConfirmModal';
 import { 
   Heart, 
   MapPin, 
@@ -39,7 +41,10 @@ import {
   RotateCcw,
   HeartHandshake,
   X,
-  Copy
+  Copy,
+  Flag,
+  ShieldAlert,
+  MoreVertical
 } from 'lucide-react';
 
 const HeroHeaderCard = ({ profile, hasValue, isContactUnlocked, onUnlockClick }) => (
@@ -455,7 +460,7 @@ const ContactDetailsModal = ({ isOpen, onClose, profile, onCopy, copiedField }) 
 };
 
 export const ProfileDetailPage = ({ profileId, onNavigate }) => {
-  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, hasActiveSubscription, triggerPrivacyAlert } = useAuth();
+  const { user, isAuthenticated, canViewProfile, unlockProfileForUser, hasActiveSubscription, triggerPrivacyAlert, isUserBlocked, unblockUser } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, recordProfileView, addToast } = useProfiles();
 
@@ -467,6 +472,12 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   const [showBiodataViewerModal, setShowBiodataViewerModal] = useState(false);
   const [showContactDetailsModal, setShowContactDetailsModal] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+
+  // Moderation: Report & Block States
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportModalConfig, setReportModalConfig] = useState({ targetType: 'profile', evidence: null });
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
 
   const handleCopyText = (text, fieldName) => {
     if (!text) return;
@@ -508,6 +519,48 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         sessionStorage.setItem('reshimgath_redirect_after_auth', `/profile/${targetSlug}`);
       } catch (e) {}
     }
+  };
+
+  const isBlocked = isUserBlocked ? isUserBlocked(profile?.id) : false;
+  const isOwnProfile = Boolean(user && profile && String(user.id) === String(profile.id));
+
+  const handleOpenReportProfile = () => {
+    if (!isAuthenticated) {
+      saveRedirectForGuest();
+      setShowGuestAuthModal(true);
+      return;
+    }
+    setReportModalConfig({ targetType: 'profile', evidence: null });
+    setShowReportModal(true);
+    setShowMoreActions(false);
+  };
+
+  const handleOpenReportPhoto = (photoUrl, photoIndex) => {
+    if (!isAuthenticated) {
+      saveRedirectForGuest();
+      setShowGuestAuthModal(true);
+      return;
+    }
+    setReportModalConfig({
+      targetType: 'photo',
+      evidence: { photoUrl, photoIndex }
+    });
+    setShowReportModal(true);
+  };
+
+  const handleToggleBlock = async () => {
+    if (!isAuthenticated) {
+      saveRedirectForGuest();
+      setShowGuestAuthModal(true);
+      return;
+    }
+    if (isBlocked) {
+      await unblockUser(profile?.id);
+      addToast(`${profile?.name || 'Member'} has been unblocked.`, 'success');
+    } else {
+      setShowBlockModal(true);
+    }
+    setShowMoreActions(false);
   };
 
   const handleUnlockContactClick = (action = 'contact') => {
@@ -733,15 +786,76 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
             <Share2 className="w-3.5 h-3.5 text-brand-plum" />
             <span>Share</span>
           </button>
+
+          {/* Safety & Moderation Menu: Report & Block (Not on own profile) */}
+          {!isOwnProfile && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowMoreActions(!showMoreActions)}
+                className="inline-flex items-center justify-center p-1.5 rounded-full bg-white border border-gray-200 text-brand-charcoal hover:bg-brand-lightBg hover:border-brand-plum transition-all"
+                title="Safety & Moderation Options"
+              >
+                <MoreVertical className="w-4 h-4 text-brand-plum" />
+              </button>
+
+              {showMoreActions && (
+                <div 
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-brand-rose/30 py-1.5 z-40 text-left animate-in fade-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={handleOpenReportProfile}
+                    className="w-full px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center space-x-2 transition-colors"
+                  >
+                    <Flag className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Report Profile (तक्रार करा)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleToggleBlock}
+                    className="w-full px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center space-x-2 transition-colors border-t border-gray-100"
+                  >
+                    <Ban className={`w-3.5 h-3.5 ${isBlocked ? 'text-emerald-600' : 'text-gray-500'}`} />
+                    <span>{isBlocked ? 'Unblock Member' : 'Block Member (ब्लॉक करा)'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Blocked Member Notice Banner */}
+      {isBlocked && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2 text-rose-800">
+            <Ban className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>You have blocked this member. They cannot view your contact details, send you messages, or send interest requests.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleBlock}
+            className="px-3 py-1.5 bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 rounded-xl font-bold text-xs shrink-0 transition-colors"
+          >
+            Unblock
+          </button>
+        </div>
+      )}
 
       {/* MOBILE VIEW ONLY (lg:hidden): Traditional Digital Matrimonial Biodata Format */}
       <div className="block lg:hidden space-y-6">
         
         {/* Photo Gallery Card */}
         <div className="bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury w-full max-w-full overflow-hidden">
-          <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
+          <PhotoGallery 
+            photos={profile.photos} 
+            avatar={profile.avatar} 
+            name={profile.name} 
+            onReportPhoto={handleOpenReportPhoto} 
+          />
         </div>
 
         {/* DIGITAL MAHARASHTRIAN BIODATA DOCUMENT (Mobile View Main Card) */}
@@ -940,7 +1054,12 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
           
           {/* Photo Gallery Card */}
           <div className="bg-white p-4 sm:p-5 rounded-3xl border border-brand-rose/20 shadow-luxury w-full max-w-full overflow-hidden">
-            <PhotoGallery photos={profile.photos} avatar={profile.avatar} name={profile.name} />
+            <PhotoGallery 
+              photos={profile.photos} 
+              avatar={profile.avatar} 
+              name={profile.name} 
+              onReportPhoto={handleOpenReportPhoto} 
+            />
           </div>
 
           {/* Candidate Verification & Trust Badges Card */}
@@ -1531,6 +1650,23 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
         profile={profile}
         onCopy={handleCopyText}
         copiedField={copiedField}
+      />
+
+      {/* Moderation: Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType={reportModalConfig.targetType}
+        targetUser={profile}
+        evidence={reportModalConfig.evidence}
+      />
+
+      {/* Moderation: Block User Confirmation Modal */}
+      <BlockConfirmModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        targetProfile={profile}
+        onSuccess={() => setShowBlockModal(false)}
       />
 
     </div>

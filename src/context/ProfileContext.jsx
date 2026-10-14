@@ -28,7 +28,14 @@ import {
   subscribeToNotificationsFromFirestore,
   saveInquiryToFirestore,
   deleteInquiryFromFirestore,
-  subscribeToInquiriesFromFirestore
+  subscribeToInquiriesFromFirestore,
+  fetchReportsFromFirestore,
+  saveReportToFirestore,
+  updateReportInFirestore,
+  deleteReportFromFirestore,
+  subscribeToReportsFromFirestore,
+  removePhotoFromProfileInFirestore,
+  deleteChatMessageFromFirestore
 } from '../services/firebaseService';
 import { doesProfileHavePhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
@@ -269,7 +276,17 @@ export const ProfileProvider = ({ children }) => {
     return DEFAULT_SUBSCRIPTION_PLANS;
   });
 
-  const { user, hasActiveSubscription, canViewProfile, unlockProfileForUser } = useAuth();
+  const [reports, setReports] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_reports');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const { user, hasActiveSubscription, canViewProfile, unlockProfileForUser, isUserBlocked, blockUser, unblockUser } = useAuth();
 
   // Global subscription modal control for actions that require membership (Send Interest, Connect, Unlock)
   const [subModalConfig, setSubModalConfig] = useState({
@@ -425,6 +442,15 @@ export const ProfileProvider = ({ children }) => {
       }
     });
 
+    const unsubReports = subscribeToReportsFromFirestore((firestoreReports) => {
+      if (firestoreReports && Array.isArray(firestoreReports)) {
+        setReports(firestoreReports);
+        try {
+          localStorage.setItem('reshimgath_reports', JSON.stringify(firestoreReports));
+        } catch (e) {}
+      }
+    });
+
     const loadOtherContent = async () => {
       const firestoreHome = await fetchHomeContentFromFirestore();
       if (firestoreHome) {
@@ -441,6 +467,13 @@ export const ProfileProvider = ({ children }) => {
           localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(firestorePlans));
         } catch (e) {}
       }
+      const firestoreReports = await fetchReportsFromFirestore();
+      if (firestoreReports && Array.isArray(firestoreReports)) {
+        setReports(firestoreReports);
+        try {
+          localStorage.setItem('reshimgath_reports', JSON.stringify(firestoreReports));
+        } catch (e) {}
+      }
     };
     loadOtherContent();
 
@@ -451,6 +484,7 @@ export const ProfileProvider = ({ children }) => {
       unsubViews();
       unsubNotifs();
       if (unsubInquiries) unsubInquiries();
+      if (unsubReports) unsubReports();
     };
   }, []);
 
@@ -591,6 +625,19 @@ export const ProfileProvider = ({ children }) => {
       return;
     }
 
+    // Rule: Do NOT record view or create notification if either user has blocked the other
+    const viewerBlocked = Array.isArray(viewerUser.blockedUsers) && viewerUser.blockedUsers.some(b => {
+      const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+      return bId === cleanTargetId;
+    });
+    const targetBlocked = Array.isArray(targetProfile.blockedUsers) && targetProfile.blockedUsers.some(b => {
+      const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+      return bId === cleanVisitorId;
+    });
+    if (viewerBlocked || targetBlocked) {
+      return;
+    }
+
     // Rule 2: Check if visitor_user_id + profile_owner_user_id pair already exists in local profileViews state
     const alreadyVisitedLocally = (profileViews || []).some((v) => {
       if (!v) return false;
@@ -690,6 +737,29 @@ export const ProfileProvider = ({ children }) => {
 
     const myId = user.id;
     const targetId = profileId;
+
+    if (isUserBlocked && isUserBlocked(profileId)) {
+      addToast('Cannot send interest. You have blocked this member.', 'error');
+      return false;
+    }
+
+    const targetP = profiles.find(p => String(p.id) === String(profileId));
+    if (targetP && Array.isArray(targetP.blockedUsers)) {
+      const myCleanId = String(user.id).toLowerCase().trim().replace(/^ss-/, '');
+      const blockedMe = targetP.blockedUsers.some(b => {
+        const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+        return bId === myCleanId;
+      });
+      if (blockedMe) {
+        addToast('Cannot send interest. This member is unavailable.', 'error');
+        return false;
+      }
+    }
+
+    if (targetP && targetP.blocked) {
+      addToast('Cannot send interest. This member profile is inactive.', 'error');
+      return false;
+    }
 
     // Check if already sent
     const alreadySent = (interests.sent || []).some((item) => {
@@ -928,6 +998,29 @@ export const ProfileProvider = ({ children }) => {
   const sendMessage = useCallback((partnerProfileId, text) => {
     if (!text || !text.trim() || !user) return false;
 
+    if (isUserBlocked && isUserBlocked(partnerProfileId)) {
+      addToast('Cannot send message. You have blocked this member.', 'error');
+      return false;
+    }
+
+    const partnerProfile = profiles.find(p => String(p.id) === String(partnerProfileId));
+    if (partnerProfile && Array.isArray(partnerProfile.blockedUsers)) {
+      const myCleanId = String(user.id).toLowerCase().trim().replace(/^ss-/, '');
+      const blockedMe = partnerProfile.blockedUsers.some(b => {
+        const bId = String(typeof b === 'object' ? b.id : b).toLowerCase().trim().replace(/^ss-/, '');
+        return bId === myCleanId;
+      });
+      if (blockedMe) {
+        addToast('Cannot send message. This member is unavailable.', 'error');
+        return false;
+      }
+    }
+
+    if (partnerProfile && partnerProfile.blocked) {
+      addToast('Cannot send message. This account is suspended.', 'error');
+      return false;
+    }
+
     const senderId = String(user.id);
     const targetId = String(partnerProfileId);
     const cleanSenderId = senderId.toLowerCase().trim().replace(/^ss-/, '');
@@ -1003,7 +1096,7 @@ export const ProfileProvider = ({ children }) => {
     saveNotificationToFirestore(messageNotif);
 
     return true;
-  }, [user]);
+  }, [user, profiles, isUserBlocked, addToast]);
 
   const markChatAsRead = useCallback((partnerProfileId) => {
     if (!user || !partnerProfileId) return;
@@ -1415,13 +1508,131 @@ export const ProfileProvider = ({ children }) => {
     addToast('Inquiry record deleted.', 'info');
   };
 
-  const updateSubscriptionPlans = async (newPlans) => {
-    setSubscriptionPlans(newPlans);
-    try {
-      localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(newPlans));
-    } catch (e) {}
-    await saveSubscriptionPlansToFirestore(newPlans);
-    addToast('Subscription plan pricing updated successfully!', 'success');
+  const submitReport = async ({ targetType, targetUserId, targetName, targetRegId, reason, details = '', evidence = null }) => {
+    if (!user) {
+      addToast('Please login to report content.', 'error');
+      return null;
+    }
+    const reportId = `rep_${Date.now()}`;
+    const newReport = {
+      id: reportId,
+      targetType: targetType || 'profile', // 'profile' | 'photo' | 'message'
+      targetUserId: String(targetUserId || ''),
+      targetName: targetName || 'Member',
+      targetRegId: targetRegId || '',
+      reason: reason || 'Other violation',
+      details: (details || '').trim(),
+      evidence: evidence || null, // { photoUrl, photoIndex } or { messageId, text, senderId, chatId }
+      reporterId: String(user.id),
+      reporterName: user.name || 'Member',
+      reporterRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : ''),
+      reporterEmail: user.email || '',
+      reporterPhone: user.phone || user.mobile || '',
+      status: 'pending', // 'pending' | 'resolved' | 'dismissed'
+      actionTaken: null,
+      adminNotes: '',
+      resolvedAt: null,
+      resolvedBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setReports((prev) => {
+      const updated = [newReport, ...prev];
+      try {
+        localStorage.setItem('reshimgath_reports', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    await saveReportToFirestore(newReport);
+    addToast('Report submitted successfully! Sambodhi Sarang administration will review it.', 'success');
+    return newReport;
+  };
+
+  const resolveReport = async (reportId, { status = 'resolved', actionTaken = 'Reviewed', adminNotes = '', resolvedBy = 'Admin' } = {}) => {
+    const now = new Date().toISOString();
+    const updateData = {
+      status,
+      actionTaken,
+      adminNotes,
+      resolvedBy,
+      resolvedAt: now,
+      updatedAt: now
+    };
+
+    setReports((prev) => {
+      const updated = prev.map((r) => String(r.id) === String(reportId) ? { ...r, ...updateData } : r);
+      try {
+        localStorage.setItem('reshimgath_reports', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    await updateReportInFirestore(reportId, updateData);
+    addToast(`Report marked as ${status}.`, 'info');
+    return true;
+  };
+
+  const warnUser = async (targetUserId, warningMessage, reason = 'Community Guidelines') => {
+    if (!targetUserId) return false;
+    const warnNotif = {
+      id: `warn_${Date.now()}`,
+      type: 'admin_warning',
+      title: 'Official Bureau Warning / ताकीद ⚠️',
+      text: warningMessage || `You have received an official warning from Sambodhi Sarang administration regarding violation of ${reason}. Repeated violations will result in permanent account suspension.`,
+      targetUserId: String(targetUserId),
+      profileId: 'admin_1',
+      senderId: 'admin_1',
+      senderName: 'Bureau Administration',
+      time: 'Just now',
+      unread: true,
+      createdAt: new Date().toISOString()
+    };
+    await saveNotificationToFirestore(warnNotif);
+    setNotifications((prev) => [warnNotif, ...prev]);
+    addToast('Official warning notification sent to member.', 'success');
+    return true;
+  };
+
+  const removeViolatingContent = async (targetType, targetUserId, evidence) => {
+    if (targetType === 'photo' && evidence?.photoUrl) {
+      await removePhotoFromProfileInFirestore(targetUserId, evidence.photoUrl);
+      setProfiles((prev) => {
+        const next = prev.map((p) => {
+          if (String(p.id) === String(targetUserId)) {
+            const nextPhotos = (p.photos || []).filter(ph => (typeof ph === 'string' ? ph : ph?.url) !== evidence.photoUrl);
+            let nextAvatar = p.avatar;
+            if (nextAvatar === evidence.photoUrl) {
+              nextAvatar = nextPhotos.length > 0 ? (typeof nextPhotos[0] === 'string' ? nextPhotos[0] : nextPhotos[0]?.url) : null;
+            }
+            const updated = { ...p, photos: nextPhotos, avatar: nextAvatar };
+            saveProfileToFirestore(p.id, updated);
+            return updated;
+          }
+          return p;
+        });
+        try {
+          localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+      addToast('Violating photo removed from member profile.', 'success');
+      return true;
+    } else if (targetType === 'message' && evidence?.messageId && evidence?.chatId) {
+      await deleteChatMessageFromFirestore(evidence.chatId, evidence.messageId);
+      setChats((prev) => {
+        const thread = prev[evidence.chatId] || [];
+        const nextThread = thread.filter(m => String(m.id) !== String(evidence.messageId));
+        return {
+          ...prev,
+          [evidence.chatId]: nextThread
+        };
+      });
+      addToast('Violating message removed from conversation.', 'success');
+      return true;
+    }
+    return false;
   };
 
   return (
@@ -1467,7 +1678,12 @@ export const ProfileProvider = ({ children }) => {
         openSubscriptionModal,
         closeSubscriptionModal,
         sortProfilesByLatest,
-        resolveNotificationProfile
+        resolveNotificationProfile,
+        reports,
+        submitReport,
+        resolveReport,
+        warnUser,
+        removeViolatingContent
       }}
     >
       {children}

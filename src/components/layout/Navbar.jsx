@@ -20,7 +20,8 @@ import {
   Crown,
   Home,
   Eye,
-  Trash2
+  Trash2,
+  Ban
 } from 'lucide-react';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
@@ -375,6 +376,14 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                             <span>{t('settings')}</span>
                           </button>
 
+                          <button
+                            onClick={() => handleNav('/blocked-users')}
+                            className="w-full text-left px-4 py-2.5 text-xs font-medium text-brand-charcoal hover:bg-brand-lightBg flex items-center space-x-2"
+                          >
+                            <Ban className="w-4 h-4 text-rose-500" />
+                            <span>Blocked Profiles</span>
+                          </button>
+
                           <div className="border-t border-gray-100 my-1"></div>
 
                           <button
@@ -476,9 +485,15 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                     <ShieldCheck className="w-4 h-4 text-brand-gray shrink-0" />
                     <span>{t('settings')}</span>
                   </div>
-                  <span className="text-[11px] text-rose-600 font-bold bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
-                    Delete Account
-                  </span>
+                </button>
+                <button
+                  onClick={() => handleNav('/blocked-users')}
+                  className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Ban className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>Blocked Profiles</span>
+                  </div>
                 </button>
                 <button
                   onClick={() => {

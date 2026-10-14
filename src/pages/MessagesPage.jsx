@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useProfiles } from '../context/ProfileContext';
+import { ReportModal } from '../components/moderation/ReportModal';
+import { BlockConfirmModal } from '../components/moderation/BlockConfirmModal';
 import { 
   MessageSquare, 
   Send, 
@@ -12,7 +14,12 @@ import {
   Heart, 
   Search, 
   ShieldCheck,
-  ArrowLeft
+  ArrowLeft,
+  Ban,
+  Flag,
+  MoreVertical,
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
 
 // Fast timestamp formatting cache to eliminate repetitive regex & Date instantiations
@@ -146,7 +153,7 @@ const ConversationItem = React.memo(({ profile, lastMsg, unreadCount, isSelected
 });
 
 // Lightweight Message Bubble optimized for GPU rendering in WebView
-const MessageBubble = React.memo(({ msg, isUser }) => {
+const MessageBubble = React.memo(({ msg, isUser, onReportMessage }) => {
   const formattedTime = formatMessageTime(msg.timestamp, msg.createdAt);
 
   return (
@@ -163,10 +170,20 @@ const MessageBubble = React.memo(({ msg, isUser }) => {
       >
         <p className="whitespace-pre-wrap break-words">{msg.text}</p>
       </div>
-      <div className="flex items-center space-x-1 mt-1 px-1">
+      <div className="flex items-center space-x-1.5 mt-1 px-1">
         <span className="text-[10px] text-gray-400">
           {formattedTime}
         </span>
+        {!isUser && onReportMessage && (
+          <button
+            type="button"
+            onClick={() => onReportMessage(msg)}
+            className="text-gray-300 hover:text-rose-500 transition-colors p-0.5"
+            title="Report this message (मेसेजची तक्रार करा)"
+          >
+            <Flag className="w-3 h-3" />
+          </button>
+        )}
         {isUser && (
           <span className="inline-flex items-center">
             {msg.status === 'read' ? (
@@ -184,11 +201,12 @@ const MessageBubble = React.memo(({ msg, isUser }) => {
 });
 
 // Isolated Chat Input component so typing text never re-renders the conversation list or message history
-const ChatInput = React.memo(({ onSend, placeholder }) => {
+const ChatInput = React.memo(({ onSend, placeholder, disabled = false }) => {
   const [text, setText] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (disabled) return;
     const trimmed = text.trim();
     if (!trimmed) return;
     onSend(trimmed);
@@ -202,15 +220,16 @@ const ChatInput = React.memo(({ onSend, placeholder }) => {
     >
       <input
         type="text"
+        disabled={disabled}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={placeholder}
-        className="flex-1 px-4 py-2.5 sm:py-3 border border-gray-200 rounded-2xl text-xs focus:ring-2 focus:ring-brand-plum/20 focus:outline-hidden bg-slate-50/60 focus:bg-white transition-colors"
+        placeholder={disabled ? 'Messaging is disabled for this conversation.' : placeholder}
+        className="flex-1 px-4 py-2.5 sm:py-3 border border-gray-200 rounded-2xl text-xs focus:ring-2 focus:ring-brand-plum/20 focus:outline-hidden bg-slate-50/60 focus:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       />
       <button
         type="submit"
-        disabled={!text.trim()}
-        className="p-3 sm:p-3.5 bg-brand-plum disabled:opacity-40 text-white rounded-2xl shadow-2xs hover:bg-brand-plumDark transition-all flex items-center justify-center shrink-0 active:scale-95"
+        disabled={disabled || !text.trim()}
+        className="p-3 sm:p-3.5 bg-brand-plum disabled:opacity-40 text-white rounded-2xl shadow-2xs hover:bg-brand-plumDark transition-all flex items-center justify-center shrink-0 active:scale-95 disabled:cursor-not-allowed"
         title="Send message"
       >
         <Send className="w-4 h-4 text-white stroke-[2.5]" />
@@ -220,9 +239,9 @@ const ChatInput = React.memo(({ onSend, placeholder }) => {
 });
 
 export const MessagesPage = ({ onNavigate }) => {
-  const { user, isAuthenticated, triggerPrivacyAlert, canViewProfile } = useAuth();
+  const { user, isAuthenticated, triggerPrivacyAlert, canViewProfile, isUserBlocked, blockUser, unblockUser } = useAuth();
   const { t } = useLanguage();
-  const { profiles, chats, interests, sendMessage, markChatAsRead } = useProfiles();
+  const { profiles, chats, interests, sendMessage, markChatAsRead, addToast, submitReport } = useProfiles();
 
   // Check if navigating directly to a specific chat via profile/interest page
   const [activePartnerId, setActivePartnerId] = useState(() => {
@@ -416,6 +435,103 @@ export const MessagesPage = ({ onNavigate }) => {
     setMobileView('chat');
   }, [markChatAsRead]);
 
+  // Moderation state & handlers
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportModalConfig, setReportModalConfig] = useState({
+    targetType: 'message',
+    targetId: '',
+    targetName: '',
+    evidenceText: '',
+    messageId: ''
+  });
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const chatMenuRef = useRef(null);
+
+  const isBlockedByMe = useMemo(() => {
+    return currentPartner ? isUserBlocked(currentPartner.id) : false;
+  }, [currentPartner, isUserBlocked]);
+
+  const isBlockedByPartner = useMemo(() => {
+    if (!currentPartner || !user) return false;
+    const blockedList = currentPartner.blockedUsers || [];
+    return blockedList.map(String).includes(String(user.id));
+  }, [currentPartner, user]);
+
+  const isPartnerSuspended = useMemo(() => {
+    return Boolean(currentPartner?.blocked === true);
+  }, [currentPartner]);
+
+  const isChatDisabled = isBlockedByMe || isBlockedByPartner || isPartnerSuspended;
+
+  // Close 3-dot menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (chatMenuRef.current && !chatMenuRef.current.contains(e.target)) {
+        setShowChatMenu(false);
+      }
+    };
+    if (showChatMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showChatMenu]);
+
+  const handleToggleBlockPartner = () => {
+    setShowChatMenu(false);
+    if (!currentPartner) return;
+    if (isBlockedByMe) {
+      unblockUser(currentPartner.id);
+      addToast?.('Member unblocked successfully.', 'success');
+    } else {
+      setShowBlockModal(true);
+    }
+  };
+
+  const handleConfirmBlock = () => {
+    if (!currentPartner) return;
+    blockUser(currentPartner.id);
+    setShowBlockModal(false);
+    addToast?.(`Blocked ${currentPartner.name}. You will no longer receive messages from this member.`, 'success');
+  };
+
+  const handleOpenReportPartner = () => {
+    setShowChatMenu(false);
+    if (!currentPartner) return;
+    setReportModalConfig({
+      targetType: 'profile',
+      targetId: currentPartner.id,
+      targetName: currentPartner.name,
+      evidenceText: '',
+      messageId: ''
+    });
+    setShowReportModal(true);
+  };
+
+  const handleOpenReportMessage = useCallback((msg) => {
+    if (!currentPartner) return;
+    setReportModalConfig({
+      targetType: 'message',
+      targetId: currentPartner.id,
+      targetName: currentPartner.name,
+      evidenceText: msg.text || '',
+      messageId: String(msg.id)
+    });
+    setShowReportModal(true);
+  }, [currentPartner]);
+
+  const handleSubmitReportModal = async (reportData) => {
+    const res = await submitReport(reportData);
+    if (res.success) {
+      addToast?.('Report submitted successfully. Our moderation team will review it.', 'success');
+    } else {
+      addToast?.(res.error || 'Failed to submit report.', 'error');
+    }
+    return res;
+  };
+
   // Early returns placed AFTER all hooks are defined
   if (!isAuthenticated) {
     return null;
@@ -565,12 +681,65 @@ export const MessagesPage = ({ onNavigate }) => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => onNavigate(`/profile/${currentPartner.id}`)}
-                  className="text-[11px] sm:text-xs font-bold text-brand-plum hover:underline shrink-0 ml-2"
-                >
-                  Profile Details
-                </button>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    onClick={() => onNavigate(`/profile/${currentPartner.id}`)}
+                    className="hidden sm:inline-block text-[11px] sm:text-xs font-bold text-brand-plum hover:underline"
+                  >
+                    Profile Details
+                  </button>
+                  <div className="relative" ref={chatMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowChatMenu(!showChatMenu)}
+                      className="p-1.5 text-gray-500 hover:text-brand-plum hover:bg-gray-100 rounded-full transition-colors"
+                      title="More options"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+
+                    {showChatMenu && (
+                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-30">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowChatMenu(false);
+                            onNavigate(`/profile/${currentPartner.id}`);
+                          }}
+                          className="sm:hidden w-full text-left px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                        >
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span>View Profile</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenReportPartner}
+                          className="w-full text-left px-3.5 py-2 text-xs text-gray-700 hover:bg-rose-50 hover:text-rose-600 flex items-center space-x-2 transition-colors"
+                        >
+                          <Flag className="w-4 h-4 text-rose-500" />
+                          <span>Report Member</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleToggleBlockPartner}
+                          className="w-full text-left px-3.5 py-2 text-xs font-medium flex items-center space-x-2 transition-colors text-rose-600 hover:bg-rose-50"
+                        >
+                          {isBlockedByMe ? (
+                            <>
+                              <UserCheck className="w-4 h-4 text-emerald-600" />
+                              <span className="text-emerald-700 font-semibold">Unblock Member</span>
+                            </>
+                          ) : (
+                            <>
+                              <Ban className="w-4 h-4 text-rose-500" />
+                              <span>Block Member</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Chat Messages Body - Solid background and hardware-accelerated touch scroll */}
@@ -591,6 +760,40 @@ export const MessagesPage = ({ onNavigate }) => {
                   </span>
                 </div>
 
+                {/* Blocked and Suspension Notices */}
+                {isBlockedByMe && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-xs text-rose-800 shadow-2xs">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Ban className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span className="truncate">You have blocked this member. You cannot send or receive messages.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        unblockUser(currentPartner.id);
+                        addToast?.('Member unblocked successfully.', 'success');
+                      }}
+                      className="px-2.5 py-1 bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 rounded-lg font-bold text-[11px] shrink-0 ml-2 shadow-2xs"
+                    >
+                      Unblock
+                    </button>
+                  </div>
+                )}
+
+                {isBlockedByPartner && !isBlockedByMe && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center space-x-2 text-xs text-amber-800 shadow-2xs">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>This conversation is unavailable because this member has blocked further communication.</span>
+                  </div>
+                )}
+
+                {isPartnerSuspended && !isBlockedByMe && !isBlockedByPartner && (
+                  <div className="p-3 bg-gray-100 border border-gray-300 rounded-xl flex items-center space-x-2 text-xs text-gray-700 shadow-2xs">
+                    <AlertCircle className="w-4 h-4 text-gray-600 shrink-0" />
+                    <span>This member's account is currently suspended by administration.</span>
+                  </div>
+                )}
+
                 {activeThread.map((msg) => {
                   const isUser = Boolean(user && (String(msg.senderId) === String(user.id)));
                   return (
@@ -598,6 +801,7 @@ export const MessagesPage = ({ onNavigate }) => {
                       key={msg.id}
                       msg={msg}
                       isUser={isUser}
+                      onReportMessage={handleOpenReportMessage}
                     />
                   );
                 })}
@@ -607,12 +811,32 @@ export const MessagesPage = ({ onNavigate }) => {
               <ChatInput
                 onSend={handleSendMessage}
                 placeholder={t('typeMessagePlaceholder') || 'Type your message...'}
+                disabled={isChatDisabled}
               />
             </>
           )}
         </main>
       </div>
 
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType={reportModalConfig.targetType}
+        targetId={reportModalConfig.targetId}
+        targetName={reportModalConfig.targetName}
+        evidenceText={reportModalConfig.evidenceText}
+        messageId={reportModalConfig.messageId}
+        onSubmit={handleSubmitReportModal}
+      />
+
+      {/* Block Confirmation Modal */}
+      <BlockConfirmModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onConfirm={handleConfirmBlock}
+        targetName={currentPartner?.name || 'this member'}
+      />
     </div>
   );
 };

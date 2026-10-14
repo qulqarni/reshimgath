@@ -28,6 +28,7 @@ import { ContactPage } from './pages/ContactPage';
 import { AdminPage } from './pages/AdminPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
+import { BlockedUsersPage } from './pages/BlockedUsersPage';
 
 function AppContent() {
   const { subModalConfig, closeSubscriptionModal } = useProfiles();
@@ -189,6 +190,8 @@ function AppContent() {
         return <NotificationsPage onNavigate={handleNavigate} />;
       case '/settings':
         return <SettingsPage onNavigate={handleNavigate} />;
+      case '/blocked-users':
+        return <BlockedUsersPage onNavigate={handleNavigate} />;
       case '/about':
         return <AboutPage onNavigate={handleNavigate} />;
       case '/contact':
