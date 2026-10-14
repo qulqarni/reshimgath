@@ -1419,6 +1419,15 @@ export const ProfileProvider = ({ children }) => {
     addToast('Homepage content updated successfully!', 'success');
   };
 
+  const updateSubscriptionPlans = async (newPlans) => {
+    setSubscriptionPlans(newPlans);
+    try {
+      localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(newPlans));
+    } catch (e) {}
+    await saveSubscriptionPlansToFirestore(newPlans);
+    addToast('Subscription plan rates updated successfully!', 'success');
+  };
+
   const addSuccessStory = (storyData) => {
     const newStory = {
       id: Date.now(),
