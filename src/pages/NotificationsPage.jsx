@@ -9,18 +9,22 @@ export const NotificationsPage = ({ onNavigate }) => {
   const { t } = useLanguage();
   const { profiles, notifications, markNotificationRead, markAllNotificationsRead, resolveNotificationProfile } = useProfiles();
 
-  const userNotifications = notifications.filter((n) => {
-    if (!user) return true;
-    if (n.type === 'view' && String(n.profileId) === String(user.id)) return false;
-    if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
-    return true;
-  });
+  const userNotifications = React.useMemo(() => {
+    return notifications.filter((n) => {
+      if (!user) return true;
+      if (n.type === 'view' && String(n.profileId) === String(user.id)) return false;
+      if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
+      return true;
+    });
+  }, [notifications, user?.id, user?.email]);
+
+  const hasUnread = React.useMemo(() => userNotifications.some((n) => n.unread), [userNotifications]);
 
   useEffect(() => {
-    if (userNotifications.some((n) => n.unread)) {
+    if (hasUnread) {
       markAllNotificationsRead(userNotifications.map((n) => n.id));
     }
-  }, [userNotifications]);
+  }, [hasUnread, markAllNotificationsRead]);
 
   useEffect(() => {
     if (!isAuthenticated) {

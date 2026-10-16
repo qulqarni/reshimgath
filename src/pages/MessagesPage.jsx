@@ -264,16 +264,32 @@ export const MessagesPage = ({ onNavigate }) => {
     if (!user) return set;
     const myId = String(user.id).toLowerCase();
 
-    (user.subscription?.unlockedProfiles || []).forEach((id) => set.add(String(id).toLowerCase()));
-    (user.unlockedProfiles || []).forEach((id) => set.add(String(id).toLowerCase()));
+    const addId = (id) => {
+      if (!id) return;
+      const s = String(id).toLowerCase().trim();
+      set.add(s);
+      const cleanSS = s.replace(/^ss-?/i, '');
+      if (cleanSS) {
+        set.add(cleanSS);
+        set.add(`ss-${cleanSS}`);
+      }
+      const numOnly = s.replace(/[^0-9]/g, '');
+      if (numOnly) {
+        set.add(numOnly);
+        set.add(`ss-${numOnly}`);
+      }
+    };
+
+    (user.subscription?.unlockedProfiles || []).forEach(addId);
+    (user.unlockedProfiles || []).forEach(addId);
 
     const conns = interests?.unlockedConnections || [];
     conns.forEach((c) => {
       if (!c) return;
       const u1 = String(c.user1 || '').toLowerCase();
       const u2 = String(c.user2 || '').toLowerCase();
-      if (u1 === myId && u2) set.add(u2);
-      if (u2 === myId && u1) set.add(u1);
+      if (u1 === myId && u2) addId(u2);
+      if (u2 === myId && u1) addId(u1);
     });
 
     return set;
@@ -315,17 +331,16 @@ export const MessagesPage = ({ onNavigate }) => {
 
       // 4. Must be unlocked by current user OR have an existing chat thread OR be the active target
       if (unlockedSet.has(pId)) return true;
+      if (p.regId && unlockedSet.has(String(p.regId).toLowerCase())) return true;
+      if (p.registrationId && unlockedSet.has(String(p.registrationId).toLowerCase())) return true;
       if (activePartnerId && String(activePartnerId).toLowerCase() === pId) return true;
 
       const convoKey = [String(user.id), String(p.id)].sort().join('_');
       if (chats[convoKey] && chats[convoKey].length > 0) return true;
 
-      if (canViewProfile) {
-        return canViewProfile(p.id).alreadyUnlocked;
-      }
       return false;
     });
-  }, [profiles, existingThreadsSignature, user, activePartnerId, unlockedSet, canViewProfile]);
+  }, [profiles, existingThreadsSignature, user, activePartnerId, unlockedSet]);
 
   // Precompute conversation metadata (last message, unread count, timestamp) in a single O(N) pass
   const conversationMetaMap = useMemo(() => {
@@ -399,12 +414,19 @@ export const MessagesPage = ({ onNavigate }) => {
   }, [isAuthenticated, onNavigate, triggerPrivacyAlert]);
 
   // Mark active chat as read ONLY when there are actual unread messages from the partner
+  const lastMarkedKeyRef = useRef(null);
   useEffect(() => {
     if (!currentPartner?.id || !activeThread || activeThread.length === 0) return;
-    const hasUnreadFromPartner = activeThread.some(
+    const unreadMsgs = activeThread.filter(
       (m) => String(m.senderId) !== String(user?.id) && m.status !== 'read'
     );
-    if (hasUnreadFromPartner) {
+    if (unreadMsgs.length === 0) return;
+
+    const lastUnreadId = unreadMsgs[unreadMsgs.length - 1]?.id || '';
+    const markKey = `${currentPartner.id}_${lastUnreadId}`;
+
+    if (lastMarkedKeyRef.current !== markKey) {
+      lastMarkedKeyRef.current = markKey;
       markChatAsRead(currentPartner.id);
     }
   }, [currentPartner?.id, activeThread, user?.id, markChatAsRead]);

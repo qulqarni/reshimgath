@@ -372,9 +372,11 @@ export const ProfileProvider = ({ children }) => {
 
         const updatedList = Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
         const sortedList = sortProfilesByLatest(updatedList);
-        try {
-          localStorage.setItem('reshimgath_profiles', JSON.stringify(sortedList));
-        } catch (e) {}
+        setTimeout(() => {
+          try {
+            localStorage.setItem('reshimgath_profiles', JSON.stringify(sortedList));
+          } catch (e) {}
+        }, 50);
         return sortedList;
       });
     });
@@ -1106,26 +1108,32 @@ export const ProfileProvider = ({ children }) => {
     const combinedKey = [meId, targetId].sort().join('_');
 
     setChats((prev) => {
-      const existingThread = prev[combinedKey] || [];
+      const existingThread = prev[combinedKey];
+      if (!existingThread || existingThread.length === 0) return prev;
+
+      // Fast check if any unread messages from partner exist before allocating array
       let hasUnread = false;
+      for (let i = 0; i < existingThread.length; i++) {
+        const msg = existingThread[i];
+        if (String(msg.senderId) !== meId && msg.status !== 'read') {
+          hasUnread = true;
+          break;
+        }
+      }
+      if (!hasUnread) return prev;
 
       const updatedThread = existingThread.map((msg) => {
         if (String(msg.senderId) !== meId && msg.status !== 'read') {
-          hasUnread = true;
           return { ...msg, status: 'read' };
         }
         return msg;
       });
 
-      if (hasUnread) {
-        saveChatToFirestore(combinedKey, updatedThread);
-        return {
-          ...prev,
-          [combinedKey]: updatedThread
-        };
-      }
-
-      return prev;
+      saveChatToFirestore(combinedKey, updatedThread);
+      return {
+        ...prev,
+        [combinedKey]: updatedThread
+      };
     });
   }, [user]);
 
@@ -1145,7 +1153,9 @@ export const ProfileProvider = ({ children }) => {
     }
 
     Object.keys(chats).forEach((convoKey) => {
-      const parts = convoKey.split('_').map((id) => id.toLowerCase());
+      const lowerKey = convoKey.toLowerCase();
+      if (!lowerKey.includes(meId)) return;
+      const parts = lowerKey.split('_');
       if (parts.includes(meId)) {
         const otherId = parts.find((id) => id !== meId);
         if (otherId && blockedMap.has(otherId)) {
@@ -1162,7 +1172,7 @@ export const ProfileProvider = ({ children }) => {
       }
     });
     return total;
-  }, [user, chats, profiles]);
+  }, [user?.id, user?.isAdmin, user?.role, chats, profiles]);
 
   const markNotificationRead = (id) => {
     try {

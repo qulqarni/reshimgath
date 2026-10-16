@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Heart, Lock, Mail, ArrowRight, ShieldCheck, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Heart, Lock, Mail, ArrowRight, ShieldCheck, Sparkles, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export const LoginPage = ({ onNavigate }) => {
   const { login, loginAsDemo } = useAuth();
@@ -11,31 +11,42 @@ export const LoginPage = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    const cleanId = email.trim();
+    if (!cleanId || !password) {
       setError('Please enter your registered email/phone and password.');
       return;
     }
-    const result = login(email, password);
-    if (result && result.success) {
-      setError('');
-      let redirectPath = null;
-      try {
-        redirectPath = sessionStorage.getItem('reshimgath_redirect_after_auth');
-        if (redirectPath) {
-          sessionStorage.removeItem('reshimgath_redirect_after_auth');
-        }
-      } catch (e) {}
+    if (isSubmitting) return;
 
-      if (redirectPath) {
-        onNavigate(redirectPath);
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const result = await login(cleanId, password);
+      if (result && result.success) {
+        let redirectPath = null;
+        try {
+          redirectPath = sessionStorage.getItem('reshimgath_redirect_after_auth');
+          if (redirectPath) {
+            sessionStorage.removeItem('reshimgath_redirect_after_auth');
+          }
+        } catch (e) {}
+
+        React.startTransition(() => {
+          onNavigate(redirectPath || '/');
+        });
       } else {
-        onNavigate('/');
+        setError(result?.message || 'Account not found. Please check your login credentials.');
       }
-    } else {
-      setError(result?.message || 'Account not found. Please check your login credentials.');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Login failed. Please check your credentials and internet connection.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -77,10 +88,11 @@ export const LoginPage = ({ onNavigate }) => {
               <input
                 type="text"
                 required
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email, Mobile, or Reg ID (e.g., SS-1001)"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs transition-all"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs transition-colors"
               />
             </div>
           </div>
@@ -103,10 +115,11 @@ export const LoginPage = ({ onNavigate }) => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs transition-all"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:border-brand-plum focus:ring-2 focus:ring-brand-plum/20 text-xs transition-colors"
               />
               <button
                 type="button"
@@ -121,9 +134,17 @@ export const LoginPage = ({ onNavigate }) => {
 
           <button
             type="submit"
-            className="w-full py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand-plumDark transition-all border border-brand-gold/30"
+            disabled={isSubmitting || !email.trim() || !password}
+            className="w-full py-3.5 bg-brand-plum hover:bg-brand-plumDark disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all border border-brand-gold/30 flex items-center justify-center space-x-2"
           >
-            {t('login')}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 text-brand-gold animate-spin" />
+                <span>Logging in...</span>
+              </>
+            ) : (
+              <span>{t('login')}</span>
+            )}
           </button>
         </form>
 

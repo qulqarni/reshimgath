@@ -6,7 +6,7 @@ import { VerificationBadge } from '../common/VerificationBadge';
 import { WatermarkOverlay } from '../common/WatermarkOverlay';
 import { Heart, MapPin, GraduationCap, Briefcase, Bookmark, MessageSquare, Check, Sparkles, UserCheck, User, RotateCcw, PhoneCall, Ruler, Eye, ChevronLeft, ChevronRight, Crown, Lock } from 'lucide-react';
 
-export const ProfileCard = ({ profile, onSelect, priority = false }) => {
+export const ProfileCard = React.memo(({ profile, onSelect, priority = false }) => {
   const { user, isAuthenticated, hasActiveSubscription, canViewProfile, triggerPrivacyAlert } = useAuth();
   const { interests, sendInterest, acceptInterest, declineInterest, withdrawInterest, toggleShortlist, openSubscriptionModal } = useProfiles();
   const { t } = useLanguage();
@@ -404,4 +404,4 @@ export const ProfileCard = ({ profile, onSelect, priority = false }) => {
       </div>
     </div>
   );
-};
+});

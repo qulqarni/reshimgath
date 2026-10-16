@@ -30,8 +30,19 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { BlockedUsersPage } from './pages/BlockedUsersPage';
 
-function AppContent() {
+const GlobalSubscriptionModal = React.memo(function GlobalSubscriptionModal() {
   const { subModalConfig, closeSubscriptionModal } = useProfiles();
+  return (
+    <SubscriptionModal
+      isOpen={Boolean(subModalConfig?.isOpen)}
+      onClose={closeSubscriptionModal}
+      targetProfileName={subModalConfig?.targetProfileName}
+      reason={subModalConfig?.reason}
+    />
+  );
+});
+
+function AppContent() {
 
   // Helper to determine initial path & profile id from browser address bar URL slug, query params, or hash
   const getInitialRoute = () => {
@@ -220,12 +231,7 @@ function AppContent() {
       <Footer onNavigate={handleNavigate} />
       <MobileBottomNav currentPath={currentPath} onNavigate={handleNavigate} />
       <ToastContainer />
-      <SubscriptionModal
-        isOpen={Boolean(subModalConfig?.isOpen)}
-        onClose={closeSubscriptionModal}
-        targetProfileName={subModalConfig?.targetProfileName}
-        reason={subModalConfig?.reason}
-      />
+      <GlobalSubscriptionModal />
     </div>
   );
 }

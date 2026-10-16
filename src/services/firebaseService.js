@@ -10,6 +10,8 @@ import {
   addDoc, 
   query, 
   orderBy,
+  where,
+  limit,
   onSnapshot
 } from 'firebase/firestore';
 import { 
@@ -87,6 +89,87 @@ export const deleteProfileFromFirestore = async (profileId) => {
   } catch (error) {
     console.error('Error deleting profile from Firestore:', error);
     return false;
+  }
+};
+
+/**
+ * Find a specific member profile in Firestore by email, phone, or registration ID (O(1) indexed query)
+ */
+export const findProfileInFirestore = async (identifier) => {
+  if (!isFirebaseConfigured || !identifier) return null;
+  try {
+    const rawId = String(identifier).trim();
+    const cleanId = rawId.toLowerCase();
+
+    // 1. Direct document key lookup
+    const docRef = doc(db, PROFILES_COLLECTION, rawId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+
+    // 2. Query by email
+    if (cleanId.includes('@')) {
+      const qEmail = query(collection(db, PROFILES_COLLECTION), where('email', '==', rawId), limit(1));
+      const snapEmail = await getDocs(qEmail);
+      if (!snapEmail.empty) {
+        const d = snapEmail.docs[0];
+        return { id: d.id, ...d.data() };
+      }
+      const qEmailLower = query(collection(db, PROFILES_COLLECTION), where('email', '==', cleanId), limit(1));
+      const snapEmailLower = await getDocs(qEmailLower);
+      if (!snapEmailLower.empty) {
+        const d = snapEmailLower.docs[0];
+        return { id: d.id, ...d.data() };
+      }
+    }
+
+    // 3. Query by phone
+    const cleanPhone = rawId.replace(/[^0-9]/g, '');
+    if (cleanPhone.length >= 10) {
+      const qPhone = query(collection(db, PROFILES_COLLECTION), where('phone', '==', rawId), limit(1));
+      const snapPhone = await getDocs(qPhone);
+      if (!snapPhone.empty) {
+        const d = snapPhone.docs[0];
+        return { id: d.id, ...d.data() };
+      }
+    }
+
+    // 4. Query by registrationId or regId
+    const qRegId = query(collection(db, PROFILES_COLLECTION), where('regId', '==', rawId.toUpperCase()), limit(1));
+    const snapRegId = await getDocs(qRegId);
+    if (!snapRegId.empty) {
+      const d = snapRegId.docs[0];
+      return { id: d.id, ...d.data() };
+    }
+
+    const regNum = parseInt(rawId.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(regNum) && regNum > 0) {
+      const qRegNum = query(collection(db, PROFILES_COLLECTION), where('registrationId', '==', regNum), limit(1));
+      const snapRegNum = await getDocs(qRegNum);
+      if (!snapRegNum.empty) {
+        const d = snapRegNum.docs[0];
+        return { id: d.id, ...d.data() };
+      }
+    }
+
+    // 5. Fallback fast scan
+    const all = await fetchProfilesFromFirestore();
+    if (all && Array.isArray(all)) {
+      return all.find(
+        (p) =>
+          (p.email && p.email.toLowerCase() === cleanId) ||
+          doesProfileHavePhone(p, rawId) ||
+          (p.id && String(p.id).toLowerCase() === cleanId) ||
+          (p.regId && String(p.regId).toLowerCase() === cleanId) ||
+          (p.registrationId && String(p.registrationId) === cleanId) ||
+          (p.registrationId && `ss-${p.registrationId}`.toLowerCase() === cleanId)
+      ) || null;
+    }
+    return null;
+  } catch (err) {
+    console.warn('findProfileInFirestore error:', err);
+    return null;
   }
 };
 
@@ -660,13 +743,21 @@ export const subscribeToProfilesFromFirestore = (callback) => {
   }
 };
 
-export const subscribeToChatsFromFirestore = (callback) => {
+export const subscribeToChatsFromFirestore = (callback, currentUserId = null) => {
   if (!isFirebaseConfigured) return () => {};
   try {
+    const cleanUserId = currentUserId ? String(currentUserId).toLowerCase().trim() : null;
     return onSnapshot(collection(db, CHATS_COLLECTION), (snapshot) => {
       const chatsMap = {};
       snapshot.forEach((docSnap) => {
-        chatsMap[docSnap.id] = docSnap.data().messages || [];
+        const docId = docSnap.id;
+        if (cleanUserId) {
+          const parts = docId.toLowerCase().split('_');
+          if (!parts.includes(cleanUserId)) {
+            return;
+          }
+        }
+        chatsMap[docId] = docSnap.data().messages || [];
       });
       callback(chatsMap);
     });

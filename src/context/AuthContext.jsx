@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
-import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore, checkExistingUserInFirestore, saveUserBlockedListToFirestore } from '../services/firebaseService';
+import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore, checkExistingUserInFirestore, saveUserBlockedListToFirestore, findProfileInFirestore } from '../services/firebaseService';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
@@ -279,7 +279,7 @@ export const AuthProvider = ({ children }) => {
     return () => unsub();
   }, [user?.id]);
 
-  const login = (emailOrPhone, password) => {
+  const login = async (emailOrPhone, password) => {
     const input = (emailOrPhone || '').trim().toLowerCase();
     const pass = (password || '').trim();
 
@@ -326,24 +326,30 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: normDemo };
     }
 
-    // 3. Search in saved registered profiles from local storage
-    const savedProfiles = (() => {
-      try {
-        const stored = localStorage.getItem('reshimgath_profiles');
-        return stored ? JSON.parse(stored) : [];
-      } catch (e) {
-        return [];
-      }
-    })();
+    // 3. Search in cached profiles
+    const savedProfiles = getStoredProfilesFast();
 
-    const matchedProfile = savedProfiles.find(
+    let matchedProfile = savedProfiles.find(
       (p) =>
         (p.email && p.email.toLowerCase() === input) ||
         doesProfileHavePhone(p, input) ||
         (p.id && String(p.id).toLowerCase() === input) ||
         (p.regId && String(p.regId).toLowerCase() === input) ||
-        (p.registrationId && String(p.registrationId) === input)
+        (p.registrationId && String(p.registrationId) === input) ||
+        (p.registrationId && `ss-${p.registrationId}`.toLowerCase() === input)
     );
+
+    // 4. If not found in cache, lookup directly in Firestore
+    if (!matchedProfile && isFirebaseConfigured) {
+      try {
+        const firestoreFound = await findProfileInFirestore(input);
+        if (firestoreFound) {
+          matchedProfile = firestoreFound;
+        }
+      } catch (err) {
+        console.warn('Firestore fallback lookup error during login:', err);
+      }
+    }
 
     if (matchedProfile) {
       if (matchedProfile.blocked) {
@@ -414,40 +420,43 @@ export const AuthProvider = ({ children }) => {
     return login(inputEmail || ADMIN_USER.email, inputPass);
   };
 
-  const checkExistingUser = (email, phone) => {
-    const inputEmail = (email || '').trim().toLowerCase();
-    const inputPhone = (phone || '').trim();
+  const checkExistingUser = useCallback((email, phone) => {
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
+    const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+    if (!cleanEmail && !cleanPhone) {
+      return { emailExists: false, phoneExists: false };
+    }
+    if ((!cleanEmail || !cleanEmail.includes('@')) && (!cleanPhone || cleanPhone.length < 10)) {
+      return { emailExists: false, phoneExists: false };
+    }
 
-    const savedProfiles = (() => {
-      try {
-        const stored = localStorage.getItem('reshimgath_profiles');
-        return stored ? JSON.parse(stored) : [];
-      } catch (e) {
-        return [];
-      }
-    })();
-
-    const allRegistered = [...savedProfiles, ...DEMO_PROFILES];
+    const allRegistered = getStoredProfilesFast();
 
     let emailExists = false;
-    if (inputEmail) {
+    if (cleanEmail && cleanEmail.includes('@')) {
       emailExists = allRegistered.some(
-        (p) => (p.email && String(p.email).trim().toLowerCase() === inputEmail)
-      ) || inputEmail === ADMIN_USER.email.toLowerCase();
+        (p) => (p.email && String(p.email).trim().toLowerCase() === cleanEmail)
+      ) || cleanEmail === ADMIN_USER.email.toLowerCase();
     }
 
     let phoneExists = false;
-    if (inputPhone) {
-      phoneExists = allRegistered.some((p) => doesProfileHavePhone(p, inputPhone));
+    if (cleanPhone && cleanPhone.length >= 10) {
+      phoneExists = allRegistered.some((p) => doesProfileHavePhone(p, cleanPhone));
     }
 
     return { emailExists, phoneExists };
-  };
+  }, []);
 
   const checkExistingUserAsync = async (email, phone) => {
     // 1. Local synchronous check
     const localCheck = checkExistingUser(email, phone);
     if (localCheck.emailExists && localCheck.phoneExists) {
+      return localCheck;
+    }
+
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
+    const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+    if ((!cleanEmail || !cleanEmail.includes('@')) && (!cleanPhone || cleanPhone.length < 10)) {
       return localCheck;
     }
 
@@ -663,103 +672,92 @@ const getStoredInterestsFast = () => {
     return Array.from(ids);
   };
 
-  const canViewProfile = (profileId) => {
+  // Precomputed fast Set of all profile IDs/Reg IDs unlocked by current user or mutual connections
+  const userUnlockedSet = useMemo(() => {
+    const set = new Set();
+    if (!user) return set;
+    const myId = String(user.id || '').toLowerCase().trim();
+    if (myId) set.add(myId);
+    if (user.registrationId) {
+      set.add(String(user.registrationId));
+      set.add(`ss-${user.registrationId}`.toLowerCase());
+    }
+
+    const addTargetId = (raw) => {
+      if (!raw) return;
+      const s = String(raw).toLowerCase().trim();
+      set.add(s);
+      const cleanSS = s.replace(/^ss-?/i, '');
+      if (cleanSS) {
+        set.add(cleanSS);
+        set.add(`ss-${cleanSS}`);
+      }
+      const numOnly = s.replace(/[^0-9]/g, '');
+      if (numOnly) {
+        set.add(numOnly);
+        set.add(`ss-${numOnly}`);
+      }
+    };
+
+    (user.subscription?.unlockedProfiles || []).forEach(addTargetId);
+    (user.unlockedProfiles || []).forEach(addTargetId);
+
+    // Mutual connections in localStorage
+    const conns = getStoredConnectionsFast();
+    conns.forEach((c) => {
+      if (!c) return;
+      const u1 = String(c.user1 || '').toLowerCase().trim();
+      const u2 = String(c.user2 || '').toLowerCase().trim();
+      if (u1 === myId && u2) addTargetId(u2);
+      if (u2 === myId && u1) addTargetId(u1);
+    });
+
+    const interestsObj = getStoredInterestsFast();
+    if (interestsObj?.unlockedConnections && Array.isArray(interestsObj.unlockedConnections)) {
+      interestsObj.unlockedConnections.forEach((c) => {
+        if (!c) return;
+        const u1 = String(c.user1 || '').toLowerCase().trim();
+        const u2 = String(c.user2 || '').toLowerCase().trim();
+        if (u1 === myId && u2) addTargetId(u2);
+        if (u2 === myId && u1) addTargetId(u1);
+      });
+    }
+
+    return set;
+  }, [user]);
+
+  const canViewProfile = useCallback((profileId) => {
     if (!user) {
       return { canView: false, alreadyUnlocked: false, remainingVisits: 0, totalVisits: 0, hasActivePlan: false };
     }
 
     const isAdminUser = user.isAdmin === true || user.role === 'admin' || user.id === 'admin_1';
-    const targetIdentifiers = getProfileIdentifiers(profileId);
-    const isOwnProfile = targetIdentifiers.includes(String(user.id).toLowerCase());
-
-    if (isAdminUser || isOwnProfile) {
+    if (isAdminUser) {
       return { canView: true, alreadyUnlocked: true, remainingVisits: 999, totalVisits: 999, hasActivePlan: true };
     }
 
+    const cleanId = String(profileId || '').toLowerCase().trim();
+    if (cleanId === String(user.id || '').toLowerCase().trim()) {
+      return { canView: true, alreadyUnlocked: true, remainingVisits: 999, totalVisits: 999, hasActivePlan: true };
+    }
+
+    const isAlreadyUnlocked = userUnlockedSet.has(cleanId) ||
+      userUnlockedSet.has(cleanId.replace(/^ss-?/i, '')) ||
+      userUnlockedSet.has(`ss-${cleanId.replace(/^ss-?/i, '')}`);
+
     const sub = user.subscription || {};
-    const unlockedList = [
-      ...(sub.unlockedProfiles || []),
-      ...(user.unlockedProfiles || [])
-    ].map(id => String(id).toLowerCase());
-
-    let isAlreadyUnlocked = unlockedList.some(id => targetIdentifiers.includes(id));
-
-    // Mutual Unlock Check 1: Check if candidate has unlocked current user in their profile
-    if (!isAlreadyUnlocked) {
-      try {
-        const allProfiles = getStoredProfilesFast();
-        const targetProfile = allProfiles.find(p => {
-          if (!p) return false;
-          const pId = String(p.id || '').toLowerCase();
-          const pReg = String(p.regId || '').toLowerCase();
-          const pNum = String(p.registrationId || '').toLowerCase();
-          return targetIdentifiers.includes(pId) || targetIdentifiers.includes(pReg) || targetIdentifiers.includes(pNum) || targetIdentifiers.includes(`ss-${pNum}`);
-        });
-
-        if (targetProfile) {
-          const targetUnlocked = [
-            ...(targetProfile.subscription?.unlockedProfiles || []),
-            ...(targetProfile.unlockedProfiles || [])
-          ].map(id => String(id).toLowerCase());
-
-          const myIdentifiers = getProfileIdentifiers(user.id);
-          if (targetUnlocked.some(id => myIdentifiers.includes(id))) {
-            isAlreadyUnlocked = true;
-          }
-        }
-      } catch (e) {}
-    }
-
-    // Mutual Unlock Check 2: Check global unlockedConnections records in localStorage
-    if (!isAlreadyUnlocked) {
-      try {
-        const conns = getStoredConnectionsFast();
-        const myIdentifiers = getProfileIdentifiers(user.id);
-        const hasMutual = conns.some(c => {
-          if (!c) return false;
-          const u1 = String(c.user1 || '').toLowerCase();
-          const u2 = String(c.user2 || '').toLowerCase();
-          return (myIdentifiers.includes(u1) && targetIdentifiers.includes(u2)) ||
-                 (myIdentifiers.includes(u2) && targetIdentifiers.includes(u1));
-        });
-        if (hasMutual) {
-          isAlreadyUnlocked = true;
-        }
-      } catch (e) {}
-    }
-
-    // Mutual Unlock Check 3: Check interests in localStorage for unlockedConnections
-    if (!isAlreadyUnlocked) {
-      try {
-        const interestsObj = getStoredInterestsFast();
-        if (interestsObj?.unlockedConnections && Array.isArray(interestsObj.unlockedConnections)) {
-          const myIdentifiers = getProfileIdentifiers(user.id);
-          const hasMutual = interestsObj.unlockedConnections.some(c => {
-            if (!c) return false;
-            const u1 = String(c.user1 || '').toLowerCase();
-            const u2 = String(c.user2 || '').toLowerCase();
-            return (myIdentifiers.includes(u1) && targetIdentifiers.includes(u2)) ||
-                   (myIdentifiers.includes(u2) && targetIdentifiers.includes(u1));
-          });
-          if (hasMutual) {
-            isAlreadyUnlocked = true;
-          }
-        }
-      } catch (e) {}
-    }
-
     const remaining = sub.creditsRemaining || 0;
     const total = sub.creditsTotal || 0;
     const hasPlan = (sub.planId && total > 0) || remaining > 0;
 
     return {
-      canView: isAlreadyUnlocked,
-      alreadyUnlocked: isAlreadyUnlocked,
+      canView: Boolean(isAlreadyUnlocked),
+      alreadyUnlocked: Boolean(isAlreadyUnlocked),
       remainingVisits: remaining,
       totalVisits: total,
       hasActivePlan: hasPlan
     };
-  };
+  }, [user, userUnlockedSet]);
 
   const unlockProfileForUser = (profileId) => {
     if (!user || !profileId) return false;

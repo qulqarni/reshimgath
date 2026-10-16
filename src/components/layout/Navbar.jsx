@@ -34,14 +34,18 @@ export const Navbar = ({ currentPath, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
-  const userNotifications = notifications.filter((n) => {
-    if (!user) return true;
-    if (n.type === 'view' && String(n.profileId) === String(user.id)) return false;
-    if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
-    return true;
-  });
+  const userNotifications = React.useMemo(() => {
+    return notifications.filter((n) => {
+      if (!user) return true;
+      if (n.type === 'view' && String(n.profileId) === String(user.id)) return false;
+      if (n.targetUserId && String(n.targetUserId) !== String(user.id) && (user.email ? n.targetUserId !== user.email : true)) return false;
+      return true;
+    });
+  }, [notifications, user?.id, user?.email]);
 
-  const unreadCount = userNotifications.filter(n => n.unread).length;
+  const unreadCount = React.useMemo(() => {
+    return userNotifications.filter(n => n.unread).length;
+  }, [userNotifications]);
 
   const handleToggleNotifications = () => {
     const nextState = !showNotifications;
