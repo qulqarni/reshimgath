@@ -44,17 +44,31 @@ const GlobalSubscriptionModal = React.memo(function GlobalSubscriptionModal() {
   );
 });
 
+// Helper to normalize route paths, strip trailing slashes, .html extensions, and queries/hashes
+export const normalizeRoutePath = (rawPath) => {
+  if (!rawPath) return '/';
+  let p = String(rawPath).split('?')[0].split('#')[0].trim().toLowerCase();
+  p = p.replace(/\.html$/i, '');
+  p = p.replace(/\/+/g, '/');
+  if (p.length > 1 && p.endsWith('/')) {
+    p = p.slice(0, -1);
+  }
+  return p || '/';
+};
+
 function AppContent() {
 
   // Helper to determine initial path & profile id from browser address bar URL slug, query params, or hash
   const getInitialRoute = () => {
-    const pathname = window.location.pathname || '';
+    const rawPathname = window.location.pathname || '';
     const search = window.location.search || '';
     const hash = window.location.hash || '';
 
+    const normPath = normalizeRoutePath(rawPathname);
+
     // 1. Direct /profile/:id in pathname
-    if (pathname.startsWith('/profile/')) {
-      const idStr = pathname.replace('/profile/', '').split('/')[0].split('?')[0];
+    if (normPath.startsWith('/profile/')) {
+      const idStr = normPath.replace('/profile/', '').split('/')[0];
       return { path: '/profile', selectedId: idStr || null };
     }
 
@@ -67,11 +81,12 @@ function AppContent() {
       }
       const routeParam = urlParams.get('route') || urlParams.get('path');
       if (routeParam) {
-        if (routeParam.startsWith('/profile/')) {
-          const idStr = routeParam.replace('/profile/', '').split('/')[0].split('?')[0];
+        const normRoute = normalizeRoutePath(routeParam);
+        if (normRoute.startsWith('/profile/')) {
+          const idStr = normRoute.replace('/profile/', '').split('/')[0];
           return { path: '/profile', selectedId: idStr || null };
         }
-        return { path: routeParam, selectedId: null };
+        return { path: normRoute, selectedId: null };
       }
       const pageParam = urlParams.get('page') || urlParams.get('screen');
       if (pageParam === 'interests') return { path: '/interests', selectedId: null };
@@ -85,12 +100,11 @@ function AppContent() {
       return { path: '/profile', selectedId: idStr || null };
     }
     if (hash.startsWith('#/')) {
-      const cleanHash = hash.replace('#', '').split('?')[0];
+      const cleanHash = normalizeRoutePath(hash.replace('#', ''));
       return { path: cleanHash, selectedId: null };
     }
 
-    const cleanPathname = pathname === '' ? '/' : pathname.split('?')[0];
-    return { path: cleanPathname, selectedId: null };
+    return { path: normPath, selectedId: null };
   };
 
   const [currentPath, setCurrentPath] = useState(() => getInitialRoute().path);
@@ -132,19 +146,19 @@ function AppContent() {
   // Centralized Navigation Function that updates both React state & Browser URL address bar slug
   const handleNavigate = (targetPath) => {
     const [pathPart, queryPart] = (targetPath || '/').split('?');
-    let cleanPath = pathPart || '/';
+    let cleanPath = normalizeRoutePath(pathPart);
     let profId = null;
 
     // Handle dynamic profile route like /profile/demo_m1 or /profile?id=demo_m1
-    if (targetPath.startsWith('/profile/')) {
-      const idStr = targetPath.replace('/profile/', '').split('/')[0].split('?')[0];
+    if (cleanPath.startsWith('/profile/')) {
+      const idStr = cleanPath.replace('/profile/', '').split('/')[0];
       if (idStr) {
         profId = idStr;
         cleanPath = '/profile';
       }
-    } else if (targetPath.startsWith('/profile?')) {
+    } else if (cleanPath === '/profile' && queryPart) {
       try {
-        const params = new URLSearchParams(queryPart || '');
+        const params = new URLSearchParams(queryPart);
         const idStr = params.get('id') || params.get('profileId');
         if (idStr) {
           profId = idStr;
@@ -160,7 +174,7 @@ function AppContent() {
     }
 
     // Redirect dashboard requests directly to my-profile
-    const pushUrl = targetPath === '/dashboard' ? '/my-profile' : targetPath;
+    const pushUrl = cleanPath === '/dashboard' ? '/my-profile' : targetPath;
 
     // Update browser URL address bar dynamically without full page reload
     const currentFull = (window.location.pathname || '/') + (window.location.search || '');
@@ -173,7 +187,8 @@ function AppContent() {
   };
 
   const renderPage = () => {
-    switch (currentPath) {
+    const activeRoute = normalizeRoutePath(currentPath);
+    switch (activeRoute) {
       case '/':
       case '/profiles':
         return <HomePage onNavigate={handleNavigate} />;
@@ -210,18 +225,28 @@ function AppContent() {
       case '/contact':
         return <ContactPage onNavigate={handleNavigate} />;
       case '/privacy-policy':
+      case '/privacy-policy/':
       case '/privacy':
+      case '/privacy/':
         return <PrivacyPolicyPage onNavigate={handleNavigate} />;
       case '/terms-of-service':
+      case '/terms-of-service/':
       case '/terms':
+      case '/terms/':
         return <TermsOfServicePage onNavigate={handleNavigate} />;
       case '/child-safety':
+      case '/child-safety/':
       case '/child-safety-standards':
+      case '/child-safety-standards/':
       case '/safety-standards':
+      case '/safety-standards/':
         return <ChildSafetyStandardsPage onNavigate={handleNavigate} />;
       case '/delete-account':
+      case '/delete-account/':
       case '/data-deletion':
+      case '/data-deletion/':
       case '/account-deletion':
+      case '/account-deletion/':
         return <AccountDeletionPage onNavigate={handleNavigate} />;
       case '/admin':
         return <AdminPage onNavigate={handleNavigate} />;

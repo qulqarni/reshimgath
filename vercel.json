@@ -1,5 +1,35 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
+    {
+      "source": "/child-safety-standards",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/child-safety",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/safety-standards",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/delete-account",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/data-deletion",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terms-of-service",
+      "destination": "/index.html"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"

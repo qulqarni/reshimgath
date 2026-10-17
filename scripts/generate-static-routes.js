@@ -37,9 +37,14 @@ routes.forEach((route) => {
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
-  const targetFile = path.join(targetDir, 'index.html');
+  const targetIndex = path.join(targetDir, 'index.html');
+  fs.writeFileSync(targetIndex, indexContent, 'utf8');
+
+  // Also write route.html for static servers that look for clean URLs without folder index
+  const targetFile = path.join(distDir, `${route}.html`);
   fs.writeFileSync(targetFile, indexContent, 'utf8');
-  console.log(`✓ Created static fallback: dist/${route}/index.html`);
+
+  console.log(`✓ Created static fallback: dist/${route}/index.html & dist/${route}.html`);
 });
 
 console.log('✅ All direct static route fallbacks created successfully.');
