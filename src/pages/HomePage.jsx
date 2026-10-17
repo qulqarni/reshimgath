@@ -493,8 +493,8 @@ export const HomePage = ({ onNavigate }) => {
                     <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/20">
                       <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                       <div>
-                        <p className="font-bold text-white">100% Genuine & Trusted Profiles</p>
-                        <p className="text-[11px] text-gray-200">Guaranteed authentic verified profiles</p>
+                        <p className="font-bold text-white">Screened & Trusted Profiles</p>
+                        <p className="text-[11px] text-gray-200">Manually reviewed matrimonial profiles</p>
                       </div>
                     </div>
 
@@ -746,7 +746,7 @@ export const HomePage = ({ onNavigate }) => {
                 className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
               />
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Show 100% Verified Profiles Only</span>
+              <span>Show Verified Profiles Only</span>
             </label>
 
             {activeFiltersCount > 0 && (
@@ -1150,7 +1150,7 @@ export const HomePage = ({ onNavigate }) => {
                     onChange={(e) => setVerifiedOnly(e.target.checked)}
                     className="rounded text-brand-plum focus:ring-brand-plum w-4 h-4"
                   />
-                  <span>Show 100% Verified Profiles Only</span>
+                  <span>Show Verified Profiles Only</span>
                 </label>
               </div>
             </div>

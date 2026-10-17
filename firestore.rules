@@ -1,0 +1,408 @@
+rules_version = '2';
+
+// ===============================================================
+// Sambodhi Sarang Matrimony - Cloud Firestore Security Rules
+// ===============================================================
+//
+// Assumed Data Model & Schemas:
+//
+// 1. Collection: profiles
+//    Document ID: {profileId} (matches user auth UID or custom member ID)
+//    Fields:
+//      - id / profileId: string (optional, up to 128 chars)
+//      - name: string (optional, up to 150 chars)
+//      - email: string (optional, up to 150 chars)
+//      - phone: string (optional, up to 40 chars)
+//      - gender: string (optional, up to 30 chars)
+//      - verified: bool (optional; ONLY admins may set to true or modify)
+//      - photos: list (optional, up to 20 items)
+//      - blockedUsers: list (optional, up to 500 items)
+//      - about: string (optional, up to 5000 chars)
+//      - createdAt: string or timestamp (optional, immutable)
+//      - updatedAt: string or timestamp (optional)
+//
+// 2. Collection: chats
+//    Document ID: {chatId} (e.g. participantA_participantB)
+//    Fields:
+//      - convoKey: string (optional, up to 128 chars)
+//      - participants: list of strings (required, size 1 to 10)
+//      - messages: list of maps (optional, up to 1000 items)
+//      - updatedAt: string or timestamp (optional)
+//
+// 3. Collection: reports
+//    Document ID: {reportId}
+//    Fields:
+//      - targetId / reportedUserId: string (optional, up to 128 chars)
+//      - reason: string (optional, up to 500 chars)
+//      - details / description: string (optional, up to 2000 chars)
+//      - status: string (optional, 'pending' on create)
+//      - reporterId / reporterEmail / reporterPhone: string (optional, up to 150 chars)
+//      - createdAt: string or timestamp (optional)
+//
+// 4. Collection: deletion_requests
+//    Document ID: {requestId}
+//    Fields:
+//      - fullName: string (optional, up to 150 chars)
+//      - phone: string (optional, up to 40 chars)
+//      - email: string (optional, up to 150 chars)
+//      - memberId: string (optional, up to 100 chars)
+//      - reason / customReason: string (optional, up to 1000 chars)
+//      - status: string (optional, 'pending' on create)
+//      - requestedAt: string or timestamp (optional)
+//
+// 5. Collection: deletion_logs
+//    Document ID: {logId}
+//    Strictly administrative and server-side compliance audit logs.
+//
+// 6. Collection: terms_acceptances
+//    Document ID: {acceptanceId} (e.g. {userId}_{version})
+//    Fields:
+//      - termsAcceptedUserId / userId: string (required)
+//      - termsAcceptedVersion: string (required, up to 50 chars)
+//      - termsAcceptedAt: string or timestamp (required)
+//      - termsAcceptedServerTimestamp: int, float, or timestamp (optional)
+//
+// 7. Collections: site_content, home_content, subscription_plans, success_stories
+//    Public website static/dynamic promotional content. Admin managed.
+//
+// 8. Collection: user_blocks
+//    Document ID: {blockId}
+//    Fields:
+//      - userId: string (required, matches auth UID)
+//      - blockedUserId: string (required, up to 128 chars)
+//
+// 9. Collections: inquiries, interests, profile_views, notifications, fcm_tokens
+//    Operational matrimonial features supporting matchmaking, real-time views, and alerts.
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------------------------------------------
+    // Core Helper Functions
+    // -----------------------------------------------------------
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.get('admin', false) == true) ||
+        ('email' in request.auth.token &&
+         request.auth.token.email != null &&
+         request.auth.token.email in ['pk9823425404@gmail.com', 'admin@sambodhisarang.com'])
+      );
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isProfileOwnerOnCreate(profileId) {
+      return isAuthenticated() && (
+        request.auth.uid == profileId ||
+        ('userId' in request.resource.data && request.resource.data.userId == request.auth.uid) ||
+        ('id' in request.resource.data && request.resource.data.id == request.auth.uid)
+      );
+    }
+
+    function isProfileOwnerOnUpdate(profileId) {
+      return isAuthenticated() && (
+        request.auth.uid == profileId ||
+        ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+        ('id' in resource.data && resource.data.id == request.auth.uid)
+      );
+    }
+
+    function isProfileOwnerOnDelete(profileId) {
+      return isAuthenticated() && (
+        request.auth.uid == profileId ||
+        ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+        ('id' in resource.data && resource.data.id == request.auth.uid)
+      );
+    }
+
+    function isValidOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isValidOptionalList(data, field, maxCount) {
+      return !(field in data) || (data[field] is list && data[field].size() <= maxCount);
+    }
+
+    // -----------------------------------------------------------
+    // Domain Validator Functions
+    // -----------------------------------------------------------
+
+    function isValidProfile(data) {
+      return isValidOptionalString(data, 'name', 150) &&
+             isValidOptionalString(data, 'phone', 40) &&
+             isValidOptionalString(data, 'email', 150) &&
+             isValidOptionalString(data, 'about', 5000) &&
+             isValidOptionalString(data, 'gender', 30) &&
+             isValidOptionalString(data, 'maritalStatus', 50) &&
+             isValidOptionalString(data, 'religion', 50) &&
+             isValidOptionalString(data, 'caste', 50) &&
+             isValidOptionalString(data, 'education', 150) &&
+             isValidOptionalString(data, 'occupation', 150) &&
+             isValidOptionalString(data, 'city', 100) &&
+             isValidOptionalString(data, 'district', 100) &&
+             isValidOptionalList(data, 'photos', 20) &&
+             isValidOptionalList(data, 'blockedUsers', 500);
+    }
+
+    function isVerifiedSafeOnCreate() {
+      return isAdmin() || !('verified' in request.resource.data) || request.resource.data.verified == false;
+    }
+
+    function isVerifiedSafeOnUpdate() {
+      return isAdmin() ||
+             (!('verified' in request.resource.data) && !('verified' in resource.data)) ||
+             ('verified' in request.resource.data && 'verified' in resource.data && request.resource.data.verified == resource.data.verified) ||
+             ('verified' in request.resource.data && !('verified' in resource.data) && request.resource.data.verified == false);
+    }
+
+    function isValidChat(data) {
+      return ('participants' in data) &&
+             data.participants is list &&
+             data.participants.size() >= 1 &&
+             data.participants.size() <= 10 &&
+             isValidOptionalList(data, 'messages', 1000);
+    }
+
+    function isValidReport(data) {
+      return isValidOptionalString(data, 'reason', 500) &&
+             isValidOptionalString(data, 'details', 2000) &&
+             isValidOptionalString(data, 'targetId', 128) &&
+             isValidOptionalString(data, 'reporterId', 128) &&
+             (!('status' in data) || data.status in ['pending', 'reviewed', 'resolved', 'dismissed']);
+    }
+
+    function isValidDeletionRequest(data) {
+      return isValidOptionalString(data, 'fullName', 150) &&
+             isValidOptionalString(data, 'phone', 40) &&
+             isValidOptionalString(data, 'email', 150) &&
+             isValidOptionalString(data, 'memberId', 100) &&
+             isValidOptionalString(data, 'reason', 500) &&
+             isValidOptionalString(data, 'customReason', 1000) &&
+             (!('status' in data) || data.status in ['pending', 'processing', 'completed', 'cancelled']);
+    }
+
+    function isValidTermsAcceptance(data) {
+      return ('termsAcceptedVersion' in data) &&
+             data.termsAcceptedVersion is string &&
+             data.termsAcceptedVersion.size() <= 50 &&
+             (('termsAcceptedUserId' in data && data.termsAcceptedUserId is string && data.termsAcceptedUserId.size() <= 128) ||
+              ('userId' in data && data.userId is string && data.userId.size() <= 128));
+    }
+
+    function isValidBlock(data) {
+      return ('userId' in data) &&
+             data.userId is string &&
+             data.userId == request.auth.uid &&
+             ('blockedUserId' in data) &&
+             data.blockedUserId is string &&
+             data.blockedUserId.size() <= 128;
+    }
+
+    function isValidInquiry(data) {
+      return isValidOptionalString(data, 'name', 150) &&
+             isValidOptionalString(data, 'phone', 40) &&
+             isValidOptionalString(data, 'email', 150) &&
+             isValidOptionalString(data, 'message', 3000);
+    }
+
+    // -----------------------------------------------------------
+    // Default Deny Fallback
+    // -----------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // 1. Profiles Collection
+    // -----------------------------------------------------------
+    match /profiles/{profileId} {
+      // Anyone authenticated or public can read verified/active profiles for matchmaking
+      allow read: if true;
+
+      // Profile owner or admin can create their profile. Non-admins cannot grant themselves verified status.
+      allow create: if (isAdmin() || isProfileOwnerOnCreate(profileId)) &&
+                       isValidProfile(request.resource.data) &&
+                       isVerifiedSafeOnCreate();
+
+      // Profile owner or admin can update their profile. Verification flag tampering is prevented.
+      allow update: if (isAdmin() || isProfileOwnerOnUpdate(profileId)) &&
+                       isValidProfile(request.resource.data) &&
+                       isVerifiedSafeOnUpdate();
+
+      // Profile owner or admin can delete their profile
+      allow delete: if isAdmin() || isProfileOwnerOnDelete(profileId);
+    }
+
+    // -----------------------------------------------------------
+    // 2. Private Chats Collection
+    // -----------------------------------------------------------
+    match /chats/{chatId} {
+      // Only chat participants or admins can read messages
+      allow read: if isAuthenticated() &&
+                     (isAdmin() || request.auth.uid in resource.data.participants);
+
+      // Only authenticated participants or admins can create a chat room
+      allow create: if isAuthenticated() &&
+                       (isAdmin() || request.auth.uid in request.resource.data.participants) &&
+                       isValidChat(request.resource.data);
+
+      // Only authenticated participants or admins can update a conversation (send messages)
+      allow update: if isAuthenticated() &&
+                       (isAdmin() || (request.auth.uid in resource.data.participants && request.auth.uid in request.resource.data.participants)) &&
+                       isValidChat(request.resource.data);
+
+      // Only participants or admins can delete a chat
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid in resource.data.participants);
+
+      // Subcollection messages support
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() &&
+                              (isAdmin() || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+      }
+    }
+
+    // -----------------------------------------------------------
+    // 3. Reports & Moderation Collection
+    // -----------------------------------------------------------
+    match /reports/{reportId} {
+      // Anyone authenticated or unauthenticated can submit a report with pending status
+      allow create: if isValidReport(request.resource.data) &&
+                       (isAdmin() || !('status' in request.resource.data) || request.resource.data.status == 'pending');
+
+      // Regular users CANNOT read, list, update, or delete any reports. Admin only.
+      allow read, update, delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 4. Account & Data Deletion Requests Collection
+    // -----------------------------------------------------------
+    match /deletion_requests/{requestId} {
+      // Public / authenticated submission allowed (Google Play statutory requirement)
+      allow create: if isValidDeletionRequest(request.resource.data) &&
+                       (isAdmin() || !('status' in request.resource.data) || request.resource.data.status == 'pending');
+
+      // Only authorized admins can read, list, update, or delete deletion requests
+      allow read, update, delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 5. Deletion Logs / Audit Collection
+    // -----------------------------------------------------------
+    match /deletion_logs/{logId} {
+      // Strictly restricted to authorized admins or server-side Admin SDK
+      allow read, write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 6. Terms Acceptances Collection
+    // -----------------------------------------------------------
+    match /terms_acceptances/{acceptanceId} {
+      // Authenticated users can read their own acceptance; admins can read all
+      allow get: if isAuthenticated() && (
+        isAdmin() ||
+        ('termsAcceptedUserId' in resource.data && resource.data.termsAcceptedUserId == request.auth.uid) ||
+        ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+        acceptanceId.matches('^' + request.auth.uid + '_.*')
+      );
+
+      // Only admins can list all terms acceptances
+      allow list: if isAdmin();
+
+      // Authenticated users can create their own acceptance record
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        ('termsAcceptedUserId' in request.resource.data && request.resource.data.termsAcceptedUserId == request.auth.uid) ||
+        ('userId' in request.resource.data && request.resource.data.userId == request.auth.uid) ||
+        acceptanceId.matches('^' + request.auth.uid + '_.*')
+      ) && isValidTermsAcceptance(request.resource.data);
+
+      // Immutable audit trail: no one can modify or delete existing acceptance records
+      allow update, delete: if false;
+    }
+
+    // -----------------------------------------------------------
+    // 7. Website Content & Configs
+    // -----------------------------------------------------------
+    match /home_content/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /site_content/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /subscription_plans/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /success_stories/{storyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 8. User Blocks Collection
+    // -----------------------------------------------------------
+    match /user_blocks/{blockId} {
+      // Users can only view their own blocks; admins can view all
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+
+      // Users can create/update their own blocks
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.userId == request.auth.uid) && isValidBlock(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid) && isValidBlock(request.resource.data);
+
+      // Users can remove their own blocks
+      allow delete: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    // -----------------------------------------------------------
+    // 9. Support Inquiries Collection
+    // -----------------------------------------------------------
+    match /inquiries/{inquiryId} {
+      // Anyone can submit a support inquiry
+      allow create: if isValidInquiry(request.resource.data);
+
+      // Only admins can read, list, resolve, or delete inquiries
+      allow read, update, delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 10. Interests, Views, Notifications & FCM Tokens
+    // -----------------------------------------------------------
+    match /interests/{docId} {
+      allow read, write: if isAuthenticated() || isAdmin();
+    }
+
+    match /profile_views/{viewId} {
+      allow read, write: if isAuthenticated() || isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() || isAdmin();
+    }
+
+    match /fcm_tokens/{tokenId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        !('userId' in request.resource.data) ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        !('userId' in resource.data) ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+  }
+}

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { uploadBiodataPdfToFirebase } from '../../services/firebaseService';
+import { TermsAcceptanceModal } from '../common/TermsAcceptanceModal';
+import { CURRENT_TERMS_VERSION, hasAcceptedTerms, createTermsAcceptanceRecord } from '../../utils/termsEnforcement';
 import { 
   FileText, 
   UploadCloud, 
@@ -26,11 +28,13 @@ export const BiodataPdfSection = ({
   updateProfile, 
   isEditable = true,
   isUnlocked = true,
-  onUnlockRequest
+  onUnlockRequest,
+  onNavigate
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showViewerModal, setShowViewerModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -45,7 +49,24 @@ export const BiodataPdfSection = ({
   }, [showViewerModal]);
 
   const biodata = user?.biodataPdf || null;
-  const firstName = user?.name ? user.name.split(' ')[0] : 'Candidate';
+  const handleUploadClick = () => {
+    if (!hasAcceptedTerms(user, CURRENT_TERMS_VERSION)) {
+      setShowTermsModal(true);
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleTermsAccept = async (version) => {
+    const record = createTermsAcceptanceRecord(user?.id || 'guest', version);
+    if (updateProfile) {
+      await updateProfile(record);
+    }
+    setShowTermsModal(false);
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 150);
+  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -71,8 +92,8 @@ export const BiodataPdfSection = ({
       : `${Math.round(file.size / 1024)} KB`;
 
     try {
-      // Upload PDF / Image directly to Firebase Storage
-      const firebaseStorageUrl = await uploadBiodataPdfToFirebase(file, user?.id || user?.regId || 'guest');
+      // Upload PDF / Image directly to Firebase Storage with backend terms acceptance check
+      const firebaseStorageUrl = await uploadBiodataPdfToFirebase(file, user?.id || user?.regId || 'guest', user);
       
       const newBiodata = {
         fileName: file.name,
@@ -89,7 +110,11 @@ export const BiodataPdfSection = ({
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (error) {
       console.error('Failed to upload Biodata to Firebase Storage:', error);
-      alert('Failed to upload file to Firebase Storage. Please try again.');
+      if (error?.message?.includes('TERMS_ACCEPTANCE_REQUIRED')) {
+        setShowTermsModal(true);
+      } else {
+        alert('Failed to upload file to Firebase Storage. Please try again.');
+      }
     } finally {
       setIsUploading(false);
     }
@@ -179,7 +204,7 @@ export const BiodataPdfSection = ({
         )}
 
         {isEditable && (
-          <div className="pt-1">
+          <div className="pt-1 space-y-1.5">
             {biodata ? (
               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                 <span className="truncate text-brand-gray font-medium flex-1 mr-2">
@@ -188,7 +213,7 @@ export const BiodataPdfSection = ({
                 <div className="flex items-center space-x-1 shrink-0">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleUploadClick}
                     disabled={isUploading}
                     className="p-1.5 bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs rounded-lg hover:bg-amber-100 transition-all"
                     title="Replace Biodata"
@@ -208,7 +233,7 @@ export const BiodataPdfSection = ({
             ) : (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleUploadClick}
                 disabled={isUploading}
                 className="w-full py-2.5 px-3 bg-white text-brand-plum border border-brand-rose/30 font-bold text-xs rounded-xl hover:bg-brand-lightBg transition-all flex items-center justify-center space-x-1.5"
               >
@@ -225,9 +250,37 @@ export const BiodataPdfSection = ({
                 )}
               </button>
             )}
+
+            {/* Accessible compliance notice & links */}
+            <p className="text-[10px] text-gray-400 text-center leading-normal">
+              Uploads are governed by our{' '}
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate('/terms-of-service')}
+                className="text-brand-plum underline hover:text-brand-plumDark font-semibold"
+              >
+                Terms of Use
+              </button>{' '}and{' '}
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate('/child-safety')}
+                className="text-brand-plum underline hover:text-brand-plumDark font-semibold"
+              >
+                Community Safety Rules
+              </button>.
+            </p>
           </div>
         )}
       </div>
+
+      {/* Terms of Use Acceptance Modal */}
+      <TermsAcceptanceModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleTermsAccept}
+        onNavigate={onNavigate || (() => {})}
+        actionTitle="Upload Biodata File"
+      />
 
       {/* FULL SCREEN BIODATA VIEWER MODAL */}
       <BiodataViewerModal

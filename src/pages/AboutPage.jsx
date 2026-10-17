@@ -32,9 +32,9 @@ export const AboutPage = () => {
         
         <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-3">
           <ShieldCheck className="w-10 h-10 text-emerald-600" />
-          <h3 className="font-serif font-bold text-lg text-brand-plum">100% Profile Screening</h3>
+          <h3 className="font-serif font-bold text-lg text-brand-plum">Profile Screening & Verification</h3>
           <p className="text-xs text-brand-gray leading-relaxed">
-            Every bride and groom profile on Sambodhi Sarang Marriage Bureau undergoes screening and mobile verification for guaranteed authenticity.
+            Every bride and groom profile on Sambodhi Sarang Marriage Bureau undergoes screening and mobile verification for member safety and authenticity.
           </p>
         </div>
 

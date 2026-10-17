@@ -38,7 +38,7 @@ export const Footer = ({ onNavigate }) => {
             <div className="pt-1 flex items-center justify-center md:justify-start space-x-3 sm:space-x-4 text-[11px] sm:text-xs">
               <div className="flex items-center space-x-1 text-brand-plum font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-                <span>100% Verified Profiles</span>
+                <span>Screened Profiles</span>
               </div>
               <div className="flex items-center space-x-1 text-brand-plum font-semibold">
                 <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-plum shrink-0" />
@@ -66,6 +66,12 @@ export const Footer = ({ onNavigate }) => {
               </button>
               <button onClick={() => onNavigate('/contact')} className="hover:text-brand-plum font-medium transition-colors">
                 {t('contactUs')}
+              </button>
+              <button onClick={() => onNavigate('/child-safety-standards')} className="hover:text-rose-600 font-semibold text-rose-700 transition-colors">
+                Child Safety Standards (बाल सुरक्षा)
+              </button>
+              <button onClick={() => onNavigate('/delete-account')} className="hover:text-rose-600 font-medium transition-colors text-left">
+                Account & Data Deletion (खाते हटवा)
               </button>
               <button onClick={() => onNavigate('/login')} className="hidden md:block hover:text-brand-plum font-medium transition-colors">
                 {t('login')} / {t('signup')}
@@ -105,10 +111,14 @@ export const Footer = ({ onNavigate }) => {
 
         {/* Bottom Bar */}
         <div className="mt-6 sm:mt-12 pt-4 sm:pt-6 border-t border-brand-rose/20 flex flex-col sm:flex-row items-center justify-between text-[11px] sm:text-xs text-brand-gray gap-2 sm:gap-4 text-center sm:text-left">
-          <div className="flex items-center space-x-4 order-1 sm:order-2">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-1 order-1 sm:order-2">
+            <button onClick={() => onNavigate('/child-safety-standards')} className="hover:text-rose-600 transition-colors font-bold text-rose-700">Child Safety Standards</button>
+            <span>•</span>
             <button onClick={() => onNavigate('/privacy-policy')} className="hover:text-brand-plum transition-colors font-medium">Privacy Policy</button>
             <span>•</span>
             <button onClick={() => onNavigate('/terms-of-service')} className="hover:text-brand-plum transition-colors font-medium">Terms of Service</button>
+            <span>•</span>
+            <button onClick={() => onNavigate('/delete-account')} className="hover:text-rose-600 transition-colors font-medium">Account Deletion</button>
             <span>•</span>
             <button onClick={() => onNavigate('/admin')} className="hover:text-brand-plum transition-colors font-medium flex items-center space-x-1">
               <Lock className="w-3 h-3 text-brand-plum/70 inline" />

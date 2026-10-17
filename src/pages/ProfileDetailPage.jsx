@@ -492,14 +492,24 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
   };
 
   const profile = profiles.find((p) => {
-    if (!profileId) return true;
+    if (!profileId || profileId === 'undefined' || profileId === 'null') return false;
     const target = String(profileId).toLowerCase().trim();
+    const targetClean = target.replace(/^ss-?/i, '');
+
+    // 1. Direct ID match
     if (String(p.id).toLowerCase() === target) return true;
+    if (String(p.id).toLowerCase().replace(/^ss-?/i, '') === targetClean) return true;
+
+    // 2. Registration ID match
     if (p.regId && String(p.regId).toLowerCase() === target) return true;
-    if (p.registrationId && String(p.registrationId).toLowerCase() === target) return true;
+    if (p.regId && String(p.regId).toLowerCase().replace(/^ss-?/i, '') === targetClean) return true;
+    if (p.registrationId && String(p.registrationId).toLowerCase() === targetClean) return true;
     if (p.registrationId && String(`SS-${p.registrationId}`).toLowerCase() === target) return true;
+
+    // 3. Full Name match
+    if (p.name && p.name.toLowerCase().trim() === target) return true;
     return false;
-  }) || profiles[0];
+  }) || (profileId ? null : profiles[0]);
 
   const firstName = profile?.name ? profile.name.split(' ')[0] : 'Candidate';
   const accessStatus = canViewProfile(profile?.id);
@@ -747,6 +757,29 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
     if (Array.isArray(val)) return val.length > 0;
     return true;
   };
+
+  if (!profile) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-brand-rose/20 shadow-2xl space-y-4">
+          <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+            <User className="w-8 h-8 text-rose-500" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-brand-plum">Profile Not Found</h2>
+          <p className="text-sm text-brand-gray">
+            The requested candidate profile ({profileId ? `ID: ${profileId}` : 'No ID specified'}) could not be located or may have been removed.
+          </p>
+          <button
+            type="button"
+            onClick={() => onNavigate('/')}
+            className="px-6 py-3 bg-brand-plum text-white font-bold rounded-2xl shadow hover:bg-brand-burgundy transition-all text-xs"
+          >
+            Browse Verified Candidates
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const hasPersonalInfo = hasValue(profile.maritalStatus) || hasValue(profile.dob) || hasValue(profile.motherTongue) || hasValue(profile.religion) || hasValue(profile.caste) || hasValue(profile.nativePlace);
   const hasCareer = hasValue(profile.education) || hasValue(profile.college) || hasValue(profile.occupation) || hasValue(profile.company) || hasValue(profile.income) || hasValue(profile.district);
@@ -1083,7 +1116,7 @@ export const ProfileDetailPage = ({ profileId, onNavigate }) => {
                 <span className="text-brand-gray font-medium">Verification Status:</span>
                 <span className="font-bold text-emerald-700 flex items-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>100% Phone & ID Verified</span>
+                  <span>Phone & Details Verified</span>
                 </span>
               </div>
 

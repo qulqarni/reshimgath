@@ -488,7 +488,7 @@ export const ProfileSetupPage = ({ onNavigate }) => {
                 <p className="text-xs text-brand-gray">
                   Upload your detailed family biodata PDF now or complete it later from your profile.
                 </p>
-                <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} />
+                <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} onNavigate={onNavigate} />
               </div>
             </div>
           )}

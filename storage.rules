@@ -1,0 +1,58 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email in ['pk9823425404@gmail.com', 'admin@sambodhisarang.com']
+      );
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size <= 10 * 1024 * 1024;
+    }
+    
+    function isValidBiodata() {
+      return (request.resource.contentType == 'application/pdf' || request.resource.contentType.matches('image/.*')) &&
+             request.resource.size <= 15 * 1024 * 1024;
+    }
+
+    // Avatars: Public read, upload/delete only by profile owner or admin
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isOwner(userId) || isAdmin()) && isValidImage();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // Member photos: Public read, upload/delete only by profile owner or admin
+    match /photos/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isOwner(userId) || isAdmin()) && isValidImage();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Biodatas: Public read, upload/delete only by profile owner or admin
+    match /biodatas/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isOwner(userId) || isAdmin()) && isValidBiodata();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Success stories: Public read, admin-only write & delete
+    match /stories/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
+    }
+  }
+}

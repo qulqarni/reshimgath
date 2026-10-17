@@ -5,6 +5,7 @@ import { db, isFirebaseConfigured } from '../config/firebase';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { doesProfileHavePhone, isSamePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
+import { CURRENT_TERMS_VERSION, hasAcceptedTerms, createTermsAcceptanceRecord } from '../utils/termsEnforcement';
 
 const AuthContext = createContext();
 
@@ -512,8 +513,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     const regNum = getNextRegistrationId();
+    const newUserId = "u_" + Date.now();
+    const termsRecord = createTermsAcceptanceRecord(newUserId, CURRENT_TERMS_VERSION);
+
     const newUser = {
-      id: "u_" + Date.now(),
+      id: newUserId,
       registrationId: regNum,
       regId: `SS-${regNum}`,
       name: (signupData.name || "").trim(),
@@ -524,6 +528,9 @@ export const AuthProvider = ({ children }) => {
       age: signupData.age || (signupData.dob ? calculateAgeFromDob(signupData.dob) : ""),
       password: signupData.password || "",
       verified: false,
+      termsAcceptedVersion: CURRENT_TERMS_VERSION,
+      termsAcceptedAt: termsRecord.termsAcceptedAt,
+      termsAcceptedServerTimestamp: termsRecord.termsAcceptedServerTimestamp,
       createdAt: new Date().toISOString()
     };
 
@@ -543,6 +550,35 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+  };
+
+  const recordTermsAcceptance = async (version = CURRENT_TERMS_VERSION) => {
+    if (!user || !user.id) return false;
+    const record = createTermsAcceptanceRecord(user.id, version);
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        termsAcceptedVersion: record.termsAcceptedVersion,
+        termsAcceptedAt: record.termsAcceptedAt,
+        termsAcceptedServerTimestamp: record.termsAcceptedServerTimestamp
+      };
+      try {
+        localStorage.setItem('reshimgath_user', JSON.stringify(updated));
+        const stored = localStorage.getItem('reshimgath_profiles');
+        if (stored) {
+          const profiles = JSON.parse(stored);
+          const nextProfiles = profiles.map(p => String(p.id) === String(user.id) ? { ...p, ...record } : p);
+          localStorage.setItem('reshimgath_profiles', JSON.stringify(nextProfiles));
+        }
+      } catch (e) {}
+
+      if (isFirebaseConfigured && user.id && user.id !== 'admin_1') {
+        saveProfileToFirestore(user.id, updated);
+      }
+      return updated;
+    });
+    return true;
   };
 
   const updateProfile = (updatedFields) => {
@@ -1082,7 +1118,10 @@ const getStoredInterestsFast = () => {
         blockedUsers: user?.blockedUsers || [],
         blockUser,
         unblockUser,
-        isUserBlocked
+        isUserBlocked,
+        recordTermsAcceptance,
+        hasAcceptedTerms: (ver) => hasAcceptedTerms(user, ver),
+        CURRENT_TERMS_VERSION
       }}
     >
       {children}

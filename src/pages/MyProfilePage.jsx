@@ -11,6 +11,8 @@ import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { compressImage } from '../utils/imageCompressor';
 import { uploadPhotoToFirebase } from '../services/firebaseService';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
+import { TermsAcceptanceModal } from '../components/common/TermsAcceptanceModal';
+import { CURRENT_TERMS_VERSION, hasAcceptedTerms } from '../utils/termsEnforcement';
 import { 
   User, 
   MapPin, 
@@ -44,7 +46,7 @@ import {
 } from 'lucide-react';
 
 export const MyProfilePage = ({ onNavigate }) => {
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, logout, recordTermsAcceptance } = useAuth();
   const { t } = useLanguage();
   const { profiles, interests, profileViews } = useProfiles();
 
@@ -62,6 +64,9 @@ export const MyProfilePage = ({ onNavigate }) => {
   const [showAllVisitors, setShowAllVisitors] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsActionTitle, setTermsActionTitle] = useState('Upload Profile Photo');
+  const [pendingFileAction, setPendingFileAction] = useState(null);
 
   const isAnyModalOpen = lightboxOpen || showEditModal || showPhotoManager;
   useEffect(() => {
@@ -238,6 +243,50 @@ export const MyProfilePage = ({ onNavigate }) => {
   const photos = user?.photos || [];
   const currentAvatar = user?.avatar || '/default-avatar.png';
 
+  const handleOpenAvatarUpload = () => {
+    if (!hasAcceptedTerms(user, CURRENT_TERMS_VERSION)) {
+      setTermsActionTitle('Upload Profile Picture');
+      setPendingFileAction('avatar');
+      setShowTermsModal(true);
+      setShowAvatarMenu(false);
+      return;
+    }
+    setShowAvatarMenu(false);
+    avatarFileInputRef.current?.click();
+  };
+
+  const handleOpenGalleryUpload = (actionSource = 'gallery') => {
+    if (!hasAcceptedTerms(user, CURRENT_TERMS_VERSION)) {
+      setTermsActionTitle('Upload Gallery Photo');
+      setPendingFileAction(actionSource);
+      setShowTermsModal(true);
+      return;
+    }
+    if (actionSource === 'modal_gallery') {
+      modalFileInputRef.current?.click();
+    } else {
+      galleryFileInputRef.current?.click();
+    }
+  };
+
+  const handleTermsAccept = async (version) => {
+    if (recordTermsAcceptance) {
+      await recordTermsAcceptance(version);
+    }
+    setShowTermsModal(false);
+    const target = pendingFileAction;
+    setPendingFileAction(null);
+    setTimeout(() => {
+      if (target === 'avatar') {
+        avatarFileInputRef.current?.click();
+      } else if (target === 'modal_gallery') {
+        modalFileInputRef.current?.click();
+      } else {
+        galleryFileInputRef.current?.click();
+      }
+    }, 150);
+  };
+
   // Avatar Handlers
   const handleAvatarFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -247,12 +296,17 @@ export const MyProfilePage = ({ onNavigate }) => {
       return;
     }
     try {
-      // Upload avatar to Firebase Storage (avatars/{userId}/...)
-      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'avatars');
+      // Upload avatar to Firebase Storage with backend terms acceptance check
+      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'avatars', user);
       await updateProfile({ avatar: storageUrl });
     } catch (err) {
       console.error('Error uploading avatar image to Firebase Storage:', err);
-      alert('Failed to upload profile picture to Firebase Storage.');
+      if (err?.message?.includes('TERMS_ACCEPTANCE_REQUIRED')) {
+        setTermsActionTitle('Upload Profile Picture');
+        setShowTermsModal(true);
+      } else {
+        alert('Failed to upload profile picture to Firebase Storage.');
+      }
     } finally {
       setShowAvatarMenu(false);
     }
@@ -272,14 +326,19 @@ export const MyProfilePage = ({ onNavigate }) => {
       return;
     }
     try {
-      // Upload gallery photo to Firebase Storage (photos/{userId}/...)
-      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'photos');
+      // Upload gallery photo to Firebase Storage with backend terms acceptance check
+      const storageUrl = await uploadPhotoToFirebase(file, user?.id || user?.regId || 'guest', 'photos', user);
       const updated = [...photos, storageUrl];
       await updateProfile({ photos: updated });
       setActivePhotoIdx(updated.length - 1);
     } catch (err) {
       console.error('Error uploading gallery photo to Firebase Storage:', err);
-      alert('Failed to upload gallery photo to Firebase Storage.');
+      if (err?.message?.includes('TERMS_ACCEPTANCE_REQUIRED')) {
+        setTermsActionTitle('Upload Gallery Photo');
+        setShowTermsModal(true);
+      } else {
+        alert('Failed to upload gallery photo to Firebase Storage.');
+      }
     }
   };
 
@@ -415,7 +474,7 @@ export const MyProfilePage = ({ onNavigate }) => {
 
                 {/* Option 1: Upload Photo */}
                 <button
-                  onClick={() => avatarFileInputRef.current?.click()}
+                  onClick={handleOpenAvatarUpload}
                   className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum flex items-center space-x-2 transition-colors"
                 >
                   <Upload className="w-4 h-4 text-brand-plum shrink-0" />
@@ -432,6 +491,31 @@ export const MyProfilePage = ({ onNavigate }) => {
                     <span>Remove Profile Picture</span>
                   </button>
                 )}
+
+                <div className="px-3 pt-2 pb-1 border-t border-gray-100 text-[10px] text-gray-500 leading-tight">
+                  Must follow{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAvatarMenu(false);
+                      onNavigate('/terms-of-service');
+                    }}
+                    className="underline text-brand-plum font-semibold hover:text-brand-plumDark"
+                  >
+                    Terms
+                  </button>
+                  {' '}&{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAvatarMenu(false);
+                      onNavigate('/child-safety');
+                    }}
+                    className="underline text-brand-plum font-semibold hover:text-brand-plumDark"
+                  >
+                    Safety Rules
+                  </button>
+                </div>
               </div>
             )}
 
@@ -760,14 +844,31 @@ export const MyProfilePage = ({ onNavigate }) => {
           </div>
 
           {/* Add Photo Button */}
-          <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:items-end space-y-1 w-full sm:w-auto">
             <button
-              onClick={() => galleryFileInputRef.current?.click()}
-              className="flex-1 sm:flex-initial px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
+              onClick={() => handleOpenGalleryUpload('gallery')}
+              className="w-full sm:w-auto px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
             >
               <Upload className="w-4 h-4 text-brand-gold shrink-0" />
               <span>Upload Photo</span>
             </button>
+            <span className="text-[10px] text-gray-400">
+              Governed by{' '}
+              <button
+                type="button"
+                onClick={() => onNavigate('/terms-of-service')}
+                className="underline text-brand-plum font-semibold hover:text-brand-plumDark"
+              >
+                Terms
+              </button>{' '}&{' '}
+              <button
+                type="button"
+                onClick={() => onNavigate('/child-safety')}
+                className="underline text-brand-plum font-semibold hover:text-brand-plumDark"
+              >
+                Safety Rules
+              </button>
+            </span>
             <input
               type="file"
               ref={galleryFileInputRef}
@@ -792,7 +893,7 @@ export const MyProfilePage = ({ onNavigate }) => {
               </p>
             </div>
             <button
-              onClick={() => galleryFileInputRef.current?.click()}
+              onClick={() => handleOpenGalleryUpload('gallery')}
               className="px-5 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-1.5"
             >
               <Plus className="w-4 h-4 text-brand-gold" />
@@ -843,7 +944,7 @@ export const MyProfilePage = ({ onNavigate }) => {
 
             {/* Add Photo Card in Grid */}
             <div
-              onClick={() => galleryFileInputRef.current?.click()}
+              onClick={() => handleOpenGalleryUpload('gallery')}
               className="h-64 sm:h-72 rounded-2xl border-2 border-dashed border-brand-rose/40 hover:border-brand-plum bg-brand-ivory/60 hover:bg-brand-ivory cursor-pointer flex flex-col items-center justify-center p-6 text-center transition-all group shadow-sm hover:shadow-md"
             >
               <div className="w-12 h-12 rounded-full bg-brand-plum/10 text-brand-plum flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
@@ -1385,7 +1486,7 @@ export const MyProfilePage = ({ onNavigate }) => {
                   <FileText className="w-4 h-4 text-amber-600" />
                   <span>Biodata Document / Photo (बायोडेटा PDF / फोटो)</span>
                 </label>
-                <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} />
+                <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} onNavigate={onNavigate} />
               </div>
 
               <button
@@ -1443,12 +1544,35 @@ export const MyProfilePage = ({ onNavigate }) => {
             <div className="space-y-3 border-t border-gray-100 pt-4">
               <button
                 type="button"
-                onClick={() => modalFileInputRef.current?.click()}
+                onClick={() => handleOpenGalleryUpload('modal_gallery')}
                 className="w-full py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center justify-center space-x-1.5"
               >
                 <Upload className="w-4 h-4 text-brand-gold" />
                 <span>Upload New Photo</span>
               </button>
+              <p className="text-[10px] text-gray-400 text-center">
+                Photos are subject to our{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPhotoManager(false);
+                    onNavigate('/terms-of-service');
+                  }}
+                  className="underline text-brand-plum font-semibold"
+                >
+                  Terms of Use
+                </button>{' '}&{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPhotoManager(false);
+                    onNavigate('/child-safety');
+                  }}
+                  className="underline text-brand-plum font-semibold"
+                >
+                  Community Safety Rules
+                </button>.
+              </p>
               <input
                 type="file"
                 ref={modalFileInputRef}
@@ -1474,6 +1598,18 @@ export const MyProfilePage = ({ onNavigate }) => {
       <SubscriptionModal
         isOpen={showSubModal}
         onClose={() => setShowSubModal(false)}
+      />
+
+      {/* Terms of Use Acceptance Modal */}
+      <TermsAcceptanceModal
+        isOpen={showTermsModal}
+        onClose={() => {
+          setShowTermsModal(false);
+          setPendingFileAction(null);
+        }}
+        onAccept={handleTermsAccept}
+        onNavigate={onNavigate}
+        actionTitle={termsActionTitle}
       />
 
     </div>

@@ -29,6 +29,8 @@ import { AdminPage } from './pages/AdminPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { BlockedUsersPage } from './pages/BlockedUsersPage';
+import { ChildSafetyStandardsPage } from './pages/ChildSafetyStandardsPage';
+import { AccountDeletionPage } from './pages/AccountDeletionPage';
 
 const GlobalSubscriptionModal = React.memo(function GlobalSubscriptionModal() {
   const { subModalConfig, closeSubscriptionModal } = useProfiles();
@@ -213,6 +215,14 @@ function AppContent() {
       case '/terms-of-service':
       case '/terms':
         return <TermsOfServicePage onNavigate={handleNavigate} />;
+      case '/child-safety':
+      case '/child-safety-standards':
+      case '/safety-standards':
+        return <ChildSafetyStandardsPage onNavigate={handleNavigate} />;
+      case '/delete-account':
+      case '/data-deletion':
+      case '/account-deletion':
+        return <AccountDeletionPage onNavigate={handleNavigate} />;
       case '/admin':
         return <AdminPage onNavigate={handleNavigate} />;
       default:

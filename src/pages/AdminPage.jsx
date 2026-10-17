@@ -148,8 +148,12 @@ export const AdminPage = ({ onNavigate }) => {
     addToast,
     reports = [],
     resolveReport,
+    dismissReport,
     warnUser,
-    removeViolatingContent
+    removeViolatingContent,
+    deletionRequests = [],
+    processDeletionRequest,
+    dismissDeletionRequest
   } = useProfiles();
 
   // Moderation state
@@ -163,10 +167,39 @@ export const AdminPage = ({ onNavigate }) => {
   const [actionTarget, setActionTarget] = useState(null); // { report, actionType: 'resolve' | 'dismiss' }
   const [adminNoteInput, setAdminNoteInput] = useState('');
 
+  // Deletion Requests state
+  const [deletionStatusFilter, setDeletionStatusFilter] = useState('pending'); // 'all', 'pending', 'completed', 'dismissed'
+  const [deletionSearchQuery, setDeletionSearchQuery] = useState('');
+  const [selectedDeletionReq, setSelectedDeletionReq] = useState(null);
+  const [showProcessDeletionModal, setShowProcessDeletionModal] = useState(false);
+  const [deletionAdminNote, setDeletionAdminNote] = useState('');
+  const [isProcessingDeletion, setIsProcessingDeletion] = useState(false);
+
   const pendingReportsCount = (reports || []).filter(r => r.status === 'pending').length;
   const resolvedReportsCount = (reports || []).filter(r => r.status === 'resolved').length;
   const dismissedReportsCount = (reports || []).filter(r => r.status === 'dismissed').length;
+  const pendingChildSafetyCount = (reports || []).filter(r => (r.isChildSafety || r.priority === 'critical') && r.status === 'pending').length;
   const suspendedProfilesCount = profiles.filter(p => p.blocked).length;
+
+  const pendingDeletionsCount = (deletionRequests || []).filter(r => r.status === 'pending').length;
+  const completedDeletionsCount = (deletionRequests || []).filter(r => r.status === 'completed').length;
+
+  const filteredDeletions = useMemo(() => {
+    let list = [...(deletionRequests || [])];
+    if (deletionStatusFilter !== 'all') {
+      list = list.filter(r => r.status === deletionStatusFilter);
+    }
+    if (deletionSearchQuery.trim()) {
+      const q = deletionSearchQuery.toLowerCase().trim();
+      list = list.filter(r => 
+        (r.fullName && r.fullName.toLowerCase().includes(q)) ||
+        (r.phone && r.phone.includes(q)) ||
+        (r.email && r.email.toLowerCase().includes(q)) ||
+        (r.memberId && r.memberId.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [deletionRequests, deletionStatusFilter, deletionSearchQuery]);
 
   const filteredAndSortedReports = useMemo(() => {
     let list = [...(reports || [])];
@@ -175,7 +208,9 @@ export const AdminPage = ({ onNavigate }) => {
       list = list.filter(r => r.status === reportStatusFilter);
     }
 
-    if (reportTypeFilter !== 'all') {
+    if (reportTypeFilter === 'child_safety') {
+      list = list.filter(r => r.isChildSafety || r.priority === 'critical');
+    } else if (reportTypeFilter !== 'all') {
       list = list.filter(r => r.targetType === reportTypeFilter);
     }
 
@@ -193,10 +228,17 @@ export const AdminPage = ({ onNavigate }) => {
     }
 
     return list.sort((a, b) => {
+      // 1. Critical / Child Safety pending reports ALWAYS come FIRST
+      const aChildSafetyPending = (a.isChildSafety || a.priority === 'critical') && a.status === 'pending' ? 1 : 0;
+      const bChildSafetyPending = (b.isChildSafety || b.priority === 'critical') && b.status === 'pending' ? 1 : 0;
+      if (aChildSafetyPending !== bChildSafetyPending) return bChildSafetyPending - aChildSafetyPending;
+
+      // 2. Other pending reports next
       const aPending = a.status === 'pending' ? 1 : 0;
       const bPending = b.status === 'pending' ? 1 : 0;
       if (aPending !== bPending) return bPending - aPending;
 
+      // 3. Newest timestamp first
       const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return tB - tA;
@@ -275,9 +317,23 @@ export const AdminPage = ({ onNavigate }) => {
     const notes = adminNoteInput.trim() || (actionType === 'resolve' ? 'Resolved after review.' : 'Dismissed after review.');
     
     if (actionType === 'resolve') {
-      await resolveReport(report.id, 'resolved', 'resolved', notes);
+      await resolveReport(report.id, {
+        status: 'resolved',
+        actionTaken: 'resolved',
+        adminNotes: notes,
+        resolvedBy: 'Admin'
+      });
     } else {
-      await resolveReport(report.id, 'dismissed', 'dismissed', notes);
+      if (typeof dismissReport === 'function') {
+        await dismissReport(report.id, notes);
+      } else {
+        await resolveReport(report.id, {
+          status: 'dismissed',
+          actionTaken: 'dismissed',
+          adminNotes: notes,
+          resolvedBy: 'Admin'
+        });
+      }
     }
 
     setShowActionModal(false);
@@ -1551,6 +1607,23 @@ export const AdminPage = ({ onNavigate }) => {
             </span>
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('deletions')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 relative ${
+            activeTab === 'deletions'
+              ? 'bg-rose-700 text-white shadow-md'
+              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
+          }`}
+        >
+          <Trash2 className="w-4 h-4 text-rose-600" />
+          <span>Deletion Requests (खाते हटवा विनंत्या)</span>
+          {pendingDeletionsCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white animate-pulse">
+              {pendingDeletionsCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* TAB 1: OVERVIEW ANALYTICS */}
@@ -2796,6 +2869,12 @@ export const AdminPage = ({ onNavigate }) => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {pendingChildSafetyCount > 0 && (
+                <div className="px-4 py-2.5 bg-red-500/30 rounded-2xl border border-red-400/50 text-center animate-pulse">
+                  <div className="text-[10px] uppercase font-bold text-red-200">🚨 Child Safety</div>
+                  <div className="text-xl font-extrabold text-white">{pendingChildSafetyCount}</div>
+                </div>
+              )}
               <div className="px-4 py-2.5 bg-white/10 rounded-2xl border border-white/10 text-center">
                 <div className="text-[10px] uppercase font-bold text-rose-200">Pending Review</div>
                 <div className="text-xl font-extrabold text-amber-300">{pendingReportsCount}</div>
@@ -2810,6 +2889,41 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
             </div>
           </div>
+
+          {/* Urgent Child Safety Alert Banner */}
+          {pendingChildSafetyCount > 0 && (
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-red-700 via-rose-800 to-red-900 text-white rounded-3xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-red-400">
+              <div className="flex items-start sm:items-center space-x-3.5">
+                <div className="p-2.5 bg-white/20 rounded-2xl text-2xl animate-pulse shrink-0">
+                  🚨
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-red-500 text-white font-extrabold text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full border border-red-300">
+                      High Priority • Zero Tolerance
+                    </span>
+                    <span className="text-xs text-red-200">Action Required</span>
+                  </div>
+                  <h4 className="font-serif font-bold text-base sm:text-lg mt-0.5">
+                    {pendingChildSafetyCount} Urgent Child Safety Incident {pendingChildSafetyCount === 1 ? 'Report' : 'Reports'} Pending
+                  </h4>
+                  <p className="text-xs text-red-100 max-w-2xl mt-0.5 leading-relaxed">
+                    Mandatory immediate review under Sambodhi Sarang Child Safety Standards. Review evidence, remove illicit media, suspend account, preserve audit logs, and escalate to law enforcement (cybercrime.gov.in / Helpline 1930) if applicable.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportStatusFilter('pending');
+                  setReportTypeFilter('child_safety');
+                }}
+                className="px-4 py-2.5 bg-white text-red-800 hover:bg-red-50 font-bold text-xs rounded-xl shadow-md shrink-0 transition-all hover:scale-105"
+              >
+                Inspect Urgent Reports ({pendingChildSafetyCount})
+              </button>
+            </div>
+          )}
 
           {/* Controls: Status tabs, type filter, search query */}
           <div className="bg-white p-5 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-4">
@@ -2894,6 +3008,7 @@ export const AdminPage = ({ onNavigate }) => {
                   className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-brand-plum focus:bg-white"
                 >
                   <option value="all">All Content Types</option>
+                  <option value="child_safety">🚨 Child Safety / Critical</option>
                   <option value="profile">Profiles only</option>
                   <option value="photo">Photos only</option>
                   <option value="message">Messages only</option>
@@ -2925,17 +3040,46 @@ export const AdminPage = ({ onNavigate }) => {
           {/* Reports Listing */}
           <div className="space-y-4">
             {filteredAndSortedReports.map((report) => {
-              const targetProfile = profiles.find((p) => String(p.id) === String(report.targetId));
+              const targetProfile = profiles.find((p) => {
+                const tId = String(report.targetId || report.targetUserId || '').trim().toLowerCase();
+                const tReg = String(report.targetRegId || '').trim().toLowerCase().replace(/^ss-?/i, '');
+                const tName = String(report.targetName || '').trim().toLowerCase();
+
+                if (tId && (
+                  String(p.id).toLowerCase() === tId || 
+                  String(p.regId || '').toLowerCase() === tId || 
+                  String(p.registrationId || '').toLowerCase() === tId ||
+                  String(p.id || '').toLowerCase().replace(/^ss-?/i, '') === tId.replace(/^ss-?/i, '')
+                )) {
+                  return true;
+                }
+                if (tReg && (
+                  String(p.regId || '').toLowerCase().replace(/^ss-?/i, '') === tReg || 
+                  String(p.registrationId || '').toLowerCase() === tReg
+                )) {
+                  return true;
+                }
+                if (tName && tName !== 'member' && String(p.name || '').trim().toLowerCase() === tName) {
+                  return true;
+                }
+                return false;
+              });
+
+              const resolvedTargetId = targetProfile?.id || report.targetId || report.targetUserId || (targetProfile?.regId ? targetProfile.regId : '');
+              const resolvedTargetName = targetProfile?.name || report.targetName || 'Member';
               const isTargetSuspended = Boolean(targetProfile?.blocked);
               const isTargetVerified = Boolean(targetProfile?.verified);
               const isPending = report.status === 'pending';
               const isResolved = report.status === 'resolved';
+              const isChildSafety = Boolean(report.isChildSafety || report.priority === 'critical');
 
               return (
                 <div
                   key={report.id}
                   className={`bg-white rounded-3xl p-5 sm:p-6 border transition-all space-y-4 shadow-sm hover:shadow-md ${
-                    isPending
+                    isChildSafety && isPending
+                      ? 'border-red-400 ring-2 ring-red-200 bg-red-50/20'
+                      : isPending
                       ? 'border-amber-300 ring-1 ring-amber-100 bg-amber-50/20'
                       : isResolved
                       ? 'border-emerald-200'
@@ -2944,7 +3088,14 @@ export const AdminPage = ({ onNavigate }) => {
                 >
                   {/* Top Bar: Badges + Timestamp */}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isChildSafety && (
+                        <span className="px-2.5 py-1 bg-red-600 text-white rounded-full text-[11px] font-black tracking-wide flex items-center space-x-1 border border-red-700 shadow-xs animate-pulse">
+                          <span>🚨</span>
+                          <span>CHILD SAFETY / CRITICAL</span>
+                        </span>
+                      )}
+
                       {isPending && (
                         <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-[11px] font-extrabold flex items-center space-x-1.5 border border-amber-300">
                           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
@@ -2973,7 +3124,11 @@ export const AdminPage = ({ onNavigate }) => {
                       </span>
 
                       {/* Report Reason Pill */}
-                      <span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-[11px] font-bold">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                        isChildSafety 
+                          ? 'bg-red-100 text-red-800 border-red-300' 
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                      }`}>
                         {report.reason}
                       </span>
                     </div>
@@ -3008,11 +3163,17 @@ export const AdminPage = ({ onNavigate }) => {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-brand-plum text-sm">
-                          {report.targetName || targetProfile?.name || 'Member'}
+                          {resolvedTargetName}
                         </span>
                         <button
                           type="button"
-                          onClick={() => onNavigate(`/profile/${report.targetId}`)}
+                          onClick={() => {
+                            if (resolvedTargetId) {
+                              onNavigate(`/profile/${resolvedTargetId}`);
+                            } else {
+                              addToast('Candidate profile could not be located.', 'error');
+                            }
+                          }}
                           className="text-[11px] font-bold text-brand-plum hover:underline inline-flex items-center space-x-1"
                           title="Open Full Candidate Profile"
                         >
@@ -3021,12 +3182,19 @@ export const AdminPage = ({ onNavigate }) => {
                         </button>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                        <span className="font-mono text-[11px] text-gray-500">ID: {report.targetId}</span>
+                        <span className="font-mono text-[11px] text-gray-500">
+                          ID: {resolvedTargetId || 'N/A'}
+                          {targetProfile?.registrationId ? ` (SS-${targetProfile.registrationId})` : ''}
+                        </span>
                         
                         {/* Integrated Manual Profile Verification Badge */}
                         <button
                           type="button"
-                          onClick={() => toggleVerifyProfile(report.targetId)}
+                          onClick={() => {
+                            if (resolvedTargetId) {
+                              toggleVerifyProfile(resolvedTargetId);
+                            }
+                          }}
                           className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1 transition-colors ${
                             isTargetVerified
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -3067,6 +3235,23 @@ export const AdminPage = ({ onNavigate }) => {
                     <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 text-xs text-amber-950">
                       <span className="font-bold text-[11px] text-amber-800 block mb-0.5">Member Explanation / तक्रारीचा तपशील:</span>
                       <p className="italic leading-relaxed whitespace-pre-wrap">"{report.details}"</p>
+                    </div>
+                  )}
+
+                  {/* Statutory Child Safety Enforcement Protocol Callout */}
+                  {isChildSafety && (
+                    <div className="p-3.5 bg-red-50/90 border border-red-300 rounded-2xl text-xs text-red-950 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center space-x-1.5 text-red-800 font-bold text-[11px]">
+                        <ShieldAlert className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>Statutory Child Safety Enforcement Protocol (POCSO & IT Act)</span>
+                      </div>
+                      <p className="text-[11px] text-red-900 leading-relaxed">
+                        Sambodhi Sarang operates a strict zero-tolerance policy against CSAE/CSAM, predatory solicitation, and underage participation. If violation is confirmed: 
+                        1) Click <strong>Suspend Account</strong> immediately. 
+                        2) Click <strong>Remove Content</strong> to purge illicit media. 
+                        3) Preserve user profile ID, phone number, and transmission logs. 
+                        4) Escalate immediately to the National Cyber Crime Reporting Portal (<a href="https://cybercrime.gov.in" target="_blank" rel="noopener noreferrer" className="underline font-bold text-red-800 hover:text-red-950">cybercrime.gov.in</a>) or dial helpline <strong>1930</strong>.
+                      </p>
                     </div>
                   )}
 
@@ -3138,13 +3323,21 @@ export const AdminPage = ({ onNavigate }) => {
 
                   {/* Administrative Resolution History (If resolved or dismissed) */}
                   {(isResolved || report.status === 'dismissed') && (
-                    <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs space-y-1 text-emerald-950">
-                      <div className="flex items-center justify-between font-bold text-[11px] text-emerald-800">
-                        <span>Administrative Decision ({report.actionTaken || report.status}):</span>
-                        <span>Resolved {report.resolvedAt ? new Date(report.resolvedAt).toLocaleString('en-IN') : ''}</span>
+                    <div className={`p-3 rounded-xl text-xs space-y-1 border ${
+                      report.status === 'dismissed'
+                        ? 'bg-slate-100 border-slate-300 text-slate-800'
+                        : 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                    }`}>
+                      <div className={`flex items-center justify-between font-bold text-[11px] ${
+                        report.status === 'dismissed' ? 'text-slate-700' : 'text-emerald-800'
+                      }`}>
+                        <span>Administrative Decision ({report.status === 'dismissed' ? 'Dismissed' : (report.actionTaken || report.status)}):</span>
+                        <span>{report.status === 'dismissed' ? 'Dismissed' : 'Resolved'} {report.resolvedAt ? new Date(report.resolvedAt).toLocaleString('en-IN') : ''}</span>
                       </div>
-                      <p className="text-[11px] text-emerald-900 leading-relaxed">
-                        {report.adminNotes || 'Reviewed and closed by administration.'}
+                      <p className={`text-[11px] leading-relaxed ${
+                        report.status === 'dismissed' ? 'text-slate-600' : 'text-emerald-900'
+                      }`}>
+                        {report.adminNotes || (report.status === 'dismissed' ? 'Report reviewed and dismissed by administration.' : 'Reviewed and closed by administration.')}
                       </p>
                     </div>
                   )}
@@ -3166,7 +3359,7 @@ export const AdminPage = ({ onNavigate }) => {
 
                       <button
                         type="button"
-                        onClick={() => handleToggleSuspendAccount(report.targetId, report)}
+                        onClick={() => handleToggleSuspendAccount(resolvedTargetId, report)}
                         className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all shadow-2xs border ${
                           isTargetSuspended
                             ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
@@ -3193,21 +3386,29 @@ export const AdminPage = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => handleOpenActionModal(report, 'dismiss')}
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all"
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all ${
+                          report.status === 'dismissed'
+                            ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`}
                         title="Dismiss report as unfounded or non-violating"
                       >
                         <XCircle className="w-3.5 h-3.5 text-gray-500" />
-                        <span>Dismiss</span>
+                        <span>{report.status === 'dismissed' ? 'Dismissed ✓' : 'Dismiss'}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleOpenActionModal(report, 'resolve')}
-                        className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all"
+                        className={`px-4 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all ${
+                          isResolved
+                            ? 'bg-emerald-700 text-white'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white'
+                        }`}
                         title="Mark this report as successfully resolved"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Mark as Resolved</span>
+                        <span>{isResolved ? 'Resolved ✓' : 'Mark as Resolved'}</span>
                       </button>
                     </div>
                   </div>
@@ -3245,6 +3446,410 @@ export const AdminPage = ({ onNavigate }) => {
           </div>
 
         </div>
+      )}
+
+      {/* TAB 8: ACCOUNT DELETION REQUESTS */}
+      {activeTab === 'deletions' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-rose-800/40 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center space-x-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1 rounded-full text-xs font-bold">
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Google Play & Regulatory Compliance</span>
+                </div>
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-white">
+                  Account & Data Deletion Requests
+                </h3>
+                <p className="text-xs sm:text-sm text-rose-200/80 max-w-2xl font-medium">
+                  Review and process user requests to permanently purge profile biodata, photographs, and messages from Sambodhi Sarang Marriage Bureau.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2 shrink-0">
+                <a
+                  href="/delete-account"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all border border-white/20 flex items-center gap-1.5"
+                >
+                  <span>Public Deletion URL</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+              <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl">
+                <div className="text-[11px] text-gray-300 font-medium">Total Requests</div>
+                <div className="text-xl font-extrabold text-white">{deletionRequests.length}</div>
+              </div>
+              <div className="bg-rose-500/15 border border-rose-500/30 p-3.5 rounded-2xl">
+                <div className="text-[11px] text-rose-300 font-bold">Pending Action</div>
+                <div className="text-xl font-extrabold text-rose-400">{pendingDeletionsCount}</div>
+              </div>
+              <div className="bg-emerald-500/15 border border-emerald-500/30 p-3.5 rounded-2xl col-span-2 sm:col-span-1">
+                <div className="text-[11px] text-emerald-300 font-bold">Completed & Purged</div>
+                <div className="text-xl font-extrabold text-emerald-400">{completedDeletionsCount}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              {/* Status Filter Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setDeletionStatusFilter('pending')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                    deletionStatusFilter === 'pending'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>Pending</span>
+                  {pendingDeletionsCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-rose-600 font-extrabold">
+                      {pendingDeletionsCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeletionStatusFilter('all')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    deletionStatusFilter === 'all'
+                      ? 'bg-brand-plum text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  All ({deletionRequests.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeletionStatusFilter('completed')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    deletionStatusFilter === 'completed'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Completed ({completedDeletionsCount})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeletionStatusFilter('dismissed')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    deletionStatusFilter === 'dismissed'
+                      ? 'bg-slate-700 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Dismissed
+                </button>
+              </div>
+
+              {/* Search Box */}
+              <div className="relative min-w-[240px]">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search name, phone, email, member ID..."
+                  value={deletionSearchQuery}
+                  onChange={(e) => setDeletionSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-brand-plum bg-gray-50/50"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* List of Deletion Requests */}
+          <div className="space-y-4">
+            {filteredDeletions.map((req) => {
+              const isPending = req.status === 'pending';
+              const isCompleted = req.status === 'completed';
+              const isDismissed = req.status === 'dismissed';
+
+              // Check if matching profile exists in system
+              const matchedProfile = profiles.find(p => 
+                (req.memberId && (String(p.id) === String(req.memberId) || String(p.regId) === String(req.memberId))) ||
+                (req.phone && doesProfileHavePhone(p, req.phone)) ||
+                (req.email && p.email && String(p.email).toLowerCase() === String(req.email).toLowerCase())
+              );
+
+              return (
+                <div
+                  key={req.id}
+                  className={`bg-white rounded-3xl p-5 sm:p-6 border shadow-xs space-y-4 transition-all ${
+                    isPending
+                      ? 'border-rose-300 ring-1 ring-rose-200/50'
+                      : 'border-slate-200/80 opacity-90'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                    <div className="flex items-center space-x-2.5">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isPending ? 'bg-rose-100 text-rose-700' : isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        <Trash2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-serif font-bold text-sm text-brand-charcoal">
+                            {req.fullName || 'Member Profile'}
+                          </h4>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            isPending
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                              : isCompleted
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {req.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400">
+                          Request ID: <span className="font-mono">{req.id}</span> • Submitted: {new Date(req.requestedAt || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 text-xs">
+                      {req.source === 'public_web' && (
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
+                          Web Form (sambodhisarang.com)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Registered Credentials Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/60">
+                    <div>
+                      <span className="text-gray-400 block text-[10px]">Registered Phone</span>
+                      <span className="font-bold text-brand-charcoal font-mono">{req.phone || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block text-[10px]">Registered Email</span>
+                      <span className="font-bold text-brand-charcoal">{req.email || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block text-[10px]">Member ID / Reg ID</span>
+                      <span className="font-bold text-brand-charcoal font-mono">{req.memberId || 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  {/* Reason Details */}
+                  <div className="text-xs space-y-1">
+                    <span className="text-gray-500 font-semibold block text-[11px]">Reason for Deletion:</span>
+                    <p className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-700 leading-relaxed">
+                      <strong>{req.reason || 'Not specified'}</strong>
+                      {req.customReason && <span className="block mt-1 text-gray-600 italic font-normal">"{req.customReason}"</span>}
+                    </p>
+                  </div>
+
+                  {/* Matched Profile Notice */}
+                  {matchedProfile ? (
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs flex items-center justify-between gap-2">
+                      <div className="text-amber-950">
+                        <span className="font-bold">Active Profile Matched:</span> {matchedProfile.name} ({matchedProfile.regId || matchedProfile.id}) • {matchedProfile.gender} • {matchedProfile.district}
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0">
+                        In Database
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-500">
+                      Profile may have already been purged or registered with different contact information.
+                    </div>
+                  )}
+
+                  {/* Administrative Notes / Execution timestamp if completed */}
+                  {req.notes && (
+                    <div className="p-3 bg-slate-100 rounded-xl text-xs text-slate-700 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Admin Note:</span>
+                      <p>{req.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons for Pending Requests */}
+                  {isPending && (
+                    <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDeletionReq(req);
+                          setDeletionAdminNote('');
+                          setShowProcessDeletionModal(true);
+                        }}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Permanently Purge & Delete Account</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const note = prompt('Enter optional reason for dismissing this deletion request:');
+                          if (note !== null) {
+                            dismissDeletionRequest(req.id, note);
+                          }
+                        }}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs rounded-xl transition-all"
+                      >
+                        Dismiss Request
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {filteredDeletions.length === 0 && (
+              <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
+                <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h4 className="font-serif font-bold text-base text-slate-800">No Deletion Requests</h4>
+                <p className="text-xs text-gray-500 max-w-md mx-auto">
+                  {deletionStatusFilter === 'pending'
+                    ? 'All member account deletion requests have been processed! No pending requests awaiting review.'
+                    : 'No requests match your selected filter.'}
+                </p>
+                {deletionStatusFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeletionStatusFilter('all');
+                      setDeletionSearchQuery('');
+                    }}
+                    className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-xs"
+                  >
+                    View All Requests
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {/* MODAL: PROCESS DELETION REQUEST */}
+      {showProcessDeletionModal && selectedDeletionReq && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 border border-rose-300 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <h3 className="font-serif text-lg font-bold text-rose-900">
+                  Confirm Permanent Account Deletion
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProcessDeletionModal(false);
+                  setSelectedDeletionReq(null);
+                }}
+                className="p-1.5 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-gray-700">
+              <div className="p-3.5 bg-rose-50 rounded-2xl border border-rose-200 text-rose-950 space-y-1">
+                <p className="font-bold">Member to be permanently deleted:</p>
+                <p>Name: <strong>{selectedDeletionReq.fullName}</strong></p>
+                <p>Phone: {selectedDeletionReq.phone || 'N/A'} • Email: {selectedDeletionReq.email || 'N/A'}</p>
+                <p>Member ID: {selectedDeletionReq.memberId || 'N/A'}</p>
+              </div>
+
+              <p className="text-rose-900 font-semibold">
+                Executing this action will permanently remove:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-gray-600">
+                <li>Candidate Firestore profile document</li>
+                <li>All profile avatar photos and gallery pictures from Firebase Storage</li>
+                <li>Uploaded Biodata PDF documents</li>
+                <li>Associated connection interests and direct message traces</li>
+              </ul>
+              <p className="text-[11px] text-gray-500 pt-1">
+                * A statutory compliance record is logged in deletion_logs (retaining only timestamp and ID for 180-day IT Act compliance) without personal demographics.
+              </p>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Administrator Notes / Resolution Remarks:
+                </label>
+                <input
+                  type="text"
+                  value={deletionAdminNote}
+                  onChange={(e) => setDeletionAdminNote(e.target.value)}
+                  placeholder="e.g. Identity verified via phone, account permanently purged."
+                  className="w-full p-2.5 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                disabled={isProcessingDeletion}
+                onClick={() => {
+                  setShowProcessDeletionModal(false);
+                  setSelectedDeletionReq(null);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-brand-charcoal font-semibold text-xs hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={isProcessingDeletion}
+                onClick={async () => {
+                  setIsProcessingDeletion(true);
+                  try {
+                    await processDeletionRequest(selectedDeletionReq.id, {
+                      notes: deletionAdminNote || 'Processed and permanently erased by Administrator.'
+                    });
+                    setShowProcessDeletionModal(false);
+                    setSelectedDeletionReq(null);
+                  } catch (err) {
+                    console.error('Error processing deletion:', err);
+                    alert('Failed to process deletion request.');
+                  } finally {
+                    setIsProcessingDeletion(false);
+                  }
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center space-x-1.5"
+              >
+                {isProcessingDeletion ? (
+                  <span>Purging Account...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirm & Purge Data</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: WARN MEMBER */}

@@ -21,6 +21,7 @@ export const SignUpPage = ({ onNavigate }) => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [asyncCheck, setAsyncCheck] = useState({ emailExists: false, phoneExists: false });
@@ -69,6 +70,11 @@ export const SignUpPage = ({ onNavigate }) => {
     setError('');
 
     if (isSubmitting) return;
+
+    if (!agreeToTerms) {
+      setError('You must accept the Terms of Use and Community Safety Rules to register.');
+      return;
+    }
 
     if (!formData.name.trim()) {
       setError('Please enter your full name.');
@@ -388,9 +394,41 @@ export const SignUpPage = ({ onNavigate }) => {
 
           </div>
 
+          {/* Explicit Terms of Use and Safety Rules Agreement */}
+          <div className="p-3.5 bg-brand-lightBg/60 rounded-2xl border border-brand-rose/20 text-xs text-brand-charcoal space-y-2">
+            <label className="flex items-start space-x-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                required
+                checked={agreeToTerms}
+                onChange={(e) => setAgreeToTerms(e.target.checked)}
+                className="mt-0.5 rounded text-brand-plum focus:ring-brand-plum w-4 h-4 cursor-pointer shrink-0"
+              />
+              <span className="text-[11px] leading-relaxed text-gray-700">
+                I have read, understood, and agree to the{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('/terms-of-service')}
+                  className="font-bold text-brand-plum underline hover:text-brand-plumDark inline"
+                >
+                  Terms of Use
+                </button>
+                {' '}and{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('/child-safety')}
+                  className="font-bold text-brand-plum underline hover:text-brand-plumDark inline"
+                >
+                  Community Safety Rules
+                </button>
+                . I confirm that I am at least 18 years of age and will not upload fake, obscene, scam, or underage content.
+              </span>
+            </label>
+          </div>
+
           <button
             type="submit"
-            disabled={isSubmitting || existingCheck.phoneExists || existingCheck.emailExists}
+            disabled={isSubmitting || !agreeToTerms || existingCheck.phoneExists || existingCheck.emailExists}
             className={`w-full py-3.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all border border-brand-gold/30 flex items-center justify-center space-x-2 ${
               isSubmitting || existingCheck.phoneExists || existingCheck.emailExists
                 ? 'opacity-60 cursor-not-allowed'

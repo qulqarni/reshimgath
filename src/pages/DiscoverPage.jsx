@@ -538,7 +538,7 @@ export const DiscoverPage = ({ onNavigate }) => {
               className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
             />
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Show 100% Verified Profiles Only</span>
+            <span>Show Verified Profiles Only</span>
           </label>
 
           <button
@@ -733,7 +733,7 @@ export const DiscoverPage = ({ onNavigate }) => {
                     onChange={(e) => setVerifiedOnly(e.target.checked)}
                     className="rounded text-brand-plum focus:ring-brand-plum w-4 h-4"
                   />
-                  <span>Show 100% Verified Profiles Only</span>
+                  <span>Show Verified Profiles Only</span>
                 </label>
               </div>
             </div>

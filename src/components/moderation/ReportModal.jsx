@@ -5,14 +5,15 @@ import { useProfiles } from '../../context/ProfileContext';
 
 export const REASON_OPTIONS = {
   profile: [
+    'Child Safety / Underage Minor (बाल सुरक्षा / अल्पवयीन प्रोफाइल)',
     'Fake profile / Impersonation (खोटे प्रोफाइल किंवा दुसऱ्याची माहिती)',
     'Inappropriate / Offensive details (अयोग्य किंवा अपमानास्पद माहिती)',
-    'Underage or Ineligible (विवाहास अपात्र किंवा वय कमी)',
     'Commercial, Scam or Financial Demands (व्यावसायिक किंवा पैशांची मागणी)',
     'Harassment or Stalking (त्रास देणे किंवा पाठलाग)',
     'Other violation (इतर तक्रार)'
   ],
   photo: [
+    'Child Sexual Abuse Material (CSAM) / Minor Photo (बाल लैंगिक शोषण सामग्री प्रतिबंध)',
     'Inappropriate or vulgar photo (अयोग्य किंवा अश्लील फोटो)',
     'Not their own photo / Celebrity photo (स्वतःचा फोटो नाही / सेलिब्रिटी फोटो)',
     'Blurry, fake or misleading photo (अस्पष्ट किंवा दिशाभूल करणारा फोटो)',
@@ -20,6 +21,7 @@ export const REASON_OPTIONS = {
     'Other photo issue (इतर समस्या)'
   ],
   message: [
+    'Grooming / Exploitation / Involving Minors (बाल लैंगिक शोषण / ग्रूमिंग प्रतिबंध)',
     'Abusive, vulgar or disrespectful language (अश्लील किंवा अपमानकारक भाषा)',
     'Harassment or unwanted continuous messages (त्रासदायक सतत मेसेजेस)',
     'Financial fraud / asking for money (पैशांची मागणी किंवा फसवणूक)',
@@ -34,7 +36,13 @@ export const ReportModal = ({
   onClose,
   targetType = 'profile', // 'profile' | 'photo' | 'message'
   targetUser = null,
-  evidence = null
+  targetId = null,
+  targetName = null,
+  targetRegId = null,
+  evidence = null,
+  evidenceText = null,
+  messageId = null,
+  onSubmit = null
 }) => {
   const { submitReport, addToast } = useProfiles();
   const reasons = REASON_OPTIONS[targetType] || REASON_OPTIONS.profile;
@@ -52,17 +60,32 @@ export const ReportModal = ({
       return;
     }
 
+    const isChildSafety = /child|minor|underage|csam|csae|grooming|बाल सुरक्षा|अल्पवयीन/i.test(selectedReason);
+    const resolvedTargetId = String(targetUser?.id || targetId || evidence?.senderId || evidence?.targetId || '');
+    const resolvedTargetName = targetUser?.name || targetName || 'Member';
+    const resolvedTargetRegId = targetUser?.regId || (targetUser?.registrationId ? `SS-${targetUser.registrationId}` : '') || targetRegId || '';
+    const resolvedEvidence = evidence || (evidenceText || messageId ? { text: evidenceText, messageId } : null);
+
     setIsSubmitting(true);
     try {
-      await submitReport({
+      const payload = {
         targetType,
-        targetUserId: targetUser?.id || evidence?.senderId,
-        targetName: targetUser?.name || 'Member',
-        targetRegId: targetUser?.regId || (targetUser?.registrationId ? `SS-${targetUser.registrationId}` : ''),
+        targetUserId: resolvedTargetId,
+        targetId: resolvedTargetId,
+        targetName: resolvedTargetName,
+        targetRegId: resolvedTargetRegId,
         reason: selectedReason,
         details,
-        evidence
-      });
+        evidence: resolvedEvidence,
+        isChildSafety,
+        priority: isChildSafety ? 'critical' : 'normal'
+      };
+
+      if (onSubmit) {
+        await onSubmit(payload);
+      } else {
+        await submitReport(payload);
+      }
       onClose();
     } catch (err) {
       console.error('Failed to submit report:', err);

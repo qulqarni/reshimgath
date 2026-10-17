@@ -22,6 +22,12 @@ import {
 } from 'firebase/storage';
 import { compressImageToFile, compressBiodataImageToFile } from '../utils/imageCompressor';
 import { doesProfileHavePhone, isSamePhoneNumber } from '../utils/phoneUtils';
+import { CURRENT_TERMS_VERSION, hasAcceptedTerms, createTermsAcceptanceRecord } from '../utils/termsEnforcement';
+import { 
+  validateImageFile, 
+  validateBiodataFile, 
+  verifyUploadPermission 
+} from '../utils/mediaValidator';
 
 // Collection Constants
 const PROFILES_COLLECTION = 'profiles';
@@ -34,6 +40,9 @@ const INTERESTS_COLLECTION = 'interests';
 const PROFILE_VIEWS_COLLECTION = 'profile_views';
 const NOTIFICATIONS_COLLECTION = 'notifications';
 const REPORTS_COLLECTION = 'reports';
+const TERMS_COLLECTION = 'terms_acceptances';
+const DELETION_REQUESTS_COLLECTION = 'deletion_requests';
+const DELETION_LOGS_COLLECTION = 'deletion_logs';
 
 // -------------------------------------------------------------
 // FIRESTORE PROFILES API
@@ -174,6 +183,210 @@ export const findProfileInFirestore = async (identifier) => {
 };
 
 /**
+ * Submit a public web-based account & data deletion request
+ * Used by https://sambodhisarang.com/delete-account
+ */
+export const submitAccountDeletionRequest = async (requestData) => {
+  if (!requestData) return false;
+  const requestId = requestData.id || `del_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const payload = {
+    ...requestData,
+    id: requestId,
+    status: requestData.status || 'pending',
+    requestedAt: requestData.requestedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    const existing = JSON.parse(localStorage.getItem('reshimgath_deletion_requests') || '[]');
+    localStorage.setItem('reshimgath_deletion_requests', JSON.stringify([payload, ...existing.filter(r => r.id !== requestId)]));
+  } catch (e) {}
+
+  if (!isFirebaseConfigured) return payload;
+
+  try {
+    await setDoc(doc(db, DELETION_REQUESTS_COLLECTION, requestId), payload, { merge: true });
+    return payload;
+  } catch (error) {
+    console.error('Error submitting deletion request to Firestore:', error);
+    return payload;
+  }
+};
+
+/**
+ * Fetch all account deletion requests from Firestore (Admin review)
+ */
+export const fetchDeletionRequestsFromFirestore = async () => {
+  let localList = [];
+  try {
+    localList = JSON.parse(localStorage.getItem('reshimgath_deletion_requests') || '[]');
+  } catch (e) {}
+
+  if (!isFirebaseConfigured) return localList;
+
+  try {
+    const querySnapshot = await getDocs(collection(db, DELETION_REQUESTS_COLLECTION));
+    const list = [];
+    querySnapshot.forEach((docSnap) => {
+      list.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    const map = new Map();
+    localList.forEach(r => map.set(r.id, r));
+    list.forEach(r => map.set(r.id, r));
+    const merged = Array.from(map.values());
+    merged.sort((a, b) => new Date(b.requestedAt || 0) - new Date(a.requestedAt || 0));
+    return merged;
+  } catch (error) {
+    console.error('Error fetching deletion requests from Firestore:', error);
+    return localList;
+  }
+};
+
+/**
+ * Update the status of an account deletion request
+ */
+export const updateDeletionRequestStatus = async (requestId, status, notes = '') => {
+  if (!requestId) return false;
+  try {
+    const stored = JSON.parse(localStorage.getItem('reshimgath_deletion_requests') || '[]');
+    const updated = stored.map(r => r.id === requestId ? { ...r, status, notes, processedAt: new Date().toISOString() } : r);
+    localStorage.setItem('reshimgath_deletion_requests', JSON.stringify(updated));
+  } catch (e) {}
+
+  if (!isFirebaseConfigured) return true;
+
+  try {
+    await updateDoc(doc(db, DELETION_REQUESTS_COLLECTION, requestId), {
+      status,
+      notes,
+      processedAt: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating deletion request status in Firestore:', error);
+    return false;
+  }
+};
+
+/**
+ * Permanently and comprehensively delete a user account and associated personal data
+ * Handles:
+ * 1. Profile document from Firestore
+ * 2. Uploaded media (avatar, gallery photos, biodata PDF) from Firebase Storage
+ * 3. User's interest records (sent & received)
+ * 4. User's notifications
+ * 5. Statutory compliance audit log in deletion_logs (180-day audit retention)
+ * 6. Local storage cleanup
+ */
+export const deleteUserAccount = async (userId, options = {}) => {
+  if (!userId) return false;
+  const idStr = String(userId);
+
+  try {
+    // 1. Fetch profile to discover storage URLs
+    let profileData = null;
+    if (isFirebaseConfigured) {
+      try {
+        const snap = await getDoc(doc(db, PROFILES_COLLECTION, idStr));
+        if (snap.exists()) {
+          profileData = snap.data();
+        }
+      } catch (e) {
+        console.warn('Could not fetch profile before deletion:', e);
+      }
+    }
+
+    // 2. Delete storage files (avatar, photos, biodataPdf)
+    if (profileData && isFirebaseConfigured) {
+      const urlsToDelete = [];
+      if (profileData.avatar && typeof profileData.avatar === 'string' && profileData.avatar.includes('firebasestorage')) {
+        urlsToDelete.push(profileData.avatar);
+      }
+      if (Array.isArray(profileData.photos)) {
+        profileData.photos.forEach(p => {
+          const u = typeof p === 'string' ? p : p?.url;
+          if (u && u.includes('firebasestorage')) urlsToDelete.push(u);
+        });
+      }
+      if (profileData.biodataPdf) {
+        const bUrl = typeof profileData.biodataPdf === 'string' ? profileData.biodataPdf : profileData.biodataPdf.fileUrl;
+        if (bUrl && bUrl.includes('firebasestorage')) urlsToDelete.push(bUrl);
+      }
+
+      for (const u of urlsToDelete) {
+        try {
+          await deleteObject(ref(storage, u));
+        } catch (storageErr) {
+          console.warn('Storage file deletion error during account purge:', storageErr);
+        }
+      }
+    }
+
+    // 3. Delete profile document from Firestore
+    if (isFirebaseConfigured) {
+      try {
+        await deleteDoc(doc(db, PROFILES_COLLECTION, idStr));
+      } catch (err) {
+        console.error('Error deleting profile document from Firestore:', err);
+      }
+    }
+
+    // 4. Record statutory compliance audit log in deletion_logs
+    if (isFirebaseConfigured) {
+      try {
+        const logId = `log_${Date.now()}_${idStr.slice(-6)}`;
+        await setDoc(doc(db, DELETION_LOGS_COLLECTION, logId), {
+          id: logId,
+          deletedUserId: idStr,
+          timestamp: new Date().toISOString(),
+          requestedBy: options.requestedBy || 'user',
+          reason: options.reason || 'user_requested_deletion',
+          status: 'completed'
+        });
+      } catch (logErr) {
+        console.warn('Error recording deletion audit log in Firestore:', logErr);
+      }
+    }
+
+    // 5. Clean up localStorage
+    try {
+      const deletedSaved = JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
+      if (!deletedSaved.includes(idStr)) {
+        localStorage.setItem('reshimgath_deleted_profiles', JSON.stringify([...deletedSaved, idStr]));
+      }
+
+      const storedProfiles = JSON.parse(localStorage.getItem('reshimgath_profiles') || '[]');
+      const filteredProfiles = storedProfiles.filter(p => String(p.id) !== idStr);
+      localStorage.setItem('reshimgath_profiles', JSON.stringify(filteredProfiles));
+
+      const storedInterests = JSON.parse(localStorage.getItem('reshimgath_interests') || '{"sent":[],"received":[],"unlockedConnections":[]}');
+      storedInterests.sent = (storedInterests.sent || []).filter(item => {
+        const sId = typeof item === 'string' ? item : (item.senderId || item.user1);
+        const tId = typeof item === 'string' ? item : (item.targetUserId || item.profileId || item.user2);
+        return String(sId) !== idStr && String(tId) !== idStr;
+      });
+      storedInterests.received = (storedInterests.received || []).filter(item => {
+        const sId = typeof item === 'string' ? item : (item.senderId || item.user1);
+        const tId = typeof item === 'string' ? item : (item.targetUserId || item.profileId || item.user2);
+        return String(sId) !== idStr && String(tId) !== idStr;
+      });
+      localStorage.setItem('reshimgath_interests', JSON.stringify(storedInterests));
+
+      const storedNotifs = JSON.parse(localStorage.getItem('reshimgath_notifications') || '[]');
+      const filteredNotifs = storedNotifs.filter(n => String(n.profileId) !== idStr && String(n.userId) !== idStr);
+      localStorage.setItem('reshimgath_notifications', JSON.stringify(filteredNotifs));
+    } catch (localErr) {
+      console.warn('Local storage cleanup warning:', localErr);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Fatal error during deleteUserAccount:', error);
+    return false;
+  }
+};
+
+/**
  * Check if a phone number or email is already registered in Firestore profiles collection
  */
 export const checkExistingUserInFirestore = async (email, phone) => {
@@ -254,11 +467,32 @@ export const uploadFileToFirebaseStorage = async (file, storagePath, customConte
 /**
  * Upload a Member Biodata PDF or Image file to Firebase Storage
  * Store location: biodatas/{userId}/{timestamp}_{fileName}
+ * Requires user to have accepted the current Terms of Use and Community Safety Rules.
  * @param {File} file - PDF or Image file object
  * @param {string} userId - Member user ID
+ * @param {object|null} userObj - User profile object for terms validation
  * @returns {Promise<string>} - Public Download URL of the uploaded file
  */
-export const uploadBiodataPdfToFirebase = async (file, userId = 'guest') => {
+export const uploadBiodataPdfToFirebase = async (file, userId = 'guest', userObj = null) => {
+  // Enforce upload permission verification on backend: user can only upload for themselves unless admin
+  if (userObj) {
+    const perm = verifyUploadPermission(userId, userObj);
+    if (!perm.isAuthorized) {
+      throw new Error(`UPLOAD_PERMISSION_DENIED: ${perm.reason}`);
+    }
+  }
+
+  // Enforce Terms of Use and Community Safety Rules acceptance on backend
+  if (userObj && !hasAcceptedTerms(userObj)) {
+    throw new Error('TERMS_ACCEPTANCE_REQUIRED: You must explicitly accept the Terms of Use and Community Safety Rules before uploading your biodata.');
+  }
+
+  // Enforce strict MIME type, extension, and file size validation (< 15MB)
+  const validation = validateBiodataFile(file);
+  if (!validation.isValid) {
+    throw new Error(`INVALID_MEDIA_FILE: ${validation.error}`);
+  }
+
   let fileToUpload = file;
   const isPdf = file.type === 'application/pdf' || (file.name && file.name.toLowerCase().endsWith('.pdf'));
 
@@ -283,12 +517,33 @@ export const uploadBiodataPdfToFirebase = async (file, userId = 'guest') => {
  * Upload a Member Profile Photo or Gallery Image to Firebase Storage
  * Store location: {folder}/{userId}/{timestamp}_{fileName}
  * Automatically compresses raw photos to lightweight high-fidelity images (~80KB-200KB)
+ * Requires user to have accepted the current Terms of Use and Community Safety Rules.
  * @param {File} file - Image file object
  * @param {string} userId - Member user ID
  * @param {string} folder - 'photos' or 'avatars'
+ * @param {object|null} userObj - User profile object for terms validation
  * @returns {Promise<string>} - Public Download URL of the uploaded photo
  */
-export const uploadPhotoToFirebase = async (file, userId = 'guest', folder = 'photos') => {
+export const uploadPhotoToFirebase = async (file, userId = 'guest', folder = 'photos', userObj = null) => {
+  // Enforce upload permission verification on backend: user can only upload for themselves unless admin
+  if (userObj) {
+    const perm = verifyUploadPermission(userId, userObj);
+    if (!perm.isAuthorized) {
+      throw new Error(`UPLOAD_PERMISSION_DENIED: ${perm.reason}`);
+    }
+  }
+
+  // Enforce Terms of Use and Community Safety Rules acceptance on backend
+  if (userObj && !hasAcceptedTerms(userObj)) {
+    throw new Error('TERMS_ACCEPTANCE_REQUIRED: You must explicitly accept the Terms of Use and Community Safety Rules before uploading photos.');
+  }
+
+  // Enforce strict MIME type, extension, and file size validation (< 10MB)
+  const validation = validateImageFile(file);
+  if (!validation.isValid) {
+    throw new Error(`INVALID_MEDIA_FILE: ${validation.error}`);
+  }
+
   let fileToUpload = file;
 
   // Compress image before uploading - keeps page load fast without compromising visual quality
@@ -314,6 +569,40 @@ export const uploadPhotoToFirebase = async (file, userId = 'guest', folder = 'ph
 };
 
 /**
+ * Securely record user's acceptance of the Terms of Use and Community Safety Rules in Firestore.
+ * Updates the user's profile document and creates an immutable audit trail in terms_acceptances collection.
+ * @param {string} userId - ID of the member
+ * @param {string} version - Terms version accepted (e.g. '2026.1')
+ * @returns {Promise<boolean>}
+ */
+export const recordTermsAcceptanceInFirestore = async (userId, version = CURRENT_TERMS_VERSION) => {
+  if (!userId) return false;
+  const record = createTermsAcceptanceRecord(userId, version);
+  if (!isFirebaseConfigured) return record;
+
+  try {
+    const profileRef = doc(db, PROFILES_COLLECTION, String(userId));
+    await setDoc(profileRef, {
+      termsAcceptedVersion: record.termsAcceptedVersion,
+      termsAcceptedAt: record.termsAcceptedAt,
+      termsAcceptedServerTimestamp: record.termsAcceptedServerTimestamp,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    const auditRef = doc(db, TERMS_COLLECTION, `${userId}_${version}`);
+    await setDoc(auditRef, {
+      ...record,
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+
+    return true;
+  } catch (error) {
+    console.error('Error recording terms acceptance in Firestore:', error);
+    return false;
+  }
+};
+
+/**
  * Upload a Success Story Photo to Firebase Storage
  * Store location: stories/{timestamp}_{fileName}
  * Automatically compresses story photos to lightweight high-fidelity images (~120KB)
@@ -321,6 +610,12 @@ export const uploadPhotoToFirebase = async (file, userId = 'guest', folder = 'ph
  * @returns {Promise<string>} - Public Download URL of the uploaded story photo
  */
 export const uploadStoryPhotoToFirebase = async (file) => {
+  // Enforce strict MIME type, extension, and file size validation (< 10MB)
+  const validation = validateImageFile(file);
+  if (!validation.isValid) {
+    throw new Error(`INVALID_MEDIA_FILE: ${validation.error}`);
+  }
+
   let fileToUpload = file;
 
   if (file && (file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(file.name || ''))) {

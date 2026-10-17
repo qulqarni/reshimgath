@@ -24,8 +24,8 @@ export const translations = {
     heroSubtext: "Connecting hearts with trust, tradition, and dignity across Maharashtra.",
     findMatchCTA: "Find Your Match",
     createProfileCTA: "Create Your Profile",
-    verifiedProfilesCount: "100% Verified Profiles",
-    happyCouplesCount: "15,000+ Happy Couples",
+    verifiedProfilesCount: "Bureau-Screened Profiles",
+    happyCouplesCount: "Trusted Matrimonial Bureau",
 
     // Homepage Sections
     howItWorksTitle: "How Sambodhi Sarang Works",
@@ -33,16 +33,16 @@ export const translations = {
     step1Title: "1. Create Free Profile",
     step1Desc: "Register easily with your family background, education, and partner expectations.",
     step2Title: "2. Verified Browsing",
-    step2Desc: "Explore 100% genuine profiles from Pune, Mumbai, Kolhapur, Sangli, Ichalkaranji & across Maharashtra.",
+    step2Desc: "Explore screened matrimonial profiles from Pune, Mumbai, Kolhapur, Sangli, Ichalkaranji & across Maharashtra.",
     step3Title: "3. Express Interest",
     step3Desc: "Send a respectful interest request. Communication opens once accepted.",
     step4Title: "4. Connect & Marry",
     step4Desc: "Engage in secure private chats, exchange family details, and begin your forever journey.",
 
-    whyChooseTitle: "Why Families Trust Sambodhi Sarang",
-    whyChooseSubtitle: "Designed with utmost dignity, cultural respect, and modern privacy protection",
-    feature1Title: "100% Verified Profiles",
-    feature1Desc: "Every profile undergoes screening and mobile verification for guaranteed authenticity.",
+    whyChooseTitle: "Why Families Choose Sambodhi Sarang",
+    whyChooseSubtitle: "Designed with dignity, cultural respect, and privacy protection",
+    feature1Title: "Screened Profiles",
+    feature1Desc: "Profiles undergo screening and mobile verification for community authenticity.",
     feature2Title: "Strict Privacy Gate",
     feature2Desc: "Non-logged-in visitors cannot view profile details or photos. Your privacy is paramount.",
     feature3Title: "Deep Local Roots",
@@ -51,10 +51,10 @@ export const translations = {
     feature4Desc: "Comprehensive Biodata PDF sharing, family background matching, and compatibility insights integrated seamlessly.",
 
     successStoriesTitle: "Sambodhi Sarang Stories of Joy",
-    successStoriesSubtitle: "Beautiful couples who found their happily ever after through Sambodhi Sarang",
+    successStoriesSubtitle: "Couples who found compatible matches through Sambodhi Sarang",
 
-    ctaTitle: "Ready to Start Your Beautiful Matrimonial Journey?",
-    ctaSubtitle: "Join thousands of families who found love and trust at Sambodhi Sarang Marriage Bureau.",
+    ctaTitle: "Ready to Start Your Matrimonial Journey?",
+    ctaSubtitle: "Connect with registered families seeking compatible alliances at Sambodhi Sarang Marriage Bureau.",
     
     // Auth & Gate
     loginHeading: "Welcome Back to Sambodhi Sarang",
@@ -179,8 +179,8 @@ export const translations = {
     heroSubtext: "विश्वास, संस्कृती आणि आदराने रेशीमगाठी जोडणारे एकमेव केंद्र.",
     findMatchCTA: "सोबती शोधा",
     createProfileCTA: "प्रोफाईल नोंदणी करा",
-    verifiedProfilesCount: "१००% सत्य व पडताळलेले प्रोफाईल्स",
-    happyCouplesCount: "१५,०००+ आनंदी विवाह",
+    verifiedProfilesCount: "तपासलेले विवाह प्रोफाईल्स",
+    happyCouplesCount: "विश्वसनीय विवाह संस्था",
 
     // Homepage Sections
     howItWorksTitle: "संबोधी सारंग कसे कार्य करते?",
@@ -194,9 +194,9 @@ export const translations = {
     step4Title: "४. संपर्क व शुभविवाह",
     step4Desc: "सुरक्षित चॅट करा, कौटुंबिक माहितीची देवाणघेवाण करा आणि आयुष्याची नवी सुरुवात करा.",
 
-    whyChooseTitle: "कुटुंबे संबोधी सारंगवर का विश्वास ठेवतात?",
+    whyChooseTitle: "कुटुंबे संबोधी सारंग का निवडतात?",
     whyChooseSubtitle: "पूर्ण आदर, गोपनीयता आणि पारदर्शकतेसह डिझाइन केलेले",
-    feature1Title: "१००% पडताळलेले प्रोफाईल्स",
+    feature1Title: "तपासलेले प्रोफाईल्स",
     feature1Desc: "प्रत्येक प्रोफाईल मोबाईल व कौटुंबिक माहितीद्वारे तपासली जाते.",
     feature2Title: "गोपनीयतेची संपूर्ण सुरक्षा",
     feature2Desc: "अनधिकृत व्यक्ती प्रोफाईल फोटो किंवा माहिती पाहू शकत नाहीत.",
@@ -206,10 +206,10 @@ export const translations = {
     feature4Desc: "संपूर्ण कौटुंबिक माहिती असलेली बायोडेटा PDF सहज डाऊनलोड व शेअर करा.",
 
     successStoriesTitle: "संबोधी सारंगच्या रेशीमगाठी",
-    successStoriesSubtitle: "संबोधी सारंगद्वारे एकत्र आलेली आनंदी दांपत्ये",
+    successStoriesSubtitle: "संबोधी सारंगद्वारे जुळलेली आनंदी दांपत्ये",
 
     ctaTitle: "आपल्या विवाहाचा प्रवास आजच सुरू करा!",
-    ctaSubtitle: "हजारो विश्वासाने जोडल्या गेलेल्या कुटुंबांचा भाग बना.",
+    ctaSubtitle: "नोंदणीकृत कुटुंबांशी जोडून घ्या आणि सुयोग्य जोडीदार शोधा.",
     
     // Auth & Gate
     loginHeading: "संबोधी सारंग मध्ये आपले स्वागत आहे",

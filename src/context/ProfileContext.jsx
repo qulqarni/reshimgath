@@ -35,7 +35,10 @@ import {
   deleteReportFromFirestore,
   subscribeToReportsFromFirestore,
   removePhotoFromProfileInFirestore,
-  deleteChatMessageFromFirestore
+  deleteChatMessageFromFirestore,
+  fetchDeletionRequestsFromFirestore,
+  updateDeletionRequestStatus,
+  deleteUserAccount
 } from '../services/firebaseService';
 import { doesProfileHavePhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
@@ -161,16 +164,16 @@ export const DEFAULT_HOME_CONTENT = {
   heroTitle: "Find Your Perfect Life Partner",
   heroTitleMr: "तुमच्या आयुष्याचा सुंदर सोबती शोधा",
   heroSubtext: "Connecting hearts with trust, tradition, and dignity across Maharashtra.",
-  verifiedProfilesCountText: "100% Verified Profiles",
-  happyCouplesCountText: "15,000+ Happy Couples",
+  verifiedProfilesCountText: "Bureau-Screened Profiles",
+  happyCouplesCountText: "Trusted Matrimonial Bureau",
   privacyProtectedText: "Privacy Protected",
   rightCardTitle: "Sambodhi Sarang Marriage Bureau",
   rightCardSubtitle: "॥ शुभमंगल सावधान ॥",
-  rightCardDesc: "Connecting verified families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji & worldwide.",
-  whyChooseTitle: "Why Families Trust Sambodhi Sarang",
-  whyChooseSubtitle: "Designed with utmost dignity, cultural respect, and modern privacy protection",
-  ctaTitle: "Ready to Start Your Beautiful Matrimonial Journey?",
-  ctaSubtitle: "Join thousands of families who found love and trust at Sambodhi Sarang Marriage Bureau."
+  rightCardDesc: "Connecting registered families across Pune, Mumbai, Kolhapur, Sangli, Satara, Solapur, Nashik, Ichalkaranji & across Maharashtra.",
+  whyChooseTitle: "Why Families Choose Sambodhi Sarang",
+  whyChooseSubtitle: "Designed with dignity, cultural respect, and privacy protection",
+  ctaTitle: "Ready to Start Your Matrimonial Journey?",
+  ctaSubtitle: "Connect with registered families seeking compatible alliances at Sambodhi Sarang Marriage Bureau."
 };
 
 export const DEFAULT_STORIES = [
@@ -178,7 +181,7 @@ export const DEFAULT_STORIES = [
     id: 1,
     names: "Snehal & Swapnil",
     location: "Pune & Mumbai",
-    quote: "“We found our perfect match within 3 weeks of registering. Sambodhi Sarang brought our two traditional families together seamlessly!”",
+    quote: "“We found a compatible match through Sambodhi Sarang. The platform brought our two traditional families together seamlessly!”",
     weddingDate: "January 2026 • Pune Palace Ground",
     photos: [
       { url: "/story1.jpg", caption: "Snehal & Swapnil in traditional green Paithani saree & royal Sherwani at mandap" },
@@ -190,7 +193,7 @@ export const DEFAULT_STORIES = [
     id: 2,
     names: "Pooja & Varun",
     location: "Kolhapur & Sangli",
-    quote: "“The verified profile feature and family privacy gate made us feel 100% safe. Highly recommended for all families.”",
+    quote: "“The profile review process and privacy controls made our family feel secure and respected. Very helpful for matrimonial search.”",
     weddingDate: "November 2025 • Sangli Wedding Hall",
     photos: [
       { url: "/story2.jpg", caption: "Pooja & Varun laughing happily in yellow Paithani saree during mandap rituals" },
@@ -284,6 +287,14 @@ export const ProfileProvider = ({ children }) => {
       } catch (e) {}
     }
     return [];
+  });
+
+  const [deletionRequests, setDeletionRequests] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('reshimgath_deletion_requests') || '[]');
+    } catch (e) {
+      return [];
+    }
   });
 
   const { user, hasActiveSubscription, canViewProfile, unlockProfileForUser, isUserBlocked, blockUser, unblockUser } = useAuth();
@@ -474,6 +485,13 @@ export const ProfileProvider = ({ children }) => {
         setReports(firestoreReports);
         try {
           localStorage.setItem('reshimgath_reports', JSON.stringify(firestoreReports));
+        } catch (e) {}
+      }
+      const firestoreDeletions = await fetchDeletionRequestsFromFirestore();
+      if (firestoreDeletions && Array.isArray(firestoreDeletions)) {
+        setDeletionRequests(firestoreDeletions);
+        try {
+          localStorage.setItem('reshimgath_deletion_requests', JSON.stringify(firestoreDeletions));
         } catch (e) {}
       }
     };
@@ -1527,26 +1545,53 @@ export const ProfileProvider = ({ children }) => {
     addToast('Inquiry record deleted.', 'info');
   };
 
-  const submitReport = async ({ targetType, targetUserId, targetName, targetRegId, reason, details = '', evidence = null }) => {
-    if (!user) {
-      addToast('Please login to report content.', 'error');
+  const submitReport = async ({ 
+    targetType, 
+    targetUserId, 
+    targetId,
+    targetName, 
+    targetRegId, 
+    reason, 
+    details = '', 
+    evidence = null, 
+    reporterName, 
+    reporterEmail, 
+    reporterPhone,
+    isChildSafety = false,
+    priority = 'normal'
+  }) => {
+    const isCritical = isChildSafety || /child|minor|underage|csam|csae|grooming|बाल सुरक्षा|अल्पवयीन/i.test(reason || '') || priority === 'critical';
+    const repName = user?.name || reporterName || 'Concerned Citizen';
+    const repEmail = user?.email || reporterEmail || '';
+    const repPhone = user?.phone || user?.mobile || reporterPhone || '';
+    const effectiveTargetId = String(targetUserId || targetId || '');
+
+    if (!user && !isCritical && !repEmail && !repPhone) {
+      addToast('Please login or provide contact information to submit a report.', 'error');
       return null;
     }
+
     const reportId = `rep_${Date.now()}`;
     const newReport = {
       id: reportId,
       targetType: targetType || 'profile', // 'profile' | 'photo' | 'message'
-      targetUserId: String(targetUserId || ''),
+      targetUserId: effectiveTargetId,
+      targetId: effectiveTargetId,
       targetName: targetName || 'Member',
       targetRegId: targetRegId || '',
       reason: reason || 'Other violation',
       details: (details || '').trim(),
-      evidence: evidence || null, // { photoUrl, photoIndex } or { messageId, text, senderId, chatId }
-      reporterId: String(user.id),
-      reporterName: user.name || 'Member',
-      reporterRegId: user.regId || (user.registrationId ? `SS-${user.registrationId}` : ''),
-      reporterEmail: user.email || '',
-      reporterPhone: user.phone || user.mobile || '',
+      evidence: evidence || null,
+      evidencePhotoUrl: evidence?.photoUrl || (typeof evidence === 'string' ? evidence : null),
+      evidenceText: evidence?.text || (typeof evidence === 'string' ? evidence : null),
+      messageId: evidence?.messageId || null,
+      reporterId: user ? String(user.id) : 'public_reporter',
+      reporterName: repName,
+      reporterRegId: user?.regId || (user?.registrationId ? `SS-${user.registrationId}` : ''),
+      reporterEmail: repEmail,
+      reporterPhone: repPhone,
+      isChildSafety: isCritical,
+      priority: isCritical ? 'critical' : 'normal',
       status: 'pending', // 'pending' | 'resolved' | 'dismissed'
       actionTaken: null,
       adminNotes: '',
@@ -1565,11 +1610,32 @@ export const ProfileProvider = ({ children }) => {
     });
 
     await saveReportToFirestore(newReport);
-    addToast('Report submitted successfully! Sambodhi Sarang administration will review it.', 'success');
-    return newReport;
+    if (isCritical) {
+      addToast('Urgent Child Safety report submitted. Our bureau moderation team prioritizes this for immediate review.', 'success');
+    } else {
+      addToast('Report submitted successfully! Sambodhi Sarang administration will review it.', 'success');
+    }
+    return { success: true, report: newReport };
   };
 
-  const resolveReport = async (reportId, { status = 'resolved', actionTaken = 'Reviewed', adminNotes = '', resolvedBy = 'Admin' } = {}) => {
+  const resolveReport = async (reportId, optionsOrStatus = 'resolved', actionTakenArg = 'Reviewed', adminNotesArg = '', resolvedByArg = 'Admin') => {
+    let status = 'resolved';
+    let actionTaken = 'Reviewed';
+    let adminNotes = '';
+    let resolvedBy = 'Admin';
+
+    if (typeof optionsOrStatus === 'object' && optionsOrStatus !== null) {
+      status = optionsOrStatus.status || 'resolved';
+      actionTaken = optionsOrStatus.actionTaken || 'Reviewed';
+      adminNotes = optionsOrStatus.adminNotes || '';
+      resolvedBy = optionsOrStatus.resolvedBy || 'Admin';
+    } else if (typeof optionsOrStatus === 'string') {
+      status = optionsOrStatus;
+      actionTaken = actionTakenArg;
+      adminNotes = adminNotesArg;
+      resolvedBy = resolvedByArg;
+    }
+
     const now = new Date().toISOString();
     const updateData = {
       status,
@@ -1591,6 +1657,15 @@ export const ProfileProvider = ({ children }) => {
     await updateReportInFirestore(reportId, updateData);
     addToast(`Report marked as ${status}.`, 'info');
     return true;
+  };
+
+  const dismissReport = async (reportId, adminNotes = 'Dismissed after review.', resolvedBy = 'Admin') => {
+    return resolveReport(reportId, {
+      status: 'dismissed',
+      actionTaken: 'dismissed',
+      adminNotes,
+      resolvedBy
+    });
   };
 
   const warnUser = async (targetUserId, warningMessage, reason = 'Community Guidelines') => {
@@ -1654,6 +1729,42 @@ export const ProfileProvider = ({ children }) => {
     return false;
   };
 
+  const processDeletionRequest = async (requestId, options = {}) => {
+    const req = deletionRequests.find(r => String(r.id) === String(requestId));
+    if (!req) return false;
+
+    // Target profile ID: either memberId, userId, or find by phone/email
+    let targetProfileId = req.memberId || req.userId;
+    if (!targetProfileId) {
+      const matched = profiles.find(p => 
+        (req.phone && doesProfileHavePhone(p, req.phone)) ||
+        (req.email && p.email && String(p.email).toLowerCase() === String(req.email).toLowerCase())
+      );
+      if (matched) targetProfileId = matched.id;
+    }
+
+    if (targetProfileId) {
+      await deleteUserAccount(targetProfileId, {
+        reason: req.reason || 'deletion_request_processed',
+        requestedBy: 'admin'
+      });
+      await deleteProfile(targetProfileId);
+    }
+
+    await updateDeletionRequestStatus(requestId, 'completed', options.notes || 'Processed and permanently erased by Administrator.');
+
+    setDeletionRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'completed', processedAt: new Date().toISOString() } : r));
+    addToast('Deletion request processed. Account & media permanently purged.', 'success');
+    return true;
+  };
+
+  const dismissDeletionRequest = async (requestId, notes = '') => {
+    await updateDeletionRequestStatus(requestId, 'dismissed', notes || 'Dismissed by Administrator.');
+    setDeletionRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'dismissed', processedAt: new Date().toISOString(), notes } : r));
+    addToast('Deletion request dismissed.', 'info');
+    return true;
+  };
+
   return (
     <ProfileContext.Provider
       value={{
@@ -1701,8 +1812,12 @@ export const ProfileProvider = ({ children }) => {
         reports,
         submitReport,
         resolveReport,
+        dismissReport,
         warnUser,
-        removeViolatingContent
+        removeViolatingContent,
+        deletionRequests,
+        processDeletionRequest,
+        dismissDeletionRequest
       }}
     >
       {children}

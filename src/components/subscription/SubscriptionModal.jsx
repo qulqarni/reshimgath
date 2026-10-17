@@ -267,7 +267,7 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null, r
                 <ShieldCheck className="w-5 h-5 text-amber-700" />
               </div>
               <div className="text-xs">
-                <h4 className="font-bold text-slate-900">100% Safe & Secure Online Payments</h4>
+                <h4 className="font-bold text-slate-900">Secure Online Payments</h4>
                 <p className="text-slate-500 text-[11px]">
                   Processed securely via Razorpay (UPI, Google Pay, Credit/Debit Cards, NetBanking).
                 </p>
