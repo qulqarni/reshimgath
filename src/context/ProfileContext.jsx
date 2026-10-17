@@ -173,7 +173,16 @@ export const DEFAULT_HOME_CONTENT = {
   whyChooseTitle: "Why Families Choose Sambodhi Sarang",
   whyChooseSubtitle: "Designed with dignity, cultural respect, and privacy protection",
   ctaTitle: "Ready to Start Your Matrimonial Journey?",
-  ctaSubtitle: "Connect with registered families seeking compatible alliances at Sambodhi Sarang Marriage Bureau."
+  ctaSubtitle: "Connect with registered families seeking compatible alliances at Sambodhi Sarang Marriage Bureau.",
+  popupAd: {
+    enabled: false,
+    imageUrl: "",
+    title: "",
+    subtitle: "",
+    linkUrl: "",
+    buttonText: "अधिक माहिती (View Details)",
+    updatedAt: null
+  }
 };
 
 export const DEFAULT_STORIES = [
@@ -248,7 +257,19 @@ export const ProfileProvider = ({ children }) => {
 
   const [homeContent, setHomeContent] = useState(() => {
     const saved = localStorage.getItem('reshimgath_home_content');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_HOME_CONTENT,
+          ...parsed,
+          popupAd: {
+            ...DEFAULT_HOME_CONTENT.popupAd,
+            ...(parsed.popupAd || {})
+          }
+        };
+      } catch (e) {}
+    }
     return DEFAULT_HOME_CONTENT;
   });
 
@@ -467,7 +488,15 @@ export const ProfileProvider = ({ children }) => {
     const loadOtherContent = async () => {
       const firestoreHome = await fetchHomeContentFromFirestore();
       if (firestoreHome) {
-        setHomeContent((prev) => ({ ...prev, ...firestoreHome }));
+        setHomeContent((prev) => ({
+          ...prev,
+          ...firestoreHome,
+          popupAd: {
+            ...DEFAULT_HOME_CONTENT.popupAd,
+            ...(prev.popupAd || {}),
+            ...(firestoreHome.popupAd || {})
+          }
+        }));
       }
       const firestoreStories = await fetchSuccessStoriesFromFirestore();
       if (firestoreStories && firestoreStories.length > 0) {

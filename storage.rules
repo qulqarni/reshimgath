@@ -54,5 +54,18 @@ service firebase.storage {
       allow write: if isAdmin() && isValidImage();
       allow delete: if isAdmin();
     }
+
+    // Promotional popup ads & banners: Public read, admin-only write & delete
+    match /popups/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
+    }
+
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
+    }
   }
 }

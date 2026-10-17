@@ -639,6 +639,42 @@ export const uploadStoryPhotoToFirebase = async (file) => {
 };
 
 /**
+ * Upload a Promotional / Announcement Popup Photo to Firebase Storage
+ * Store location: popups/{timestamp}_{fileName}
+ * Automatically validates and compresses popup images to lightweight high-fidelity images (~150KB)
+ * @param {File} file - Image file object
+ * @returns {Promise<string>} - Public Download URL of the uploaded popup photo
+ */
+export const uploadPopupPhotoToFirebase = async (file) => {
+  // Enforce strict MIME type, extension, and file size validation (< 10MB)
+  const validation = validateImageFile(file);
+  if (!validation.isValid) {
+    throw new Error(`INVALID_MEDIA_FILE: ${validation.error}`);
+  }
+
+  let fileToUpload = file;
+
+  if (file && (file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(file.name || ''))) {
+    try {
+      fileToUpload = await compressImageToFile(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.85
+      });
+    } catch (compressErr) {
+      console.warn('Popup photo compression fallback:', compressErr);
+    }
+  }
+
+  const cleanName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'popup.jpg';
+  const fileName = `${Date.now()}_${cleanName}`;
+  const storagePath = `popups/${fileName}`;
+  const contentType = fileToUpload.type || 'image/jpeg';
+
+  return await uploadFileToFirebaseStorage(fileToUpload, storagePath, contentType);
+};
+
+/**
  * Delete a Biodata PDF or Photo from Firebase Storage
  */
 export const deleteBiodataPdfFromFirebase = async (pdfUrl) => {

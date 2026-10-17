@@ -31,6 +31,7 @@ import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { BlockedUsersPage } from './pages/BlockedUsersPage';
 import { ChildSafetyStandardsPage } from './pages/ChildSafetyStandardsPage';
 import { AccountDeletionPage } from './pages/AccountDeletionPage';
+import { SiteAnnouncementModal } from './components/common/SiteAnnouncementModal';
 
 const GlobalSubscriptionModal = React.memo(function GlobalSubscriptionModal() {
   const { subModalConfig, closeSubscriptionModal } = useProfiles();
@@ -267,6 +268,9 @@ function AppContent() {
       <MobileBottomNav currentPath={currentPath} onNavigate={handleNavigate} />
       <ToastContainer />
       <GlobalSubscriptionModal />
+      {currentPath !== '/admin' && (
+        <SiteAnnouncementModal onNavigate={handleNavigate} />
+      )}
     </div>
   );
 }

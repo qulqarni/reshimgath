@@ -9,7 +9,8 @@ import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
-import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadBiodataPdfToFirebase, optimizeAndCompressExistingProfileMedia } from '../services/firebaseService';
+import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadPopupPhotoToFirebase, uploadBiodataPdfToFirebase, optimizeAndCompressExistingProfileMedia } from '../services/firebaseService';
+import { SiteAnnouncementModal } from '../components/common/SiteAnnouncementModal';
 import { doesProfileHavePhone } from '../utils/phoneUtils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -58,7 +59,8 @@ import {
   ShieldAlert,
   Flag,
   AlertTriangle,
-  ExternalLink
+  ExternalLink,
+  Megaphone
 } from 'lucide-react';
 
 export const getSubscriptionDetails = (p) => {
@@ -341,7 +343,9 @@ export const AdminPage = ({ onNavigate }) => {
     setAdminNoteInput('');
   };
 
-  const [activeTab, setActiveTab] = useState('profiles'); // 'overview', 'profiles', 'content', 'stories', 'inquiries', 'plans', 'export', 'moderation'
+  const [activeTab, setActiveTab] = useState('profiles'); // 'overview', 'profiles', 'content', 'popup', 'stories', 'inquiries', 'plans', 'export', 'moderation'
+  const [showPopupPreview, setShowPopupPreview] = useState(false);
+  const [isUploadingPopupImage, setIsUploadingPopupImage] = useState(false);
   const [editablePlans, setEditablePlans] = useState(() => {
     return subscriptionPlans || SUBSCRIPTION_PLANS;
   });
@@ -1037,6 +1041,365 @@ export const AdminPage = ({ onNavigate }) => {
     updateHomeContent(editableHomeContent);
   };
 
+  const handlePopupImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('कृपया वैध फोटो निवडा (JPG, PNG, WEBP).');
+      return;
+    }
+    setIsUploadingPopupImage(true);
+    try {
+      const storageUrl = await uploadPopupPhotoToFirebase(file);
+      const updated = {
+        ...editableHomeContent,
+        popupAd: {
+          ...(editableHomeContent?.popupAd || {}),
+          imageUrl: storageUrl,
+          enabled: true,
+          updatedAt: new Date().toISOString()
+        }
+      };
+      setEditableHomeContent(updated);
+      updateHomeContent(updated);
+      addToast('पॉप-अप फोटो अपलोड झाला आणि सक्रिय केला गेला!', 'success');
+    } catch (err) {
+      console.error('Popup upload failed:', err);
+      alert('फोटो अपलोड अयशस्वी: ' + (err.message || 'त्रुटी'));
+    } finally {
+      setIsUploadingPopupImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemovePopupImage = () => {
+    if (!window.confirm('तुम्हाला खरोखर हा पॉप-अप फोटो काढून टाकायचा आहे का?')) return;
+    const updated = {
+      ...editableHomeContent,
+      popupAd: {
+        ...(editableHomeContent?.popupAd || {}),
+        imageUrl: '',
+        enabled: false,
+        updatedAt: new Date().toISOString()
+      }
+    };
+    setEditableHomeContent(updated);
+    updateHomeContent(updated);
+    addToast('पॉप-अप फोटो काढण्यात आला.', 'info');
+  };
+
+  const handleTogglePopupActive = () => {
+    const isCurrentlyActive = Boolean(editableHomeContent?.popupAd?.enabled);
+    if (!isCurrentlyActive && !editableHomeContent?.popupAd?.imageUrl) {
+      alert('कृपया प्रथम पॉप-अपसाठी फोटो अपलोड करा.');
+      return;
+    }
+    const updated = {
+      ...editableHomeContent,
+      popupAd: {
+        ...(editableHomeContent?.popupAd || {}),
+        enabled: !isCurrentlyActive,
+        updatedAt: new Date().toISOString()
+      }
+    };
+    setEditableHomeContent(updated);
+    updateHomeContent(updated);
+    addToast(
+      !isCurrentlyActive ? 'पॉप-अप जाहिरात सक्रिय केली!' : 'पॉप-अप जाहिरात बंद केली.',
+      !isCurrentlyActive ? 'success' : 'info'
+    );
+  };
+
+  const handleSavePopupSettingsOnly = (e) => {
+    if (e) e.preventDefault();
+    updateHomeContent(editableHomeContent);
+    addToast('पॉप-अप सेटिंग्ज यशस्वीरित्या सेव्ह केल्या!', 'success');
+  };
+
+  const renderPopupAdManagerCard = () => (
+    <div className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-600 shadow-sm shrink-0">
+            <Megaphone className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-serif font-bold text-lg sm:text-xl text-brand-plum">
+              वेबसाइट पॉप-अप जाहिरात / सूचना (Site Announcement Popup Ad)
+            </h3>
+            <p className="text-xs text-brand-gray font-medium">
+              येथे जाहिरातीचा किंवा सूचनेचा फोटो अपलोड करा. युजरने वेबसाइट उघडल्यावर हा फोटो पॉप-अप म्हणून दिसेल आणि त्याला बंद (Cancel) करण्याचे बटण असेल.
+            </p>
+          </div>
+        </div>
+
+        {/* Status & Preview Button */}
+        <div className="flex items-center space-x-2 shrink-0">
+          {editableHomeContent?.popupAd?.enabled && editableHomeContent?.popupAd?.imageUrl ? (
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
+              सक्रिय (Active on Site)
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
+              ⚪ बंद (Inactive)
+            </span>
+          )}
+
+          {editableHomeContent?.popupAd?.imageUrl && (
+            <button
+              type="button"
+              onClick={() => setShowPopupPreview(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-brand-lightBg hover:bg-brand-rose/20 text-brand-plum text-xs font-bold transition-colors flex items-center space-x-1.5 border border-brand-rose/30 shadow-sm"
+              title="Preview exactly how visitors see it"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>थेट पाहा (Preview)</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-6 text-xs">
+        {/* 1. Toggle Active / Inactive */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-brand-lightBg to-amber-50/40 border border-brand-rose/20">
+          <div>
+            <h4 className="font-bold text-sm text-brand-charcoal">
+              पॉप-अप चालू / बंद ठेवा (Enable Popup on Website)
+            </h4>
+            <p className="text-xs text-brand-gray mt-0.5">
+              सुरू केल्यावर नवीन भेट देणाऱ्या युजर्सना हा फोटो स्क्रीनवर दिसेल आणि बंद (Cancel / X) करण्याचे बटण असेल.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleTogglePopupActive}
+            className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              editableHomeContent?.popupAd?.enabled && editableHomeContent?.popupAd?.imageUrl
+                ? 'bg-emerald-500'
+                : 'bg-gray-300'
+            }`}
+            title={editableHomeContent?.popupAd?.enabled ? 'Click to disable' : 'Click to enable'}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                editableHomeContent?.popupAd?.enabled && editableHomeContent?.popupAd?.imageUrl
+                  ? 'translate-x-7'
+                  : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* 2. Image Upload and Live Preview */}
+        <div className="space-y-3">
+          <label className="block font-bold text-brand-plum text-xs uppercase tracking-wider">
+            पॉप-अप जाहिरात फोटो (Popup Image Banner) *
+          </label>
+
+          {editableHomeContent?.popupAd?.imageUrl ? (
+            <div className="p-4 rounded-2xl border-2 border-brand-rose/30 bg-gray-50 flex flex-col md:flex-row items-center gap-6">
+              <div className="relative group max-w-xs w-full bg-white rounded-2xl overflow-hidden shadow-md border border-gray-200 flex items-center justify-center p-2">
+                <img 
+                  src={editableHomeContent.popupAd.imageUrl} 
+                  alt="Popup Preview" 
+                  className="w-full max-h-56 object-contain block rounded-xl bg-gray-50"
+                />
+                <div className="absolute top-3 right-3 flex space-x-1">
+                  <span className="px-2 py-0.5 rounded-md bg-black/75 text-white text-[10px] font-semibold">
+                    Current Image
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3 w-full">
+                <div className="space-y-1">
+                  <p className="font-bold text-sm text-brand-charcoal">
+                    फोटो यशस्वीरित्या अपलोड झाला आहे
+                  </p>
+                  <p className="text-xs text-brand-gray">
+                    हा फोटो हाय-स्पीड लोडिंगसाठी कॉम्प्रेस केलेला आहे. युजरने साइट उघडल्यावर हा फोटो दिसेल.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <label className="cursor-pointer px-4 py-2 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-1.5">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploadingPopupImage ? 'अपलोड होत आहे...' : 'दुसरा फोटो बदला (Change Image)'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePopupImageUpload}
+                      disabled={isUploadingPopupImage}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={handleRemovePopupImage}
+                    className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs rounded-xl transition-colors flex items-center space-x-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>फोटो काढा (Remove Image)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPopupPreview(true)}
+                    className="px-4 py-2 border border-brand-rose/30 bg-white hover:bg-brand-lightBg text-brand-plum font-bold text-xs rounded-xl shadow-sm transition-colors flex items-center space-x-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>स्क्रीनवर कसा दिसेल ते पाहा (Preview Modal)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-brand-rose/40 rounded-2xl p-8 bg-brand-lightBg/50 text-center hover:bg-brand-rose/5 transition-colors">
+              <input
+                type="file"
+                id="popup-image-upload-input"
+                accept="image/*"
+                onChange={handlePopupImageUpload}
+                disabled={isUploadingPopupImage}
+                className="hidden"
+              />
+              <label 
+                htmlFor="popup-image-upload-input"
+                className="cursor-pointer flex flex-col items-center justify-center space-y-3"
+              >
+                {isUploadingPopupImage ? (
+                  <>
+                    <Loader2 className="w-10 h-10 text-brand-plum animate-spin" />
+                    <p className="font-bold text-brand-plum text-sm">फोटो अपलोड व ऑप्टिमाइझ होत आहे...</p>
+                    <p className="text-xs text-brand-gray">कृपया थांबा...</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-2xl bg-brand-plum/10 text-brand-plum flex items-center justify-center shadow-inner">
+                      <UploadCloud className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-brand-plum text-sm">
+                        येथे क्लिक करून पॉप-अप जाहिरातीचा फोटो निवडा (Upload Image)
+                      </p>
+                      <p className="text-xs text-brand-gray mt-1">
+                        Supports JPG, PNG, WEBP (जास्तीत जास्त 10MB) • आपोआप ऑप्टिमाइझ केला जाईल
+                      </p>
+                    </div>
+                    <span className="px-4 py-2 bg-brand-plum text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand-plumDark transition-all">
+                      फोटो निवडा (Browse Image)
+                    </span>
+                  </>
+                )}
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Optional Settings: Title, Target Link URL, Button Text */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+          <div>
+            <label className="block font-semibold mb-1 text-brand-charcoal">
+              पॉप-अप शीर्षक / टायटल (Optional Title)
+            </label>
+            <input
+              type="text"
+              placeholder="उदा. विशेष सवलत / दिवाळी ऑफर / नवीन मेळावा २०२६"
+              value={editableHomeContent?.popupAd?.title || ''}
+              onChange={(e) => setEditableHomeContent(prev => ({
+                ...prev,
+                popupAd: { ...(prev.popupAd || {}), title: e.target.value }
+              }))}
+              className="w-full p-2.5 rounded-xl border border-gray-200 font-medium text-xs focus:ring-2 focus:ring-brand-plum focus:outline-none"
+            />
+            <span className="text-[10px] text-brand-gray">हे शीर्षक पॉप-अपच्या वर पट्टीमध्ये दिसेल (ऐच्छिक).</span>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-brand-charcoal">
+              क्लिक केल्यावर जाणारी लिंक (Target Redirect Link - Optional)
+            </label>
+            <input
+              type="text"
+              placeholder="उदा. /signup किंवा /plans किंवा https://wa.me/919823425404"
+              value={editableHomeContent?.popupAd?.linkUrl || ''}
+              onChange={(e) => setEditableHomeContent(prev => ({
+                ...prev,
+                popupAd: { ...(prev.popupAd || {}), linkUrl: e.target.value }
+              }))}
+              className="w-full p-2.5 rounded-xl border border-gray-200 font-medium text-xs focus:ring-2 focus:ring-brand-plum focus:outline-none"
+            />
+            <span className="text-[10px] text-brand-gray">युझरने फोटोवर किंवा बटणावर क्लिक केल्यास या लिंकवर नेले जाईल.</span>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-brand-charcoal">
+              उपकल्पना / सबटायटल (Optional Subtitle)
+            </label>
+            <input
+              type="text"
+              placeholder="उदा. मर्यादित कालावधीसाठी मोफत नोंदणी"
+              value={editableHomeContent?.popupAd?.subtitle || ''}
+              onChange={(e) => setEditableHomeContent(prev => ({
+                ...prev,
+                popupAd: { ...(prev.popupAd || {}), subtitle: e.target.value }
+              }))}
+              className="w-full p-2.5 rounded-xl border border-gray-200 font-medium text-xs focus:ring-2 focus:ring-brand-plum focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-brand-charcoal">
+              अॅक्शन बटणाचे नाव (Button Label)
+            </label>
+            <input
+              type="text"
+              placeholder="उदा. अधिक माहिती (View Details)"
+              value={editableHomeContent?.popupAd?.buttonText || ''}
+              onChange={(e) => setEditableHomeContent(prev => ({
+                ...prev,
+                popupAd: { ...(prev.popupAd || {}), buttonText: e.target.value }
+              }))}
+              className="w-full p-2.5 rounded-xl border border-gray-200 font-medium text-xs focus:ring-2 focus:ring-brand-plum focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Save and Preview actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center space-x-2 text-brand-gray text-[11px]">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>पॉप-अपमध्ये युजरसाठी उजव्या कोपऱ्यात 'X' आणि खाली 'Cancel / बंद करा' बटण दिलेले आहे.</span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {editableHomeContent?.popupAd?.imageUrl && (
+              <button
+                type="button"
+                onClick={() => setShowPopupPreview(true)}
+                className="px-5 py-2.5 rounded-xl border border-brand-rose/40 bg-white text-brand-plum hover:bg-brand-lightBg font-bold text-xs transition-colors flex items-center space-x-1.5"
+              >
+                <Eye className="w-4 h-4" />
+                <span>थेट टेस्ट करा (Preview Popup)</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleSavePopupSettingsOnly}
+              className="px-6 py-2.5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-2"
+            >
+              <Save className="w-4 h-4" />
+              <span>पॉप-अप सेव्ह करा (Save Popup)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const handleAddStoryPhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1541,6 +1904,21 @@ export const AdminPage = ({ onNavigate }) => {
         >
           <Layout className="w-4 h-4" />
           <span>Manage Homepage Content</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('popup')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 relative ${
+            activeTab === 'popup'
+              ? 'bg-amber-600 text-white shadow-md'
+              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
+          }`}
+        >
+          <Megaphone className="w-4 h-4 text-amber-500" />
+          <span>Popup Ad (पॉप-अप जाहिरात)</span>
+          {editableHomeContent?.popupAd?.enabled && editableHomeContent?.popupAd?.imageUrl && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+          )}
         </button>
 
         <button
@@ -2090,10 +2468,19 @@ export const AdminPage = ({ onNavigate }) => {
         </div>
       )}
 
+      {/* TAB: POPUP ANNOUNCEMENT AD */}
+      {activeTab === 'popup' && (
+        <div className="space-y-8 animate-fade-in">
+          {renderPopupAdManagerCard()}
+        </div>
+      )}
+
       {/* TAB 3: MANAGE HOMEPAGE CONTENT */}
       {activeTab === 'content' && (
         <div className="space-y-8 animate-fade-in">
-          
+          {/* Top Section: Popup Announcement Ad Manager */}
+          {renderPopupAdManagerCard()}
+
           {/* Homepage Content Form */}
           <div className="bg-white p-8 rounded-3xl border border-brand-rose/20 shadow-luxury space-y-6">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -5781,6 +6168,15 @@ export const AdminPage = ({ onNavigate }) => {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Admin Live Preview of Site Announcement Modal */}
+      {showPopupPreview && (
+        <SiteAnnouncementModal
+          forceOpen={true}
+          overrideContent={editableHomeContent?.popupAd}
+          onClose={() => setShowPopupPreview(false)}
+        />
       )}
 
     </div>
