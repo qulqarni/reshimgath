@@ -33,7 +33,8 @@ export const sendAdminRegistrationAlert = async (candidateData) => {
       const res = await fetch('/api/send-registration-alert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        keepalive: true
       });
 
       if (res.ok) {
@@ -52,7 +53,8 @@ export const sendAdminRegistrationAlert = async (candidateData) => {
       const resPhp = await fetch('/api/send-registration-alert.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        keepalive: true
       });
 
       if (resPhp.ok) {

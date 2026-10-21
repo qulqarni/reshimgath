@@ -547,14 +547,19 @@ export const AuthProvider = ({ children }) => {
     // Push newly created user profile directly to Firebase Firestore Database!
     await saveProfileToFirestore(newUser.id, newUser);
 
-    // Asynchronously dispatch instant email notification to bureau admin (non-blocking)
-    sendAdminRegistrationAlert({
-      ...newUser,
-      district: signupData.district || '',
-      city: signupData.city || ''
-    }).catch(err => {
+    // Asynchronously dispatch instant email notification to bureau admin (waits max 2.5s so browser does not abort request)
+    try {
+      await Promise.race([
+        sendAdminRegistrationAlert({
+          ...newUser,
+          district: signupData.district || '',
+          city: signupData.city || ''
+        }),
+        new Promise((resolve) => setTimeout(resolve, 2500))
+      ]);
+    } catch (err) {
       console.warn('[Admin Alert Non-blocking Catch]:', err);
-    });
+    }
 
     return { success: true, user: newUser };
   };
