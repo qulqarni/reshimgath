@@ -38,12 +38,13 @@ console.log('\n👉 TEST 4: Verifying SiteAnnouncementModal component');
 const modalPath = path.join(rootDir, 'src/components/common/SiteAnnouncementModal.jsx');
 assert(fs.existsSync(modalPath), 'SiteAnnouncementModal.jsx must exist');
 const modalContent = fs.readFileSync(modalPath, 'utf8');
-assert(modalContent.includes('Cancel / बंद करा'), 'SiteAnnouncementModal must provide a cancel button');
+assert(modalContent.includes('title="Cancel / Close (बंद करा)"'), 'SiteAnnouncementModal must provide a top-right cancel button');
+assert(!modalContent.includes('Cancel / बंद करा'), 'SiteAnnouncementModal bottom-left cancel button should be removed');
 assert(modalContent.includes('sessionStorage'), 'SiteAnnouncementModal must respect session dismissal to avoid harassment');
 assert(modalContent.includes('Escape'), 'SiteAnnouncementModal must handle Escape key');
 assert(modalContent.includes('forceOpen'), 'SiteAnnouncementModal must support admin preview via forceOpen');
 assert(modalContent.includes('popupConfig.imageUrl'), 'SiteAnnouncementModal must render uploaded image');
-console.log('  ✅ SiteAnnouncementModal has close button (X), cancel button, session dismissal, and link action');
+console.log('  ✅ SiteAnnouncementModal has top-right cancel button (X), bottom cancel button removed, session dismissal, and link action');
 
 // 5. Check App.jsx mounts SiteAnnouncementModal
 console.log('\n👉 TEST 5: Verifying App.jsx mounts SiteAnnouncementModal');

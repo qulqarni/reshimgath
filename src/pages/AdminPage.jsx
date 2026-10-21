@@ -1371,7 +1371,7 @@ export const AdminPage = ({ onNavigate }) => {
         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-2 text-brand-gray text-[11px]">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>पॉप-अपमध्ये युजरसाठी उजव्या कोपऱ्यात 'X' आणि खाली 'Cancel / बंद करा' बटण दिलेले आहे.</span>
+            <span>पॉप-अपमध्ये युजरसाठी वर उजव्या कोपऱ्यात 'X' (Close / Cancel) बटण दिलेले आहे.</span>
           </div>
 
           <div className="flex items-center space-x-3">

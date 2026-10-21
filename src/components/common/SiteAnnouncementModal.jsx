@@ -158,30 +158,19 @@ export const SiteAnnouncementModal = ({
           )}
         </div>
 
-        {/* Action & Dismiss Footer */}
-        <div className="p-3 sm:p-4 bg-white border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          {/* Cancel button */}
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-gray-200 text-brand-charcoal hover:bg-gray-100 font-semibold text-xs transition-colors flex items-center justify-center space-x-1.5 order-2 sm:order-1"
-          >
-            <X className="w-4 h-4 text-gray-500" />
-            <span>Cancel / बंद करा</span>
-          </button>
-
-          {/* Optional Action / View Button */}
-          {hasLink && (
+        {/* Optional Action Footer if a redirect link is set */}
+        {hasLink && (
+          <div className="p-3 sm:p-4 bg-white border-t border-gray-100 flex items-center justify-end">
             <button
               type="button"
               onClick={handleActionClick}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs shadow-md transition-all flex items-center justify-center space-x-2 order-1 sm:order-2"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs shadow-md transition-all flex items-center justify-center space-x-2"
             >
               <span>{popupConfig.buttonText || 'अधिक माहिती (View Details)'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
