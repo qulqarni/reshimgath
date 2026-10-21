@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import createOrderHandler from './api/create-order.js';
 import verifyPaymentHandler from './api/verify-payment.js';
+import sendRegistrationAlertHandler from './api/send-registration-alert.js';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -16,7 +17,7 @@ export default defineConfig(({ mode }) => {
         configureServer(server) {
           server.middlewares.use((req, res, next) => {
             const url = req.url ? req.url.split('?')[0] : '';
-            if (url === '/api/create-order' || url === '/api/verify-payment') {
+            if (url === '/api/create-order' || url === '/api/verify-payment' || url === '/api/send-registration-alert') {
               let body = '';
               req.on('data', chunk => { body += chunk; });
               req.on('end', async () => {
@@ -41,6 +42,8 @@ export default defineConfig(({ mode }) => {
                     await createOrderHandler(req, res);
                   } else if (url === '/api/verify-payment') {
                     await verifyPaymentHandler(req, res);
+                  } else if (url === '/api/send-registration-alert') {
+                    await sendRegistrationAlertHandler(req, res);
                   }
                 } catch (err) {
                   console.error('API Dev Middleware Error:', err);

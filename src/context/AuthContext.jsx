@@ -6,6 +6,7 @@ import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { doesProfileHavePhone, isSamePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import { CURRENT_TERMS_VERSION, hasAcceptedTerms, createTermsAcceptanceRecord } from '../utils/termsEnforcement';
+import { sendAdminRegistrationAlert } from '../services/alertService';
 
 const AuthContext = createContext();
 
@@ -545,6 +546,16 @@ export const AuthProvider = ({ children }) => {
     }
     // Push newly created user profile directly to Firebase Firestore Database!
     await saveProfileToFirestore(newUser.id, newUser);
+
+    // Asynchronously dispatch instant email notification to bureau admin (non-blocking)
+    sendAdminRegistrationAlert({
+      ...newUser,
+      district: signupData.district || '',
+      city: signupData.city || ''
+    }).catch(err => {
+      console.warn('[Admin Alert Non-blocking Catch]:', err);
+    });
+
     return { success: true, user: newUser };
   };
 
