@@ -67,5 +67,32 @@ service firebase.storage {
       allow write: if isAdmin() && isValidImage();
       allow delete: if isAdmin();
     }
+
+    // Upcoming Events posters: Public read, admin write/delete
+    match /events/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
+    }
+
+    // Gallery photos & videos: Public read, admin write/delete
+    match /gallery/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && (
+        request.resource.contentType.matches('image/.*') ||
+        request.resource.contentType.matches('video/.*')
+      ) && request.resource.size <= 50 * 1024 * 1024;
+      allow delete: if isAdmin();
+    }
+
+    // User Feedbacks photos & video uploads (up to 25MB for video, 10MB for image): Public/Authenticated upload, admin delete
+    match /feedbacks/{allPaths=**} {
+      allow read: if true;
+      allow write: if (
+        request.resource.contentType.matches('image/.*') ||
+        request.resource.contentType.matches('video/.*')
+      ) && request.resource.size <= 25 * 1024 * 1024;
+      allow delete: if isAdmin();
+    }
   }
 }

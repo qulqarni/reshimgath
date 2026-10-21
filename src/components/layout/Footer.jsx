@@ -61,8 +61,20 @@ export const Footer = ({ onNavigate }) => {
                 {t('discover')}
               </button>
               */}
-              <button onClick={() => onNavigate('/about')} className="hover:text-brand-plum font-medium transition-colors">
-                {t('aboutUs')}
+              <button onClick={() => onNavigate('/stories')} className="hover:text-brand-plum font-medium transition-colors">
+                Success Stories
+              </button>
+              <button onClick={() => onNavigate('/feedbacks')} className="hover:text-brand-plum font-medium transition-colors">
+                Feedbacks & Reviews
+              </button>
+              <button onClick={() => onNavigate('/events')} className="hover:text-brand-plum font-medium transition-colors">
+                Upcoming Events (मेळावे)
+              </button>
+              <button onClick={() => onNavigate('/gallery')} className="hover:text-brand-plum font-medium transition-colors">
+                Gallery
+              </button>
+              <button onClick={() => onNavigate('/subscription')} className="hover:text-brand-plum font-semibold text-amber-700 transition-colors">
+                👑 Subscription Plans
               </button>
               <button onClick={() => onNavigate('/contact')} className="hover:text-brand-plum font-medium transition-colors">
                 {t('contactUs')}

@@ -4,23 +4,24 @@ import { useProfiles } from '../context/ProfileContext';
 import { Phone, Mail, MapPin, CheckCircle2, Send } from 'lucide-react';
 
 export const ContactPage = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { addInquiry } = useProfiles();
   const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone || !formData.message) return;
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.message.trim()) return;
     addInquiry({
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      message: formData.message
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      email: formData.email.trim(),
+      subject: formData.subject.trim() || 'General Matrimonial Support',
+      message: formData.message.trim()
     });
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 5000);
-    setFormData({ name: '', email: '', phone: '', message: '' });
+    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
   };
 
   return (
@@ -143,6 +144,17 @@ export const ContactPage = () => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="user@gmail.com"
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1 text-brand-charcoal">Subject / Topic</label>
+              <input
+                type="text"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="e.g. Biodata verification, Melawa inquiry, Membership assistance"
                 className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20"
               />
             </div>

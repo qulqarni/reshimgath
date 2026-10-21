@@ -21,7 +21,12 @@ import {
   Home,
   Eye,
   Trash2,
-  Ban
+  Ban,
+  MessageSquareHeart,
+  Calendar,
+  Images,
+  PhoneCall,
+  ChevronDown
 } from 'lucide-react';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
@@ -32,7 +37,23 @@ export const Navbar = ({ currentPath, onNavigate }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showNavMenu, setShowNavMenu] = useState(false);
+
+  // Close menus when clicking outside
+  const menuRef = React.useRef(null);
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowNavMenu(false);
+      }
+    };
+    if (showNavMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNavMenu]);
 
   const userNotifications = React.useMemo(() => {
     return notifications.filter((n) => {
@@ -161,19 +182,169 @@ export const Navbar = ({ currentPath, onNavigate }) => {
           {/* Right Action Icons & Controls */}
           <div className="flex items-center space-x-1.5 sm:space-x-3">
             
-            {/* Subscription Button (Visible on both Mobile & Desktop beside Language switcher) */}
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/90 text-amber-900 hover:from-amber-100 hover:to-amber-200 transition-all text-[11px] sm:text-xs font-bold shadow-sm shrink-0"
-              title="Subscription Plans / वर्गणी प्लॅन"
-            >
-              <Crown className="w-3.5 h-3.5 text-amber-600 fill-amber-500 shrink-0" />
-              <span className="truncate max-w-[90px] sm:max-w-none">
-                {user?.subscription?.planName && isAuthenticated && !isAdmin
-                  ? `${user.subscription.planName} (${user.subscription.creditsRemaining || 0} Left)`
-                  : (lang === 'en' ? 'Subscription' : 'वर्गणी')}
-              </span>
-            </button>
+            {/* REDESIGNED MENU BUTTON (Opens the 6-option menu in required order) */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowNavMenu(!showNavMenu)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full border transition-all text-xs font-bold shadow-sm shrink-0 ${
+                  showNavMenu
+                    ? 'bg-brand-plum text-white border-brand-plum shadow-md'
+                    : 'bg-gradient-to-r from-brand-rose/20 via-brand-lightBg to-white border-brand-rose/40 text-brand-plum hover:bg-brand-rose/30'
+                }`}
+                title="Menu / मेनू"
+                aria-expanded={showNavMenu}
+              >
+                <Menu className="w-4 h-4 text-brand-plum" />
+                <span>{lang === 'en' ? 'Menu' : 'मेनू'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showNavMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* 6-OPTION MENU DROPDOWN (Strictly in the specified order:
+                  1. Success Stories
+                  2. Feedbacks
+                  3. Upcoming Events
+                  4. Gallery
+                  5. Contact Us
+                  6. Subscription
+              ) */}
+              {showNavMenu && (
+                <div className="absolute right-0 mt-2.5 w-64 sm:w-72 bg-white rounded-2xl shadow-2xl border border-brand-rose/30 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-brand-plum font-serif">
+                      {lang === 'en' ? 'Explore Features' : 'महत्त्वाचे विभाग'}
+                    </span>
+                    <button
+                      onClick={() => setShowNavMenu(false)}
+                      className="text-gray-400 hover:text-brand-plum p-0.5 rounded-full"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="py-1">
+                    {/* 1. Success Stories */}
+                    <button
+                      onClick={() => {
+                        setShowNavMenu(false);
+                        handleNav('/stories');
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                        currentPath === '/stories' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-lightBg'
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                        <Heart className="w-3.5 h-3.5 fill-rose-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-brand-plum">{lang === 'en' ? 'Success Stories' : 'यशस्वी विवाह गाथा'}</p>
+                        <p className="text-[10px] text-gray-400 truncate">Happy married couples & journeys</p>
+                      </div>
+                    </button>
+
+                    {/* 2. Feedbacks */}
+                    <button
+                      onClick={() => {
+                        setShowNavMenu(false);
+                        handleNav('/feedbacks');
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                        currentPath === '/feedbacks' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-lightBg'
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                        <MessageSquareHeart className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-brand-plum">{lang === 'en' ? 'Feedbacks' : 'अभिप्राय आणि प्रतिक्रिया'}</p>
+                        <p className="text-[10px] text-gray-400 truncate">Member reviews, photos & videos</p>
+                      </div>
+                    </button>
+
+                    {/* 3. Upcoming Events */}
+                    <button
+                      onClick={() => {
+                        setShowNavMenu(false);
+                        handleNav('/events');
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                        currentPath === '/events' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-lightBg'
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                        <Calendar className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-brand-plum">{lang === 'en' ? 'Upcoming Events' : 'वधू-वर परिचय मेळावे'}</p>
+                        <p className="text-[10px] text-gray-400 truncate">Vadhu-Var Melawas & gatherings</p>
+                      </div>
+                    </button>
+
+                    {/* 4. Gallery */}
+                    <button
+                      onClick={() => {
+                        setShowNavMenu(false);
+                        handleNav('/gallery');
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                        currentPath === '/gallery' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-lightBg'
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <Images className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-brand-plum">{lang === 'en' ? 'Gallery' : 'फोटो व व्हिडिओ गॅलरी'}</p>
+                        <p className="text-[10px] text-gray-400 truncate">Memorable photos & event videos</p>
+                      </div>
+                    </button>
+
+                    {/* 5. Contact Us */}
+                    <button
+                      onClick={() => {
+                        setShowNavMenu(false);
+                        handleNav('/contact');
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                        currentPath === '/contact' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-lightBg'
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                        <PhoneCall className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-brand-plum">{lang === 'en' ? 'Contact Us' : 'संपर्क व पत्ता'}</p>
+                        <p className="text-[10px] text-gray-400 truncate">+91 9823425404 • Ichalkaranji</p>
+                      </div>
+                    </button>
+
+                    <div className="border-t border-gray-100 my-1"></div>
+
+                    {/* 6. Subscription */}
+                    <button
+                      onClick={() => {
+                        setShowNavMenu(false);
+                        handleNav('/subscription');
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center space-x-3 transition-colors bg-amber-50/70 hover:bg-amber-100/80 ${
+                        currentPath === '/subscription' ? 'ring-1 ring-amber-400' : ''
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 shadow-sm">
+                        <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-amber-950">{lang === 'en' ? 'Subscription' : 'वर्गणी व योजना'}</p>
+                        <p className="text-[10px] text-amber-800 truncate">
+                          {user?.subscription?.planName && isAuthenticated && !isAdmin
+                            ? `${user.subscription.planName} (${user.subscription.creditsRemaining || 0} Credits Left)`
+                            : 'View membership plans & rates'}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Language Switcher Button (Visible on both Mobile & Desktop) */}
             <button
@@ -447,18 +618,78 @@ export const Navbar = ({ currentPath, onNavigate }) => {
               {t('discover')}
             </button>
             */}
-            <button
-              onClick={() => handleNav('/about')}
-              className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl"
-            >
-              {t('aboutUs')}
-            </button>
-            <button
-              onClick={() => handleNav('/contact')}
-              className="text-left px-4 py-2.5 text-sm font-semibold text-brand-charcoal hover:bg-brand-ivory rounded-xl"
-            >
-              {t('contactUs')}
-            </button>
+            {/* The 6 Core Navigation Sections in Required Order */}
+            <div className="py-2 border-y border-brand-rose/20 my-1 space-y-1">
+              <span className="px-4 text-[10px] font-bold uppercase tracking-wider text-brand-plum/70 block">
+                {lang === 'en' ? 'Quick Menu' : 'मुख्य विभाग'}
+              </span>
+
+              {/* 1. Success Stories */}
+              <button
+                onClick={() => handleNav('/stories')}
+                className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-2.5 ${
+                  currentPath === '/stories' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-ivory'
+                }`}
+              >
+                <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600 shrink-0" />
+                <span>{lang === 'en' ? '1. Success Stories' : '१. यशस्वी विवाह गाथा'}</span>
+              </button>
+
+              {/* 2. Feedbacks */}
+              <button
+                onClick={() => handleNav('/feedbacks')}
+                className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-2.5 ${
+                  currentPath === '/feedbacks' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-ivory'
+                }`}
+              >
+                <MessageSquareHeart className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{lang === 'en' ? '2. Feedbacks' : '२. अभिप्राय आणि प्रतिक्रिया'}</span>
+              </button>
+
+              {/* 3. Upcoming Events */}
+              <button
+                onClick={() => handleNav('/events')}
+                className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-2.5 ${
+                  currentPath === '/events' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-ivory'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>{lang === 'en' ? '3. Upcoming Events' : '३. वधू-वर परिचय मेळावे'}</span>
+              </button>
+
+              {/* 4. Gallery */}
+              <button
+                onClick={() => handleNav('/gallery')}
+                className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-2.5 ${
+                  currentPath === '/gallery' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-ivory'
+                }`}
+              >
+                <Images className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{lang === 'en' ? '4. Gallery' : '४. फोटो व व्हिडिओ गॅलरी'}</span>
+              </button>
+
+              {/* 5. Contact Us */}
+              <button
+                onClick={() => handleNav('/contact')}
+                className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-2.5 ${
+                  currentPath === '/contact' ? 'bg-brand-rose/20 text-brand-plum' : 'text-brand-charcoal hover:bg-brand-ivory'
+                }`}
+              >
+                <PhoneCall className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                <span>{lang === 'en' ? '5. Contact Us' : '५. संपर्क व पत्ता'}</span>
+              </button>
+
+              {/* 6. Subscription */}
+              <button
+                onClick={() => handleNav('/subscription')}
+                className={`w-full text-left px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-2.5 bg-amber-50 text-amber-950 border border-amber-200 ${
+                  currentPath === '/subscription' ? 'ring-2 ring-amber-400' : ''
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-600 fill-amber-500 shrink-0" />
+                <span>{lang === 'en' ? '6. Subscription Plans' : '६. वर्गणी व योजना'}</span>
+              </button>
+            </div>
 
             {isAuthenticated ? (
               <>

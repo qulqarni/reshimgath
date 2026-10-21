@@ -31,6 +31,34 @@
       "destination": "/index.html"
     },
     {
+      "source": "/stories",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/success-stories",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/feedbacks",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/events",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/gallery",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/subscription",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/index.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

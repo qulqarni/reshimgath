@@ -43,6 +43,9 @@ const REPORTS_COLLECTION = 'reports';
 const TERMS_COLLECTION = 'terms_acceptances';
 const DELETION_REQUESTS_COLLECTION = 'deletion_requests';
 const DELETION_LOGS_COLLECTION = 'deletion_logs';
+const FEEDBACKS_COLLECTION = 'feedbacks';
+const EVENTS_COLLECTION = 'events';
+const GALLERY_COLLECTION = 'gallery';
 
 // -------------------------------------------------------------
 // FIRESTORE PROFILES API
@@ -1564,3 +1567,154 @@ export const optimizeAndCompressExistingProfileMedia = async (profilesList = [],
 
   return { updatedCount, errorCount };
 };
+
+// -------------------------------------------------------------
+// FIRESTORE FEEDBACKS API
+// -------------------------------------------------------------
+
+export const fetchFeedbacksFromFirestore = async (isAdmin = false) => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const collRef = collection(db, FEEDBACKS_COLLECTION);
+    const q = isAdmin 
+      ? query(collRef, orderBy('createdAt', 'desc'))
+      : query(collRef, where('status', '==', 'approved'), where('published', '==', true));
+    const snapshot = await getDocs(q);
+    const list = [];
+    snapshot.forEach((docSnap) => {
+      list.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    return list;
+  } catch (error) {
+    console.error('Error fetching feedbacks from Firestore:', error);
+    // Fallback: try simple collection fetch without composite index
+    try {
+      const snap = await getDocs(collection(db, FEEDBACKS_COLLECTION));
+      const list = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+      return isAdmin ? list : list.filter(item => item.status === 'approved' && item.published === true);
+    } catch (e) {
+      return null;
+    }
+  }
+};
+
+export const saveFeedbackToFirestore = async (feedbackData) => {
+  if (!isFirebaseConfigured || !feedbackData) return true;
+  try {
+    const docId = String(feedbackData.id || `fb_${Date.now()}`);
+    await setDoc(doc(db, FEEDBACKS_COLLECTION, docId), {
+      ...feedbackData,
+      id: docId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return docId;
+  } catch (error) {
+    console.error('Error saving feedback to Firestore:', error);
+    return null;
+  }
+};
+
+export const deleteFeedbackFromFirestore = async (feedbackId) => {
+  if (!isFirebaseConfigured || !feedbackId) return true;
+  try {
+    await deleteDoc(doc(db, FEEDBACKS_COLLECTION, String(feedbackId)));
+    return true;
+  } catch (error) {
+    console.error('Error deleting feedback from Firestore:', error);
+    return false;
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE UPCOMING EVENTS API
+// -------------------------------------------------------------
+
+export const fetchEventsFromFirestore = async (isAdmin = false) => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const collRef = collection(db, EVENTS_COLLECTION);
+    const snap = await getDocs(collRef);
+    const list = [];
+    snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return isAdmin ? list : list.filter(item => item.published !== false);
+  } catch (error) {
+    console.error('Error fetching events from Firestore:', error);
+    return null;
+  }
+};
+
+export const saveEventToFirestore = async (eventData) => {
+  if (!isFirebaseConfigured || !eventData) return true;
+  try {
+    const docId = String(eventData.id || `ev_${Date.now()}`);
+    await setDoc(doc(db, EVENTS_COLLECTION, docId), {
+      ...eventData,
+      id: docId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return docId;
+  } catch (error) {
+    console.error('Error saving event to Firestore:', error);
+    return null;
+  }
+};
+
+export const deleteEventFromFirestore = async (eventId) => {
+  if (!isFirebaseConfigured || !eventId) return true;
+  try {
+    await deleteDoc(doc(db, EVENTS_COLLECTION, String(eventId)));
+    return true;
+  } catch (error) {
+    console.error('Error deleting event from Firestore:', error);
+    return false;
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE GALLERY API
+// -------------------------------------------------------------
+
+export const fetchGalleryFromFirestore = async (isAdmin = false) => {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const collRef = collection(db, GALLERY_COLLECTION);
+    const snap = await getDocs(collRef);
+    const list = [];
+    snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return isAdmin ? list : list.filter(item => item.published !== false);
+  } catch (error) {
+    console.error('Error fetching gallery from Firestore:', error);
+    return null;
+  }
+};
+
+export const saveGalleryItemToFirestore = async (galleryItem) => {
+  if (!isFirebaseConfigured || !galleryItem) return true;
+  try {
+    const docId = String(galleryItem.id || `gal_${Date.now()}`);
+    await setDoc(doc(db, GALLERY_COLLECTION, docId), {
+      ...galleryItem,
+      id: docId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return docId;
+  } catch (error) {
+    console.error('Error saving gallery item to Firestore:', error);
+    return null;
+  }
+};
+
+export const deleteGalleryItemFromFirestore = async (itemId) => {
+  if (!isFirebaseConfigured || !itemId) return true;
+  try {
+    await deleteDoc(doc(db, GALLERY_COLLECTION, String(itemId)));
+    return true;
+  } catch (error) {
+    console.error('Error deleting gallery item from Firestore:', error);
+    return false;
+  }
+};
+

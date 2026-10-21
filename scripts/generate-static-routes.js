@@ -27,7 +27,16 @@ const routes = [
   'about',
   'contact',
   'login',
-  'signup'
+  'signup',
+  'stories',
+  'success-stories',
+  'feedbacks',
+  'feedback',
+  'events',
+  'upcoming-events',
+  'gallery',
+  'subscription',
+  'plans'
 ];
 
 const indexContent = fs.readFileSync(indexHtmlPath, 'utf8');

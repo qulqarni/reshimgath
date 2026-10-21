@@ -31,6 +31,11 @@ import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { BlockedUsersPage } from './pages/BlockedUsersPage';
 import { ChildSafetyStandardsPage } from './pages/ChildSafetyStandardsPage';
 import { AccountDeletionPage } from './pages/AccountDeletionPage';
+import { SuccessStoriesPage } from './pages/SuccessStoriesPage';
+import { FeedbacksPage } from './pages/FeedbacksPage';
+import { UpcomingEventsPage } from './pages/UpcomingEventsPage';
+import { GalleryPage } from './pages/GalleryPage';
+import { SubscriptionPage } from './pages/SubscriptionPage';
 import { SiteAnnouncementModal } from './components/common/SiteAnnouncementModal';
 
 const GlobalSubscriptionModal = React.memo(function GlobalSubscriptionModal() {
@@ -225,6 +230,34 @@ function AppContent() {
         return <AboutPage onNavigate={handleNavigate} />;
       case '/contact':
         return <ContactPage onNavigate={handleNavigate} />;
+      case '/stories':
+      case '/stories/':
+      case '/success-stories':
+      case '/success-stories/':
+        return <SuccessStoriesPage onNavigate={handleNavigate} />;
+      case '/feedbacks':
+      case '/feedbacks/':
+      case '/feedback':
+      case '/feedback/':
+      case '/testimonials':
+        return <FeedbacksPage onNavigate={handleNavigate} />;
+      case '/events':
+      case '/events/':
+      case '/upcoming-events':
+      case '/upcoming-events/':
+      case '/melawa':
+        return <UpcomingEventsPage onNavigate={handleNavigate} />;
+      case '/gallery':
+      case '/gallery/':
+      case '/photos':
+      case '/videos':
+        return <GalleryPage onNavigate={handleNavigate} />;
+      case '/subscription':
+      case '/subscription/':
+      case '/plans':
+      case '/pricing':
+      case '/memberships':
+        return <SubscriptionPage onNavigate={handleNavigate} />;
       case '/privacy-policy':
       case '/privacy-policy/':
       case '/privacy':

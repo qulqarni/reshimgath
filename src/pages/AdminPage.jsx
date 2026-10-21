@@ -155,7 +155,19 @@ export const AdminPage = ({ onNavigate }) => {
     removeViolatingContent,
     deletionRequests = [],
     processDeletionRequest,
-    dismissDeletionRequest
+    dismissDeletionRequest,
+    feedbacks = [],
+    addFeedback,
+    updateFeedbackStatus,
+    deleteFeedback,
+    events = [],
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    gallery = [],
+    addGalleryItem,
+    updateGalleryItem,
+    deleteGalleryItem
   } = useProfiles();
 
   // Moderation state
@@ -694,7 +706,43 @@ export const AdminPage = ({ onNavigate }) => {
     location: 'Ichalkaranji & Kolhapur',
     quote: '“We found our perfect life partner through Sambodhi Sarang Marriage Bureau!”',
     weddingDate: 'February 2026 • Ichalkaranji Wedding Hall',
+    order: 0,
+    published: true,
     photos: []
+  });
+
+  // Admin Feedback Management State
+  const [feedbackFilter, setFeedbackFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
+
+  // Admin Events Management State
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    date: '',
+    time: '',
+    venue: '',
+    city: 'Kolhapur',
+    posterUrl: '',
+    description: '',
+    registrationLink: '',
+    registrationFee: 'Free for Members',
+    contactPhone: '+91 9823425404',
+    published: true,
+    order: 0
+  });
+
+  // Admin Gallery Management State
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [editingGalleryItem, setEditingGalleryItem] = useState(null);
+  const [galleryFormData, setGalleryFormData] = useState({
+    title: '',
+    category: 'Events',
+    type: 'photo',
+    url: '',
+    caption: '',
+    order: 0,
+    published: true
   });
 
   // Bureau Contact Info (Editable)
@@ -1934,6 +1982,45 @@ export const AdminPage = ({ onNavigate }) => {
         </button>
 
         <button
+          onClick={() => setActiveTab('feedbacks')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
+            activeTab === 'feedbacks'
+              ? 'bg-brand-plum text-white shadow-md'
+              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-amber-500" />
+          <span>Feedbacks ({feedbacks.length})</span>
+          {feedbacks.filter(f => f.status === 'pending').length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse ml-1" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('events')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
+            activeTab === 'events'
+              ? 'bg-brand-plum text-white shadow-md'
+              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
+          }`}
+        >
+          <Calendar className="w-4 h-4 text-blue-500" />
+          <span>Upcoming Events ({events.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('gallery')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
+            activeTab === 'gallery'
+              ? 'bg-brand-plum text-white shadow-md'
+              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
+          }`}
+        >
+          <Images className="w-4 h-4 text-emerald-500" />
+          <span>Gallery ({gallery.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('inquiries')}
           className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
             activeTab === 'inquiries'
@@ -2695,7 +2782,10 @@ export const AdminPage = ({ onNavigate }) => {
         <div className="space-y-6 animate-fade-in">
           
           <div className="flex items-center justify-between">
-            <h3 className="font-serif font-bold text-xl text-brand-plum">Manage Success Stories</h3>
+            <div>
+              <h3 className="font-serif font-bold text-xl text-brand-plum">Manage Success Stories</h3>
+              <p className="text-xs text-slate-500">Publish, reorder, and showcase verified married couples on the website.</p>
+            </div>
             <button
               onClick={() => setShowAddStoryModal(true)}
               className="px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
@@ -2709,29 +2799,276 @@ export const AdminPage = ({ onNavigate }) => {
             {stories.map((story) => (
               <div key={story.id} className="bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury p-5 space-y-3 flex flex-col justify-between">
                 <div className="space-y-3">
-                  <img src={story.photos?.[0]?.url || '/story1.jpg'} alt={story.names} className="w-full h-44 object-cover rounded-2xl" />
-                  <h4 className="font-serif font-bold text-base text-brand-plum">{story.names}</h4>
+                  <div className="relative">
+                    <img src={story.photos?.[0]?.url || '/story1.jpg'} alt={story.names} className="w-full h-44 object-cover rounded-2xl" />
+                    <button
+                      onClick={() => updateSuccessStory(story.id, { published: story.published === false ? true : false })}
+                      className={`absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-bold shadow ${
+                        story.published !== false
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-800 text-gray-200'
+                      }`}
+                    >
+                      {story.published !== false ? '● Published' : '○ Draft'}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-serif font-bold text-base text-brand-plum">{story.names}</h4>
+                    <span className="text-[10px] bg-brand-lightBg text-brand-plum font-bold px-2 py-0.5 rounded-full">
+                      Order: {story.order || 0}
+                    </span>
+                  </div>
                   <p className="text-xs text-brand-gray italic">{story.quote}</p>
                   <span className="text-[10px] text-brand-plum font-semibold block">{story.weddingDate}</span>
                 </div>
 
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-1 text-[11px] text-brand-gray">
+                    <span>{story.photos?.length || 1} photo(s)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleOpenEditStory(story)}
+                      className="p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
+                      title="Edit Success Story"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete story for ${story.names}?`)) {
+                          deleteSuccessStory(story.id);
+                        }
+                      }}
+                      className="p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
+                      title="Delete Success Story"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 4b: FEEDBACKS MANAGEMENT */}
+      {activeTab === 'feedbacks' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white rounded-3xl border border-brand-rose/20 shadow-luxury overflow-hidden p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-xl text-brand-plum">User Testimonials & Feedback Moderation</h3>
+                <p className="text-xs text-slate-500">Review, approve, reject, and publish testimonials submitted by candidates.</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {['all', 'pending', 'approved', 'rejected'].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setFeedbackFilter(st)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase transition-all ${
+                      feedbackFilter === st
+                        ? 'bg-brand-plum text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {st} ({feedbacks.filter(f => st === 'all' || f.status === st).length})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {feedbacks.filter(f => feedbackFilter === 'all' || f.status === feedbackFilter).length === 0 ? (
+              <div className="p-8 text-center text-xs text-brand-gray space-y-2">
+                <MessageSquare className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="font-bold text-slate-600">No feedbacks in this category.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {feedbacks.filter(f => feedbackFilter === 'all' || f.status === feedbackFilter).map((fb) => (
+                  <div
+                    key={fb.id}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
+                      fb.status === 'pending'
+                        ? 'bg-amber-50/60 border-amber-300'
+                        : fb.status === 'rejected'
+                        ? 'bg-rose-50/50 border-rose-200 opacity-75'
+                        : 'bg-white border-gray-200 shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-2 flex-1 text-xs">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-bold text-brand-plum text-sm">{fb.name}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                          fb.status === 'approved'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : fb.status === 'rejected'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-amber-100 text-amber-900 animate-pulse'
+                        }`}>
+                          {fb.status}
+                        </span>
+                        <span className="text-[10px] text-gray-400">Type: {fb.type}</span>
+                        {fb.date && <span className="text-[10px] text-gray-400">• {fb.date}</span>}
+                      </div>
+
+                      <p className="text-brand-charcoal font-medium leading-relaxed bg-white/70 p-3 rounded-xl border border-gray-100">
+                        “{fb.message}”
+                      </p>
+
+                      {fb.mediaUrl && (
+                        <div className="pt-1">
+                          <a href={fb.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline font-semibold flex items-center space-x-1">
+                            <span>View Attached Photo</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                      {fb.videoUrl && (
+                        <div className="pt-1">
+                          <a href={fb.videoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline font-semibold flex items-center space-x-1">
+                            <span>Play Attached Video</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {fb.status !== 'approved' && (
+                        <button
+                          onClick={() => updateFeedbackStatus(fb.id, 'approved', true)}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all"
+                        >
+                          Approve & Publish
+                        </button>
+                      )}
+
+                      {fb.status === 'approved' && (
+                        <button
+                          onClick={() => updateFeedbackStatus(fb.id, 'approved', !fb.published)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                            fb.published
+                              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          }`}
+                        >
+                          {fb.published ? 'Unpublish' : 'Publish'}
+                        </button>
+                      )}
+
+                      {fb.status !== 'rejected' && (
+                        <button
+                          onClick={() => updateFeedbackStatus(fb.id, 'rejected', false)}
+                          className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-bold transition-all border border-rose-200"
+                        >
+                          Reject
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete feedback from ${fb.name}?`)) {
+                            deleteFeedback(fb.id);
+                          }
+                        }}
+                        className="p-2 bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 rounded-xl transition-all"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4c: UPCOMING EVENTS MANAGEMENT */}
+      {activeTab === 'events' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-serif font-bold text-xl text-brand-plum">Manage Matrimonial Events & Melawa</h3>
+              <p className="text-xs text-slate-500">Create, edit, announce, and manage upcoming Vadhu-Var Melawas.</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingEvent(null);
+                setEventFormData({
+                  title: '',
+                  date: '',
+                  time: '',
+                  venue: '',
+                  city: 'Kolhapur',
+                  posterUrl: '',
+                  description: '',
+                  registrationLink: '',
+                  registrationFee: 'Free for Members',
+                  contactPhone: '+91 9823425404',
+                  published: true,
+                  order: 0
+                });
+                setShowEventModal(true);
+              }}
+              className="px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create New Event</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {events.map((ev) => (
+              <div key={ev.id} className="bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury p-5 space-y-3 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="relative">
+                    <img src={ev.posterUrl || '/popup_banner.jpg'} alt={ev.title} className="w-full h-44 object-cover rounded-2xl" />
+                    <button
+                      onClick={() => updateEvent(ev.id, { published: !ev.published })}
+                      className={`absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-bold shadow ${
+                        ev.published !== false
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-800 text-gray-200'
+                      }`}
+                    >
+                      {ev.published !== false ? '● Published' : '○ Draft'}
+                    </button>
+                  </div>
+
+                  <h4 className="font-serif font-bold text-base text-brand-plum">{ev.title}</h4>
+                  <div className="text-xs text-slate-600 space-y-1">
+                    <p className="font-semibold text-brand-kesari">📅 {ev.date} {ev.time && `• ${ev.time}`}</p>
+                    <p>📍 {ev.venue}, {ev.city}</p>
+                  </div>
+                  <p className="text-xs text-brand-gray line-clamp-2">{ev.description}</p>
+                </div>
+
                 <div className="pt-3 border-t border-gray-100 flex items-center justify-end space-x-2">
                   <button
-                    onClick={() => handleOpenEditStory(story)}
+                    onClick={() => {
+                      setEditingEvent(ev);
+                      setEventFormData({ ...ev });
+                      setShowEventModal(true);
+                    }}
                     className="p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
-                    title="Edit Success Story"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Delete story for ${story.names}?`)) {
-                        deleteSuccessStory(story.id);
+                      if (window.confirm(`Delete event "${ev.title}"?`)) {
+                        deleteEvent(ev.id);
                       }
                     }}
                     className="p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-all flex items-center space-x-1 text-xs font-bold"
-                    title="Delete Success Story"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete</span>
@@ -2740,7 +3077,91 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
             ))}
           </div>
+        </div>
+      )}
 
+      {/* TAB 4d: GALLERY MANAGEMENT */}
+      {activeTab === 'gallery' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-serif font-bold text-xl text-brand-plum">Manage Photo & Video Gallery</h3>
+              <p className="text-xs text-slate-500">Upload and curate photographs, celebration moments, and videos.</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingGalleryItem(null);
+                setGalleryFormData({
+                  title: '',
+                  category: 'Events',
+                  type: 'photo',
+                  url: '',
+                  caption: '',
+                  order: 0,
+                  published: true
+                });
+                setShowGalleryModal(true);
+              }}
+              className="px-4 py-2.5 bg-brand-plum text-white font-bold text-xs rounded-xl shadow hover:bg-brand-plumDark transition-all flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Media Item</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {gallery.map((item) => (
+              <div key={item.id} className="bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury p-4 space-y-2 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="relative h-40 bg-slate-950 rounded-2xl overflow-hidden">
+                    {item.type === 'video' ? (
+                      <video src={item.url} className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                    )}
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand-plum text-white text-[10px] font-bold">
+                      {item.category}
+                    </span>
+                    <button
+                      onClick={() => updateGalleryItem(item.id, { published: !item.published })}
+                      className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow ${
+                        item.published !== false
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-800 text-gray-200'
+                      }`}
+                    >
+                      {item.published !== false ? 'Published' : 'Draft'}
+                    </button>
+                  </div>
+                  <h4 className="font-serif font-bold text-xs text-brand-plum truncate">{item.title}</h4>
+                  <p className="text-[11px] text-brand-gray line-clamp-2">{item.caption}</p>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-end space-x-2">
+                  <button
+                    onClick={() => {
+                      setEditingGalleryItem(item);
+                      setGalleryFormData({ ...item });
+                      setShowGalleryModal(true);
+                    }}
+                    className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete gallery item "${item.title}"?`)) {
+                        deleteGalleryItem(item.id);
+                      }
+                    }}
+                    className="p-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-bold"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -4607,6 +5028,342 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
             </form>
 
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL: EVENT CREATE / EDIT */}
+      {showEventModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-5 border border-brand-rose/30 shadow-2xl my-auto animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="font-serif text-xl font-bold text-brand-plum">
+                {editingEvent ? 'Edit Event' : 'Create Matrimonial Event'}
+              </h3>
+              <button onClick={() => setShowEventModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (editingEvent) {
+                  updateEvent(editingEvent.id, eventFormData);
+                } else {
+                  addEvent(eventFormData);
+                }
+                setShowEventModal(false);
+              }}
+              className="space-y-4 text-xs font-semibold"
+            >
+              <div>
+                <label className="block text-brand-charcoal mb-1">Event Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={eventFormData.title}
+                  onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
+                  placeholder="e.g. Grand Vadhu-Var Melawa 2026"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Date (YYYY-MM-DD) *</label>
+                  <input
+                    type="date"
+                    required
+                    value={eventFormData.date}
+                    onChange={(e) => setEventFormData({ ...eventFormData, date: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Time</label>
+                  <input
+                    type="text"
+                    value={eventFormData.time}
+                    onChange={(e) => setEventFormData({ ...eventFormData, time: e.target.value })}
+                    placeholder="e.g. 10:00 AM - 5:00 PM"
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Venue *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventFormData.venue}
+                    onChange={(e) => setEventFormData({ ...eventFormData, venue: e.target.value })}
+                    placeholder="e.g. Maharaja Palace Ground"
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-brand-charcoal mb-1">City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventFormData.city}
+                    onChange={(e) => setEventFormData({ ...eventFormData, city: e.target.value })}
+                    placeholder="e.g. Kolhapur"
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-brand-charcoal mb-1">Poster Image (URL or Upload)</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={eventFormData.posterUrl}
+                    onChange={(e) => setEventFormData({ ...eventFormData, posterUrl: e.target.value })}
+                    placeholder="https://... or upload below"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                  <label className="px-3 py-2.5 bg-brand-lightBg hover:bg-brand-rose/20 text-brand-plum rounded-xl cursor-pointer text-xs font-bold shrink-0 border border-brand-rose/30">
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const url = await uploadFileToFirebaseStorage(file, `events/${Date.now()}_${file.name}`, file.type);
+                          setEventFormData({ ...eventFormData, posterUrl: url });
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-brand-charcoal mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={eventFormData.description}
+                  onChange={(e) => setEventFormData({ ...eventFormData, description: e.target.value })}
+                  placeholder="Details about participation, candidate profiles, and schedule..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Registration Link (WhatsApp / URL)</label>
+                  <input
+                    type="text"
+                    value={eventFormData.registrationLink}
+                    onChange={(e) => setEventFormData({ ...eventFormData, registrationLink: e.target.value })}
+                    placeholder="https://wa.me/..."
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={eventFormData.contactPhone}
+                    onChange={(e) => setEventFormData({ ...eventFormData, contactPhone: e.target.value })}
+                    placeholder="+91 9823425404"
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-6 pt-1">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={eventFormData.published !== false}
+                    onChange={(e) => setEventFormData({ ...eventFormData, published: e.target.checked })}
+                    className="rounded text-brand-plum"
+                  />
+                  <span>Published on Website</span>
+                </label>
+                <div className="flex items-center space-x-2">
+                  <span>Display Order:</span>
+                  <input
+                    type="number"
+                    value={eventFormData.order || 0}
+                    onChange={(e) => setEventFormData({ ...eventFormData, order: parseInt(e.target.value) || 0 })}
+                    className="w-16 p-1 rounded-lg border border-gray-200 text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEventModal(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                >
+                  {editingEvent ? 'Save Changes' : 'Create Event'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL: GALLERY ITEM CREATE / EDIT */}
+      {showGalleryModal && createPortal(
+        <div className="fixed inset-0 w-screen h-screen z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 border border-brand-rose/30 shadow-2xl my-auto animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="font-serif text-xl font-bold text-brand-plum">
+                {editingGalleryItem ? 'Edit Gallery Item' : 'Add Gallery Photo / Video'}
+              </h3>
+              <button onClick={() => setShowGalleryModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (editingGalleryItem) {
+                  updateGalleryItem(editingGalleryItem.id, galleryFormData);
+                } else {
+                  addGalleryItem(galleryFormData);
+                }
+                setShowGalleryModal(false);
+              }}
+              className="space-y-4 text-xs font-semibold"
+            >
+              <div>
+                <label className="block text-brand-charcoal mb-1">Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={galleryFormData.title}
+                  onChange={(e) => setGalleryFormData({ ...galleryFormData, title: e.target.value })}
+                  placeholder="e.g. Kolhapur Melawa Lamp Lighting"
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Category</label>
+                  <select
+                    value={galleryFormData.category}
+                    onChange={(e) => setGalleryFormData({ ...galleryFormData, category: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  >
+                    <option value="Events">Events</option>
+                    <option value="Weddings">Weddings</option>
+                    <option value="Office">Office</option>
+                    <option value="Videos">Videos</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-brand-charcoal mb-1">Media Type</label>
+                  <select
+                    value={galleryFormData.type}
+                    onChange={(e) => setGalleryFormData({ ...galleryFormData, type: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200"
+                  >
+                    <option value="photo">Photo</option>
+                    <option value="video">Video</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-brand-charcoal mb-1">Media URL or Upload *</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    required
+                    value={galleryFormData.url}
+                    onChange={(e) => setGalleryFormData({ ...galleryFormData, url: e.target.value })}
+                    placeholder="https://... or upload below"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
+                  />
+                  <label className="px-3 py-2.5 bg-brand-lightBg hover:bg-brand-rose/20 text-brand-plum rounded-xl cursor-pointer text-xs font-bold shrink-0 border border-brand-rose/30">
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept={galleryFormData.type === 'video' ? 'video/*' : 'image/*'}
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const url = await uploadFileToFirebaseStorage(file, `gallery/${Date.now()}_${file.name}`, file.type);
+                          setGalleryFormData({ ...galleryFormData, url });
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-brand-charcoal mb-1">Caption / Description</label>
+                <textarea
+                  rows={2}
+                  value={galleryFormData.caption}
+                  onChange={(e) => setGalleryFormData({ ...galleryFormData, caption: e.target.value })}
+                  placeholder="Short caption describing the moment..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200"
+                />
+              </div>
+
+              <div className="flex items-center space-x-6 pt-1">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={galleryFormData.published !== false}
+                    onChange={(e) => setGalleryFormData({ ...galleryFormData, published: e.target.checked })}
+                    className="rounded text-brand-plum"
+                  />
+                  <span>Published</span>
+                </label>
+                <div className="flex items-center space-x-2">
+                  <span>Display Order:</span>
+                  <input
+                    type="number"
+                    value={galleryFormData.order || 0}
+                    onChange={(e) => setGalleryFormData({ ...galleryFormData, order: parseInt(e.target.value) || 0 })}
+                    className="w-16 p-1 rounded-lg border border-gray-200 text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowGalleryModal(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                >
+                  {editingGalleryItem ? 'Save Changes' : 'Add Item'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body

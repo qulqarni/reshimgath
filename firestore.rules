@@ -352,6 +352,41 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------
+    // 7b. Feedbacks Collection
+    // -----------------------------------------------------------
+    match /feedbacks/{feedbackId} {
+      // Anyone can read approved & published feedbacks; admins can read all
+      allow read: if isAdmin() || (resource.data.status == 'approved' && resource.data.published == true);
+
+      // Anyone can submit a feedback with pending status
+      allow create: if isValidOptionalString(request.resource.data, 'name', 150) &&
+                       isValidOptionalString(request.resource.data, 'message', 3000) &&
+                       (!('status' in request.resource.data) || request.resource.data.status == 'pending') &&
+                       (!('published' in request.resource.data) || request.resource.data.published == false || isAdmin());
+
+      // Only admins can approve, reject, edit, or delete feedback
+      allow update, delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 7c. Upcoming Events Collection
+    // -----------------------------------------------------------
+    match /events/{eventId} {
+      // Public read of published events; admins can read all
+      allow read: if isAdmin() || resource.data.published == true;
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
+    // 7d. Gallery Collection
+    // -----------------------------------------------------------
+    match /gallery/{itemId} {
+      // Public read of published gallery items; admins can read all
+      allow read: if isAdmin() || resource.data.published == true;
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------
     // 8. User Blocks Collection
     // -----------------------------------------------------------
     match /user_blocks/{blockId} {

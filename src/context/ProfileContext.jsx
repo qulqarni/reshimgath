@@ -38,7 +38,16 @@ import {
   deleteChatMessageFromFirestore,
   fetchDeletionRequestsFromFirestore,
   updateDeletionRequestStatus,
-  deleteUserAccount
+  deleteUserAccount,
+  fetchFeedbacksFromFirestore,
+  saveFeedbackToFirestore,
+  deleteFeedbackFromFirestore,
+  fetchEventsFromFirestore,
+  saveEventToFirestore,
+  deleteEventFromFirestore,
+  fetchGalleryFromFirestore,
+  saveGalleryItemToFirestore,
+  deleteGalleryItemFromFirestore
 } from '../services/firebaseService';
 import { doesProfileHavePhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
@@ -192,6 +201,8 @@ export const DEFAULT_STORIES = [
     location: "Pune & Mumbai",
     quote: "“We found a compatible match through Sambodhi Sarang. The platform brought our two traditional families together seamlessly!”",
     weddingDate: "January 2026 • Pune Palace Ground",
+    order: 1,
+    published: true,
     photos: [
       { url: "/story1.jpg", caption: "Snehal & Swapnil in traditional green Paithani saree & royal Sherwani at mandap" },
       { url: "/story1_2.jpg", caption: "Sweet wedding moment exchanging varmala garland" },
@@ -204,6 +215,8 @@ export const DEFAULT_STORIES = [
     location: "Kolhapur & Sangli",
     quote: "“The profile review process and privacy controls made our family feel secure and respected. Very helpful for matrimonial search.”",
     weddingDate: "November 2025 • Sangli Wedding Hall",
+    order: 2,
+    published: true,
     photos: [
       { url: "/story2.jpg", caption: "Pooja & Varun laughing happily in yellow Paithani saree during mandap rituals" },
       { url: "/story2_2.jpg", caption: "Walking together holding hands amidst marigold flower path" },
@@ -216,11 +229,155 @@ export const DEFAULT_STORIES = [
     location: "Nashik & Satara",
     quote: "“Authentic verified profiles gave our parents absolute confidence. Today we are happily married for over 2 years!”",
     weddingDate: "February 2024 • Nashik Grand Reception",
+    order: 3,
+    published: true,
     photos: [
       { url: "/story3.jpg", caption: "Dr. Radhika & Rohan at their fairy-lit evening reception in maroon Nauvari saree" },
       { url: "/story3_2.jpg", caption: "Auspicious wedding ring ritual ceremony" },
       { url: "/story1_2.jpg", caption: "Grand Varmala flower garland celebration" }
     ]
+  }
+];
+
+export const DEFAULT_FEEDBACKS = [
+  {
+    id: 'fb_1',
+    name: 'Sunil & Sunita Narade',
+    type: 'text',
+    message: 'Sambodhi Sarang Marriage Bureau is exceptionally trustworthy. The team personally verifies each candidate profile and family background with utmost dignity.',
+    status: 'approved',
+    published: true,
+    rating: 5,
+    date: 'March 2026',
+    createdAt: '2026-03-15T10:00:00.000Z'
+  },
+  {
+    id: 'fb_2',
+    name: 'Anjali Deshmukh',
+    type: 'photo',
+    message: 'We found our daughter’s life partner in just 3 months. Transparent contact exchange and clean biodata verification made all the difference!',
+    mediaUrl: '/story2.jpg',
+    status: 'approved',
+    published: true,
+    rating: 5,
+    date: 'February 2026',
+    createdAt: '2026-02-18T12:30:00.000Z'
+  },
+  {
+    id: 'fb_3',
+    name: 'Mahesh Kulkarni',
+    type: 'video',
+    message: 'Heartfelt gratitude to Sambodhi Sarang! The online portal combined with local Ichalkaranji office guidance made our search seamless.',
+    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    status: 'approved',
+    published: true,
+    rating: 5,
+    date: 'January 2026',
+    createdAt: '2026-01-10T14:20:00.000Z'
+  }
+];
+
+export const DEFAULT_EVENTS = [
+  {
+    id: 'ev_1',
+    title: 'Grand Vadhu-Var Melawa 2026 (भव्य वधू-वर मेळावा)',
+    date: '2026-11-15',
+    time: '10:00 AM - 5:00 PM',
+    venue: 'Maharaja Palace Ground, Station Road, Kolhapur',
+    city: 'Kolhapur',
+    posterUrl: '/popup_banner.jpg',
+    description: 'A grand matrimonial gathering bringing together screened prospective brides, grooms, and their families across Maharashtra. Direct face-to-face interaction, astrologer consultation, and instant profile registration.',
+    registrationLink: 'https://wa.me/919823425404?text=Interested%20in%20Kolhapur%20Vadhu-Var%20Melawa%202026',
+    registrationFee: 'Free for Registered Members',
+    contactPhone: '+91 9823425404',
+    published: true,
+    order: 1,
+    createdAt: '2026-04-01T10:00:00.000Z'
+  },
+  {
+    id: 'ev_2',
+    title: 'Engineers & Doctors Matrimonial Meet (इंजिनिअर व डॉक्टर विशेष परिचय मेळावा)',
+    date: '2026-12-06',
+    time: '11:00 AM - 4:00 PM',
+    venue: 'Hotel Pearl Hall, Market Yard, Sangli',
+    city: 'Sangli',
+    posterUrl: '/event_placeholder.jpg',
+    description: 'Exclusive match-making meet designed specifically for engineering, IT, medical, and civil service professionals. Meet like-minded professionals in a comfortable, respectful setting.',
+    registrationLink: 'https://wa.me/919823425404?text=Interested%20in%20Engineers%20and%20Doctors%20Meet',
+    registrationFee: '₹500 per family',
+    contactPhone: '+91 9823425404',
+    published: true,
+    order: 2,
+    createdAt: '2026-04-05T10:00:00.000Z'
+  },
+  {
+    id: 'ev_3',
+    title: 'Ichalkaranji Parichay Melawa 2025 (इचलकरंजी परिचय मेळावा)',
+    date: '2025-10-12',
+    time: '9:30 AM - 3:30 PM',
+    venue: 'Sambodhi Sarang Bureau Hall, Main Road, Ichalkaranji',
+    city: 'Ichalkaranji',
+    posterUrl: '/popup_banner.jpg',
+    description: 'Successful regional meet concluded with over 250 participating families and 42 successful matches initiated.',
+    registrationLink: '',
+    registrationFee: 'Free',
+    contactPhone: '+91 9823425404',
+    published: true,
+    order: 3,
+    createdAt: '2025-09-01T10:00:00.000Z'
+  }
+];
+
+export const DEFAULT_GALLERY = [
+  {
+    id: 'gal_1',
+    title: 'Kolhapur Melawa Auspicious Lamp Lighting',
+    category: 'Events',
+    type: 'photo',
+    url: '/story1.jpg',
+    caption: 'Dignitaries inaugurating the matrimonial get-together with traditional Deep Prajwalan.',
+    order: 1,
+    published: true
+  },
+  {
+    id: 'gal_2',
+    title: 'Family Consultations & Introductions',
+    category: 'Events',
+    type: 'photo',
+    url: '/story2.jpg',
+    caption: 'Parents and candidates engaging in friendly family discussions at the bureau lounge.',
+    order: 2,
+    published: true
+  },
+  {
+    id: 'gal_3',
+    title: 'Happy Newlywed Couple Blessing Ceremony',
+    category: 'Weddings',
+    type: 'photo',
+    url: '/story3.jpg',
+    caption: 'Couple celebrating their marriage milestone after finding each other through Sambodhi Sarang.',
+    order: 3,
+    published: true
+  },
+  {
+    id: 'gal_4',
+    title: 'Bureau Office & Reception Desk',
+    category: 'Office',
+    type: 'photo',
+    url: '/logo.png',
+    caption: 'Warm reception and dedicated counseling desk at Ichalkaranji headquarters.',
+    order: 4,
+    published: true
+  },
+  {
+    id: 'gal_5',
+    title: 'Annual Melawa Highlights & Couple Testimonials',
+    category: 'Videos',
+    type: 'video',
+    url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    caption: 'Highlights from our annual family gathering celebrating 500+ successful matches.',
+    order: 5,
+    published: true
   }
 ];
 
@@ -317,6 +474,40 @@ export const ProfileProvider = ({ children }) => {
       return [];
     }
   });
+
+  const [feedbacks, setFeedbacks] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_feedbacks');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return DEFAULT_FEEDBACKS;
+  });
+
+  const [events, setEvents] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_events');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return DEFAULT_EVENTS;
+  });
+
+  const [gallery, setGallery] = useState(() => {
+    const saved = localStorage.getItem('reshimgath_gallery');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return DEFAULT_GALLERY;
+  });
+
 
   const { user, hasActiveSubscription, canViewProfile, unlockProfileForUser, isUserBlocked, blockUser, unblockUser } = useAuth();
 
@@ -521,6 +712,27 @@ export const ProfileProvider = ({ children }) => {
         setDeletionRequests(firestoreDeletions);
         try {
           localStorage.setItem('reshimgath_deletion_requests', JSON.stringify(firestoreDeletions));
+        } catch (e) {}
+      }
+      const firestoreFeedbacks = await fetchFeedbacksFromFirestore(true);
+      if (firestoreFeedbacks && Array.isArray(firestoreFeedbacks) && firestoreFeedbacks.length > 0) {
+        setFeedbacks(firestoreFeedbacks);
+        try {
+          localStorage.setItem('reshimgath_feedbacks', JSON.stringify(firestoreFeedbacks));
+        } catch (e) {}
+      }
+      const firestoreEvents = await fetchEventsFromFirestore(true);
+      if (firestoreEvents && Array.isArray(firestoreEvents) && firestoreEvents.length > 0) {
+        setEvents(firestoreEvents);
+        try {
+          localStorage.setItem('reshimgath_events', JSON.stringify(firestoreEvents));
+        } catch (e) {}
+      }
+      const firestoreGallery = await fetchGalleryFromFirestore(true);
+      if (firestoreGallery && Array.isArray(firestoreGallery) && firestoreGallery.length > 0) {
+        setGallery(firestoreGallery);
+        try {
+          localStorage.setItem('reshimgath_gallery', JSON.stringify(firestoreGallery));
         } catch (e) {}
       }
     };
@@ -1487,23 +1699,27 @@ export const ProfileProvider = ({ children }) => {
 
   const addSuccessStory = (storyData) => {
     const newStory = {
-      id: Date.now(),
+      id: storyData.id || Date.now(),
       names: storyData.names,
-      location: storyData.location,
-      quote: storyData.quote,
-      weddingDate: storyData.weddingDate,
-      photos: storyData.photos || [{ url: '/story1.jpg', caption: 'Couple portrait' }]
+      location: storyData.location || '',
+      quote: storyData.quote || '',
+      weddingDate: storyData.weddingDate || '',
+      order: typeof storyData.order === 'number' ? storyData.order : 0,
+      published: storyData.published !== false,
+      photos: storyData.photos || [{ url: '/story1.jpg', caption: 'Couple portrait' }],
+      createdAt: new Date().toISOString()
     };
     setStories((prev) => [newStory, ...prev]);
     saveSuccessStoryToFirestore(newStory);
-    addToast('New success story added to homepage!', 'success');
+    addToast('Success story saved successfully!', 'success');
+    return newStory;
   };
 
   const updateSuccessStory = (storyId, updatedStoryData) => {
     setStories((prev) =>
       prev.map((s) => {
         if (String(s.id) === String(storyId)) {
-          const updated = { ...s, ...updatedStoryData };
+          const updated = { ...s, ...updatedStoryData, updatedAt: new Date().toISOString() };
           saveSuccessStoryToFirestore(updated);
           return updated;
         }
@@ -1514,10 +1730,186 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const deleteSuccessStory = (storyId) => {
-    setStories((prev) => prev.filter((s) => s.id !== storyId));
+    setStories((prev) => prev.filter((s) => String(s.id) !== String(storyId)));
     deleteSuccessStoryFromFirestore(storyId);
-    addToast('Success story removed from homepage.', 'info');
+    addToast('Success story removed.', 'info');
   };
+
+  // FEEDBACKS ACTIONS
+  const addFeedback = (feedbackData) => {
+    const newFeedback = {
+      id: `fb_${Date.now()}`,
+      name: feedbackData.name || 'Anonymous User',
+      type: feedbackData.type || 'text', // 'text' | 'photo' | 'video'
+      message: feedbackData.message || '',
+      mediaUrl: feedbackData.mediaUrl || null,
+      videoUrl: feedbackData.videoUrl || null,
+      status: feedbackData.status || 'pending', // 'pending' | 'approved' | 'rejected'
+      published: feedbackData.published || false,
+      rating: feedbackData.rating || 5,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      createdAt: new Date().toISOString()
+    };
+    setFeedbacks((prev) => {
+      const next = [newFeedback, ...prev];
+      try {
+        localStorage.setItem('reshimgath_feedbacks', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    saveFeedbackToFirestore(newFeedback);
+    return newFeedback;
+  };
+
+  const updateFeedbackStatus = (feedbackId, status, published = null) => {
+    setFeedbacks((prev) => {
+      const next = prev.map((fb) => {
+        if (String(fb.id) === String(feedbackId)) {
+          const updated = { 
+            ...fb, 
+            status, 
+            published: published !== null ? published : (status === 'approved')
+          };
+          saveFeedbackToFirestore(updated);
+          return updated;
+        }
+        return fb;
+      });
+      try {
+        localStorage.setItem('reshimgath_feedbacks', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    addToast(`Feedback status updated to ${status}.`, 'info');
+  };
+
+  const deleteFeedback = (feedbackId) => {
+    setFeedbacks((prev) => {
+      const next = prev.filter((fb) => String(fb.id) !== String(feedbackId));
+      try {
+        localStorage.setItem('reshimgath_feedbacks', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    deleteFeedbackFromFirestore(feedbackId);
+    addToast('Feedback item deleted.', 'info');
+  };
+
+  // EVENTS ACTIONS
+  const addEvent = (eventData) => {
+    const newEvent = {
+      id: eventData.id || `ev_${Date.now()}`,
+      title: eventData.title || 'Upcoming Matrimonial Event',
+      date: eventData.date || '',
+      time: eventData.time || '',
+      venue: eventData.venue || '',
+      city: eventData.city || 'Maharashtra',
+      posterUrl: eventData.posterUrl || '/popup_banner.jpg',
+      description: eventData.description || '',
+      registrationLink: eventData.registrationLink || '',
+      registrationFee: eventData.registrationFee || 'Free',
+      contactPhone: eventData.contactPhone || '+91 9823425404',
+      published: eventData.published !== false,
+      order: typeof eventData.order === 'number' ? eventData.order : 0,
+      createdAt: new Date().toISOString()
+    };
+    setEvents((prev) => {
+      const next = [newEvent, ...prev].sort((a, b) => (a.order || 0) - (b.order || 0));
+      try {
+        localStorage.setItem('reshimgath_events', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    saveEventToFirestore(newEvent);
+    addToast('Event created successfully!', 'success');
+    return newEvent;
+  };
+
+  const updateEvent = (eventId, updatedData) => {
+    setEvents((prev) => {
+      const next = prev.map((ev) => {
+        if (String(ev.id) === String(eventId)) {
+          const updated = { ...ev, ...updatedData, updatedAt: new Date().toISOString() };
+          saveEventToFirestore(updated);
+          return updated;
+        }
+        return ev;
+      }).sort((a, b) => (a.order || 0) - (b.order || 0));
+      try {
+        localStorage.setItem('reshimgath_events', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    addToast('Event updated successfully!', 'success');
+  };
+
+  const deleteEvent = (eventId) => {
+    setEvents((prev) => {
+      const next = prev.filter((ev) => String(ev.id) !== String(eventId));
+      try {
+        localStorage.setItem('reshimgath_events', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    deleteEventFromFirestore(eventId);
+    addToast('Event removed.', 'info');
+  };
+
+  // GALLERY ACTIONS
+  const addGalleryItem = (itemData) => {
+    const newItem = {
+      id: itemData.id || `gal_${Date.now()}`,
+      title: itemData.title || '',
+      category: itemData.category || 'Events',
+      type: itemData.type || 'photo', // 'photo' | 'video'
+      url: itemData.url || '',
+      caption: itemData.caption || '',
+      order: typeof itemData.order === 'number' ? itemData.order : 0,
+      published: itemData.published !== false,
+      createdAt: new Date().toISOString()
+    };
+    setGallery((prev) => {
+      const next = [newItem, ...prev].sort((a, b) => (a.order || 0) - (b.order || 0));
+      try {
+        localStorage.setItem('reshimgath_gallery', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    saveGalleryItemToFirestore(newItem);
+    addToast('Gallery item added successfully!', 'success');
+    return newItem;
+  };
+
+  const updateGalleryItem = (itemId, updatedData) => {
+    setGallery((prev) => {
+      const next = prev.map((item) => {
+        if (String(item.id) === String(itemId)) {
+          const updated = { ...item, ...updatedData, updatedAt: new Date().toISOString() };
+          saveGalleryItemToFirestore(updated);
+          return updated;
+        }
+        return item;
+      }).sort((a, b) => (a.order || 0) - (b.order || 0));
+      try {
+        localStorage.setItem('reshimgath_gallery', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    addToast('Gallery item updated!', 'success');
+  };
+
+  const deleteGalleryItem = (itemId) => {
+    setGallery((prev) => {
+      const next = prev.filter((item) => String(item.id) !== String(itemId));
+      try {
+        localStorage.setItem('reshimgath_gallery', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    deleteGalleryItemFromFirestore(itemId);
+    addToast('Gallery item deleted.', 'info');
+  };
+
 
   const addInquiry = (data) => {
     const newInquiry = {
@@ -1846,7 +2238,19 @@ export const ProfileProvider = ({ children }) => {
         removeViolatingContent,
         deletionRequests,
         processDeletionRequest,
-        dismissDeletionRequest
+        dismissDeletionRequest,
+        feedbacks,
+        addFeedback,
+        updateFeedbackStatus,
+        deleteFeedback,
+        events,
+        addEvent,
+        updateEvent,
+        deleteEvent,
+        gallery,
+        addGalleryItem,
+        updateGalleryItem,
+        deleteGalleryItem
       }}
     >
       {children}
