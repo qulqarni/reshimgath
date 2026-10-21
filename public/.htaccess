@@ -4,6 +4,8 @@
   
   # Allow direct execution of API php scripts on Hostinger
   RewriteRule ^api/send-registration-alert/?$ /api/send-registration-alert.php [L,QSA]
+  RewriteRule ^api/create-order/?$ /api/create-order.php [L,QSA]
+  RewriteRule ^api/verify-payment/?$ /api/verify-payment.php [L,QSA]
   
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
