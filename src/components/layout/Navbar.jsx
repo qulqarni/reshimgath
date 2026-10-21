@@ -24,8 +24,7 @@ import {
   MessageSquareHeart,
   Calendar,
   Images,
-  PhoneCall,
-  ChevronDown
+  PhoneCall
 } from 'lucide-react';
 
 export const Navbar = ({ currentPath, onNavigate }) => {
@@ -181,21 +180,30 @@ export const Navbar = ({ currentPath, onNavigate }) => {
           {/* Right Action Icons & Controls */}
           <div className="flex items-center space-x-1.5 sm:space-x-3">
             
-            {/* REDESIGNED MENU BUTTON (Opens the 6-option menu in required order) */}
+            {/* Language Switcher Button (Visible on both Mobile & Desktop) */}
+            <button
+              onClick={() => toggleLanguage()}
+              className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-brand-gold/40 bg-white/80 text-brand-plum hover:bg-brand-lightBg transition-all text-[11px] sm:text-xs font-semibold shadow-sm shrink-0"
+              title="Switch Language / भाषा बदला"
+            >
+              <Globe className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
+              <span>{lang === 'en' ? 'मराठी' : 'English'}</span>
+            </button>
+
+            {/* 6-OPTION MENU BUTTON (3 lines hamburger icon only) */}
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowNavMenu(!showNavMenu)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full border transition-all text-xs font-bold shadow-sm shrink-0 ${
+                className={`w-9 h-9 rounded-full border transition-all shadow-sm shrink-0 flex items-center justify-center ${
                   showNavMenu
                     ? 'bg-brand-plum text-white border-brand-plum shadow-md'
-                    : 'bg-gradient-to-r from-brand-rose/20 via-brand-lightBg to-white border-brand-rose/40 text-brand-plum hover:bg-brand-rose/30'
+                    : 'bg-white border-brand-rose/40 text-brand-plum hover:bg-brand-rose/20'
                 }`}
                 title="Menu / मेनू"
+                aria-label="Menu"
                 aria-expanded={showNavMenu}
               >
-                <Menu className="w-4 h-4 text-brand-plum" />
-                <span>{lang === 'en' ? 'Menu' : 'मेनू'}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showNavMenu ? 'rotate-180' : ''}`} />
+                <Menu className={`w-5 h-5 ${showNavMenu ? 'text-white' : 'text-brand-plum'}`} />
               </button>
 
               {/* 6-OPTION MENU DROPDOWN (Strictly in the specified order:
@@ -344,16 +352,6 @@ export const Navbar = ({ currentPath, onNavigate }) => {
                 </div>
               )}
             </div>
-
-            {/* Language Switcher Button (Visible on both Mobile & Desktop) */}
-            <button
-              onClick={() => toggleLanguage()}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-brand-gold/40 bg-white/80 text-brand-plum hover:bg-brand-lightBg transition-all text-[11px] sm:text-xs font-semibold shadow-sm shrink-0"
-              title="Switch Language / भाषा बदला"
-            >
-              <Globe className="w-3.5 h-3.5 text-brand-kesari shrink-0" />
-              <span>{lang === 'en' ? 'मराठी' : 'English'}</span>
-            </button>
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-1 sm:space-x-2">
