@@ -62,7 +62,8 @@ import {
   ExternalLink,
   Megaphone,
   Calendar,
-  Images
+  Images,
+  ChevronDown
 } from 'lucide-react';
 
 export const getSubscriptionDetails = (p) => {
@@ -358,6 +359,7 @@ export const AdminPage = ({ onNavigate }) => {
   };
 
   const [activeTab, setActiveTab] = useState('profiles'); // 'overview', 'profiles', 'content', 'popup', 'stories', 'inquiries', 'plans', 'export', 'moderation'
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showPopupPreview, setShowPopupPreview] = useState(false);
   const [isUploadingPopupImage, setIsUploadingPopupImage] = useState(false);
   const [editablePlans, setEditablePlans] = useState(() => {
@@ -1900,7 +1902,7 @@ export const AdminPage = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-brand-plum via-brand-plumDark to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-white/10">
@@ -1918,180 +1920,350 @@ export const AdminPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Admin Tabs */}
-      <div className="flex items-center space-x-2 border-b border-brand-rose/20 pb-4 overflow-x-auto scrollbar-none">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'overview'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Overview Analytics</span>
-        </button>
+      {/* 2-Column Dashboard Layout: Left Sidebar + Right Content Area */}
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+        
+        {/* Left Sidebar Navigation */}
+        <aside className="w-full lg:w-72 xl:w-80 shrink-0 lg:sticky lg:top-24 z-10">
+          <div className="bg-white rounded-3xl border border-brand-rose/25 shadow-luxury p-3 sm:p-4 space-y-2.5">
+            
+            {/* Sidebar Title / Header */}
+            <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-brand-plum animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-plum font-serif">
+                  Admin Navigation
+                </span>
+              </div>
+              <span className="text-[10px] bg-brand-rose/20 text-brand-plum px-2.5 py-0.5 rounded-full font-extrabold">
+                13 Sections
+              </span>
+            </div>
 
-        <button
-          onClick={() => setActiveTab('profiles')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'profiles'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Profile Management ({profiles.length})</span>
-        </button>
+            {/* Mobile Toggle Button (Visible only on mobile / small screens) */}
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-brand-lightBg hover:bg-brand-rose/10 border border-brand-rose/20 text-brand-plum text-xs font-bold transition-all"
+              >
+                <div className="flex items-center space-x-2 min-w-0">
+                  <span className="text-gray-500 font-normal">Section:</span>
+                  <span className="truncate text-brand-plum font-bold">
+                    {activeTab === 'overview' && 'Overview Analytics'}
+                    {activeTab === 'profiles' && `Profile Management (${profiles.length})`}
+                    {activeTab === 'content' && 'Manage Homepage Content'}
+                    {activeTab === 'popup' && 'Popup Ad (पॉप-अप जाहिरात)'}
+                    {activeTab === 'stories' && `Success Stories (${stories.length})`}
+                    {activeTab === 'feedbacks' && `Feedbacks (${feedbacks.length})`}
+                    {activeTab === 'events' && `Upcoming Events (${events.length})`}
+                    {activeTab === 'gallery' && `Gallery (${gallery.length})`}
+                    {activeTab === 'inquiries' && `Support Inquiries (${inquiries.filter(i => !i.resolved).length})`}
+                    {activeTab === 'plans' && 'Plan Rates & Pricing'}
+                    {activeTab === 'export' && 'Profile Export & Filters'}
+                    {activeTab === 'moderation' && `Reports & Moderation (${pendingReportsCount})`}
+                    {activeTab === 'deletions' && `Deletion Requests (${pendingDeletionsCount})`}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1.5 shrink-0 text-brand-plum ml-2">
+                  <span className="text-[11px]">{mobileSidebarOpen ? 'Close' : 'Switch'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileSidebarOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+            </div>
 
-        <button
-          onClick={() => setActiveTab('content')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'content'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Layout className="w-4 h-4" />
-          <span>Manage Homepage Content</span>
-        </button>
+            {/* Tab Navigation List (Always visible on desktop, toggleable on mobile) */}
+            <div className={`${mobileSidebarOpen ? 'block' : 'hidden'} lg:block space-y-1 pt-1 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto pr-0.5`}>
+              
+              {/* 1. Overview Analytics */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('overview'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'overview'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'overview' ? 'bg-white/20 text-white' : 'bg-brand-plum/10 text-brand-plum'}`}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Overview Analytics</span>
+                </div>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('popup')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 relative ${
-            activeTab === 'popup'
-              ? 'bg-amber-600 text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Megaphone className="w-4 h-4 text-amber-500" />
-          <span>Popup Ad (पॉप-अप जाहिरात)</span>
-          {editableHomeContent?.popupAd?.enabled && editableHomeContent?.popupAd?.imageUrl && (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
-          )}
-        </button>
+              {/* 2. Profile Management */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('profiles'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'profiles'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'profiles' ? 'bg-white/20 text-white' : 'bg-brand-plum/10 text-brand-plum'}`}>
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Profile Management</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${activeTab === 'profiles' ? 'bg-white/25 text-white' : 'bg-brand-rose/20 text-brand-plum'}`}>
+                  {profiles.length}
+                </span>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('stories')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'stories'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Heart className="w-4 h-4 text-rose-400" />
-          <span>Success Stories ({stories.length})</span>
-        </button>
+              {/* 3. Manage Homepage Content */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('content'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'content'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-brand-lightBg hover:text-brand-plum'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'content' ? 'bg-white/20 text-white' : 'bg-brand-plum/10 text-brand-plum'}`}>
+                    <Layout className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Homepage Content</span>
+                </div>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('feedbacks')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'feedbacks'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4 text-amber-500" />
-          <span>Feedbacks ({feedbacks.length})</span>
-          {feedbacks.filter(f => f.status === 'pending').length > 0 && (
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse ml-1" />
-          )}
-        </button>
+              {/* 4. Popup Ad */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('popup'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'popup'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-amber-50 hover:text-amber-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'popup' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'}`}>
+                    <Megaphone className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Popup Ad (जाहिरात)</span>
+                </div>
+                {editableHomeContent?.popupAd?.enabled && editableHomeContent?.popupAd?.imageUrl && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                )}
+              </button>
 
-        <button
-          onClick={() => setActiveTab('events')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'events'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Calendar className="w-4 h-4 text-blue-500" />
-          <span>Upcoming Events ({events.length})</span>
-        </button>
+              {/* 5. Success Stories */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('stories'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'stories'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-rose-50 hover:text-rose-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'stories' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                    <Heart className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Success Stories</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${activeTab === 'stories' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                  {stories.length}
+                </span>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('gallery')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'gallery'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Images className="w-4 h-4 text-emerald-500" />
-          <span>Gallery ({gallery.length})</span>
-        </button>
+              {/* 6. Feedbacks */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('feedbacks'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'feedbacks'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-amber-50 hover:text-amber-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'}`}>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Feedbacks</span>
+                </div>
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  {feedbacks.filter(f => f.status === 'pending').length > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  )}
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'feedbacks' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                    {feedbacks.length}
+                  </span>
+                </div>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('inquiries')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'inquiries'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>Support Inquiries ({inquiries.filter(i => !i.resolved).length})</span>
-        </button>
+              {/* 7. Upcoming Events */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('events'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'events'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-blue-50 hover:text-blue-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-600'}`}>
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Upcoming Events</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${activeTab === 'events' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                  {events.length}
+                </span>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('plans')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'plans'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
-          <span>Plan Rates & Pricing (दर व्यवस्थापन)</span>
-        </button>
+              {/* 8. Media Gallery */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('gallery'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'gallery'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-emerald-50 hover:text-emerald-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'gallery' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
+                    <Images className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Gallery Media</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${activeTab === 'gallery' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                  {gallery.length}
+                </span>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('export')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 ${
-            activeTab === 'export'
-              ? 'bg-brand-plum text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-          <span>Profile Export & Filters (एक्सपोर्ट डेटा)</span>
-        </button>
+              {/* 9. Support Inquiries */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('inquiries'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'inquiries'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-indigo-50 hover:text-indigo-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'inquiries' ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-600'}`}>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Support Inquiries</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${
+                  inquiries.filter(i => !i.resolved).length > 0
+                    ? (activeTab === 'inquiries' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-700')
+                    : (activeTab === 'inquiries' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700')
+                }`}>
+                  {inquiries.filter(i => !i.resolved).length}
+                </span>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('moderation')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 relative ${
-            activeTab === 'moderation'
-              ? 'bg-rose-600 text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <ShieldAlert className="w-4 h-4 text-rose-500" />
-          <span>Reports & Moderation (तक्रार निवारण)</span>
-          {pendingReportsCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white animate-pulse">
-              {pendingReportsCount}
-            </span>
-          )}
-        </button>
+              {/* 10. Plan Rates & Pricing */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('plans'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'plans'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-amber-50 hover:text-amber-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'plans' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'}`}>
+                    <Crown className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Plan Rates & Pricing</span>
+                </div>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('deletions')}
-          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center space-x-2 relative ${
-            activeTab === 'deletions'
-              ? 'bg-rose-700 text-white shadow-md'
-              : 'bg-white text-brand-charcoal hover:bg-brand-lightBg'
-          }`}
-        >
-          <Trash2 className="w-4 h-4 text-rose-600" />
-          <span>Deletion Requests (खाते हटवा विनंत्या)</span>
-          {pendingDeletionsCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white animate-pulse">
-              {pendingDeletionsCount}
-            </span>
-          )}
-        </button>
-      </div>
+              {/* 11. Profile Export */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('export'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'export'
+                    ? 'bg-brand-plum text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-emerald-50 hover:text-emerald-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'export' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Profile Export (Excel)</span>
+                </div>
+              </button>
+
+              {/* Section Divider */}
+              <div className="pt-2 pb-1">
+                <div className="border-t border-gray-100" />
+                <span className="px-3 text-[9px] font-bold uppercase tracking-wider text-gray-400 block pt-1.5">
+                  Compliance & Safety
+                </span>
+              </div>
+
+              {/* 12. Reports & Moderation */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('moderation'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'moderation'
+                    ? 'bg-rose-600 text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-rose-50 hover:text-rose-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'moderation' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Reports & Moderation</span>
+                </div>
+                {pendingReportsCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white animate-pulse shrink-0">
+                    {pendingReportsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* 13. Deletion Requests */}
+              <button
+                type="button"
+                onClick={() => { setActiveTab('deletions'); setMobileSidebarOpen(false); }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === 'deletions'
+                    ? 'bg-rose-700 text-white shadow-md'
+                    : 'text-brand-charcoal hover:bg-rose-50 hover:text-rose-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'deletions' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate">Deletion Requests</span>
+                </div>
+                {pendingDeletionsCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white animate-pulse shrink-0">
+                    {pendingDeletionsCount}
+                  </span>
+                )}
+              </button>
+
+            </div>
+
+          </div>
+        </aside>
+
+        {/* Right Main Content Area */}
+        <main className="flex-1 min-w-0 w-full space-y-8">
 
       {/* TAB 1: OVERVIEW ANALYTICS */}
       {activeTab === 'overview' && (
@@ -4553,6 +4725,9 @@ export const AdminPage = ({ onNavigate }) => {
 
         </div>
       )}
+
+        </main>
+      </div>
 
       {/* MODAL: PROCESS DELETION REQUEST */}
       {showProcessDeletionModal && selectedDeletionReq && createPortal(
