@@ -177,6 +177,11 @@ export const SubscriptionPage = ({ onNavigate }) => {
                   <p className="text-[11px] text-white/90">
                     Includes <strong>{plan.visits} Verified Candidate Unlocks</strong>
                   </p>
+                  {plan.description && (
+                    <p className="text-xs text-white/95 font-medium italic mt-1">
+                      {plan.description}
+                    </p>
+                  )}
                 </div>
 
                 {/* Features List */}

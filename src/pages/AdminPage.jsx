@@ -63,7 +63,8 @@ import {
   Megaphone,
   Calendar,
   Images,
-  ChevronDown
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 export const getSubscriptionDetails = (p) => {
@@ -378,8 +379,49 @@ export const AdminPage = ({ onNavigate }) => {
         if (plan.id === planId) {
           return {
             ...plan,
-            [field]: field === 'price' || field === 'visits' ? (isNaN(Number(value)) ? 0 : Number(value)) : value
+            [field]: field === 'price' || field === 'visits' 
+              ? (isNaN(Number(value)) ? 0 : Number(value)) 
+              : field === 'popular'
+              ? Boolean(value)
+              : value
           };
+        }
+        return plan;
+      })
+    );
+  };
+
+  const handlePlanFeatureChange = (planId, index, value) => {
+    setEditablePlans((prev) =>
+      prev.map((plan) => {
+        if (plan.id === planId) {
+          const newFeatures = [...(plan.features || [])];
+          newFeatures[index] = value;
+          return { ...plan, features: newFeatures };
+        }
+        return plan;
+      })
+    );
+  };
+
+  const handleAddPlanFeature = (planId) => {
+    setEditablePlans((prev) =>
+      prev.map((plan) => {
+        if (plan.id === planId) {
+          const newFeatures = [...(plan.features || []), ''];
+          return { ...plan, features: newFeatures };
+        }
+        return plan;
+      })
+    );
+  };
+
+  const handleRemovePlanFeature = (planId, index) => {
+    setEditablePlans((prev) =>
+      prev.map((plan) => {
+        if (plan.id === planId) {
+          const newFeatures = (plan.features || []).filter((_, i) => i !== index);
+          return { ...plan, features: newFeatures };
         }
         return plan;
       })
@@ -388,11 +430,16 @@ export const AdminPage = ({ onNavigate }) => {
 
   const handleSaveSubscriptionPlans = (e) => {
     e.preventDefault();
-    updateSubscriptionPlans(editablePlans);
+    const cleanedPlans = editablePlans.map((plan) => ({
+      ...plan,
+      features: (plan.features || []).map((f) => (typeof f === 'string' ? f.trim() : f)).filter(Boolean)
+    }));
+    setEditablePlans(cleanedPlans);
+    updateSubscriptionPlans(cleanedPlans);
   };
 
   const handleResetSubscriptionPlans = () => {
-    if (window.confirm('Reset all subscription plan rates to original default values?')) {
+    if (window.confirm('Reset all subscription plan rates and descriptions to original default values?')) {
       setEditablePlans(SUBSCRIPTION_PLANS);
       updateSubscriptionPlans(SUBSCRIPTION_PLANS);
     }
@@ -1959,7 +2006,7 @@ export const AdminPage = ({ onNavigate }) => {
                     {activeTab === 'events' && `Upcoming Events (${events.length})`}
                     {activeTab === 'gallery' && `Gallery (${gallery.length})`}
                     {activeTab === 'inquiries' && `Support Inquiries (${inquiries.filter(i => !i.resolved).length})`}
-                    {activeTab === 'plans' && 'Plan Rates & Pricing'}
+                    {activeTab === 'plans' && 'Plan Rates & Descriptions'}
                     {activeTab === 'export' && 'Profile Export & Filters'}
                     {activeTab === 'moderation' && `Reports & Moderation (${pendingReportsCount})`}
                     {activeTab === 'deletions' && `Deletion Requests (${pendingDeletionsCount})`}
@@ -2181,7 +2228,7 @@ export const AdminPage = ({ onNavigate }) => {
                   <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'plans' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'}`}>
                     <Crown className="w-3.5 h-3.5" />
                   </div>
-                  <span className="truncate">Plan Rates & Pricing</span>
+                  <span className="truncate">Plan Rates & Descriptions</span>
                 </div>
               </button>
 
@@ -3429,11 +3476,11 @@ export const AdminPage = ({ onNavigate }) => {
               <div className="flex items-center space-x-2">
                 <Crown className="w-6 h-6 text-amber-600 fill-amber-500" />
                 <h2 className="font-serif text-2xl font-bold text-brand-plum">
-                  Subscription Plan Rates & Pricing (सभासदत्व प्लॅन दर व्यवस्थापन)
+                  Subscription Plans & Descriptions (सभासदत्व प्लॅन दर व वैशिष्ट्ये)
                 </h2>
               </div>
               <p className="text-xs text-brand-gray">
-                Update membership plan prices (₹ amounts), contact view credits limit, and plan titles. Changes reflect live on Razorpay checkout & candidate subscription modal.
+                Update membership plan prices (₹ amounts), contact unlock credits, descriptions/taglines, and plan feature bullet points. Changes reflect live on Razorpay checkout & candidate subscription modal.
               </p>
             </div>
             
@@ -3531,6 +3578,78 @@ export const AdminPage = ({ onNavigate }) => {
                         className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-medium text-brand-charcoal focus:ring-2 focus:ring-brand-plum focus:bg-white transition-all"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-brand-plum mb-1">
+                        Plan Description / Tagline (प्लॅन वर्णन / टॅगलाईन)
+                      </label>
+                      <input
+                        type="text"
+                        value={plan.description || ''}
+                        onChange={(e) => handlePlanPriceChange(plan.id, 'description', e.target.value)}
+                        placeholder="उदा. लवकर लग्न जुळण्यासाठी उत्तम प्लॅन"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-medium text-brand-charcoal focus:ring-2 focus:ring-brand-plum focus:bg-white transition-all"
+                      />
+                    </div>
+
+                    {/* Features & Benefits List */}
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-bold text-brand-plum">
+                          Plan Features & Benefits (प्लॅन वैशिष्ट्ये व सुविधा)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleAddPlanFeature(plan.id)}
+                          className="inline-flex items-center space-x-1 text-[11px] font-bold text-brand-plum hover:text-brand-plumDark bg-brand-rose/20 hover:bg-brand-rose/40 px-2 py-1 rounded-lg transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Feature</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {(plan.features || []).map((feat, fIdx) => (
+                          <div key={fIdx} className="flex items-center space-x-1.5">
+                            <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <input
+                              type="text"
+                              value={feat}
+                              onChange={(e) => handlePlanFeatureChange(plan.id, fIdx, e.target.value)}
+                              placeholder={`Feature #${fIdx + 1} (उदा. Contact Number पाहण्याची सुविधा)`}
+                              className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-brand-charcoal focus:ring-2 focus:ring-brand-plum focus:bg-white transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePlanFeature(plan.id, fIdx)}
+                              title="Delete feature"
+                              className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {(!plan.features || plan.features.length === 0) && (
+                          <p className="text-[11px] text-gray-400 italic py-1">No features added yet. Click &quot;Add Feature&quot; to add.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Most Popular Toggle */}
+                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                      <label className="text-xs font-bold text-brand-plum cursor-pointer flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(plan.popular)}
+                          onChange={(e) => handlePlanPriceChange(plan.id, 'popular', e.target.checked)}
+                          className="w-4 h-4 text-brand-plum rounded border-gray-300 focus:ring-brand-plum cursor-pointer"
+                        />
+                        <span>Highlight as &apos;Most Popular&apos; Plan</span>
+                      </label>
+                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 font-medium">
@@ -3547,7 +3666,7 @@ export const AdminPage = ({ onNavigate }) => {
                 className="px-8 py-3.5 bg-gradient-to-r from-brand-plum to-rose-600 hover:from-brand-plumDark hover:to-rose-700 text-white font-bold text-sm rounded-2xl shadow-luxury hover:shadow-luxury-hover transition-all flex items-center space-x-2 border border-white/20"
               >
                 <Save className="w-4 h-4 text-brand-gold" />
-                <span>Save All Subscription Plan Rates (दर अद्ययावत करा)</span>
+                <span>Save All Subscription Plans & Descriptions (प्लॅन दर व माहिती सेव्ह करा)</span>
               </button>
             </div>
           </form>

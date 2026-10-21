@@ -446,12 +446,24 @@ export const ProfileProvider = ({ children }) => {
     return DEFAULT_INQUIRIES;
   });
 
+  const mergeWithDefaultPlans = (plans) => {
+    if (!Array.isArray(plans)) return DEFAULT_SUBSCRIPTION_PLANS;
+    return plans.map((p) => {
+      const def = DEFAULT_SUBSCRIPTION_PLANS.find((dp) => dp.id === p.id) || {};
+      return {
+        ...def,
+        ...p,
+        features: Array.isArray(p.features) && p.features.length > 0 ? p.features : (def.features || [])
+      };
+    });
+  };
+
   const [subscriptionPlans, setSubscriptionPlans] = useState(() => {
     const saved = localStorage.getItem('reshimgath_subscription_plans');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return mergeWithDefaultPlans(parsed);
       } catch (e) {}
     }
     return DEFAULT_SUBSCRIPTION_PLANS;
@@ -695,9 +707,10 @@ export const ProfileProvider = ({ children }) => {
       }
       const firestorePlans = await fetchSubscriptionPlansFromFirestore();
       if (firestorePlans && Array.isArray(firestorePlans) && firestorePlans.length > 0) {
-        setSubscriptionPlans(firestorePlans);
+        const merged = mergeWithDefaultPlans(firestorePlans);
+        setSubscriptionPlans(merged);
         try {
-          localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(firestorePlans));
+          localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(merged));
         } catch (e) {}
       }
       const firestoreReports = await fetchReportsFromFirestore();
@@ -1694,7 +1707,7 @@ export const ProfileProvider = ({ children }) => {
       localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(newPlans));
     } catch (e) {}
     await saveSubscriptionPlansToFirestore(newPlans);
-    addToast('Subscription plan rates updated successfully!', 'success');
+    addToast('Subscription plans and descriptions updated successfully!', 'success');
   };
 
   const addSuccessStory = (storyData) => {

@@ -218,11 +218,17 @@ export const SubscriptionModal = ({ isOpen, onClose, targetProfileName = null, r
                         <Eye className="w-3.5 h-3.5 text-amber-600" />
                         <span>{plan.visits} Profile Unlocks / Visits</span>
                       </div>
+
+                      {plan.description && (
+                        <p className="text-[11px] text-brand-plum font-semibold italic pt-1">
+                          {plan.description}
+                        </p>
+                      )}
                     </div>
 
                     {/* Features Bullet List */}
                     <ul className="space-y-2 text-xs text-slate-700 font-medium">
-                      {plan.features.map((feature, idx) => (
+                      {(plan.features || []).map((feature, idx) => (
                         <li key={idx} className="flex items-start space-x-2">
                           <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
