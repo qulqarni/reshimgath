@@ -60,7 +60,9 @@ import {
   Flag,
   AlertTriangle,
   ExternalLink,
-  Megaphone
+  Megaphone,
+  Calendar,
+  Images
 } from 'lucide-react';
 
 export const getSubscriptionDetails = (p) => {
