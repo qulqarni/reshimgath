@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useProfiles } from '../../context/ProfileContext';
-import { SubscriptionModal } from '../subscription/SubscriptionModal';
 import { 
   Heart, 
   Search, 
@@ -759,12 +758,6 @@ export const Navbar = ({ currentPath, onNavigate }) => {
           </div>
         </div>
       )}
-
-      {/* Global Subscription Modal */}
-      <SubscriptionModal
-        isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-      />
     </header>
   );
 };
