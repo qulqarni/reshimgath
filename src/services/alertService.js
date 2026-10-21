@@ -7,6 +7,7 @@
  * Triggers an instant email notification to the Bureau Administrator (pk9823425404@gmail.com)
  * when a new candidate registers on the website.
  * This runs asynchronously and is completely non-blocking.
+ * Supports both Vercel (Node.js API) and Hostinger (PHP API) seamlessly.
  *
  * @param {Object} candidateData Candidate details
  * @returns {Promise<Object>} API response status
@@ -27,23 +28,47 @@ export const sendAdminRegistrationAlert = async (candidateData) => {
       city: candidateData.city || ''
     };
 
-    const res = await fetch('/api/send-registration-alert', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    // Attempt 1: Standard /api/send-registration-alert (Vercel & Vite dev server)
+    try {
+      const res = await fetch('/api/send-registration-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    const data = await res.json().catch(() => ({}));
-    if (data?.success) {
-      console.log('✅ [Admin Alert] Email notification dispatched successfully to admin.');
-    } else if (data?.warning) {
-      console.info('ℹ️ [Admin Alert] Email alert info:', data.warning);
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data?.success) {
+          console.log('✅ [Admin Alert] Registration email dispatched to admin.');
+          return data;
+        }
+      }
+    } catch (e1) {
+      console.warn('⚠️ [Admin Alert] Attempt 1 failed, trying fallback PHP endpoint...');
     }
-    return data;
+
+    // Attempt 2: Direct /api/send-registration-alert.php (Hostinger live site fallback)
+    try {
+      const resPhp = await fetch('/api/send-registration-alert.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (resPhp.ok) {
+        const dataPhp = await resPhp.json().catch(() => ({}));
+        if (dataPhp?.success) {
+          console.log('✅ [Admin Alert] Registration email dispatched via PHP endpoint.');
+          return dataPhp;
+        }
+      }
+    } catch (e2) {
+      console.warn('⚠️ [Admin Alert] Attempt 2 failed:', e2.message);
+    }
+
+    return { success: false, error: 'Could not deliver email through available endpoints' };
   } catch (error) {
-    console.warn('⚠️ [Admin Alert] Failed to trigger admin registration alert email:', error);
+    console.warn('⚠️ [Admin Alert] Exception in sendAdminRegistrationAlert:', error);
     return { success: false, error: error.message };
   }
 };

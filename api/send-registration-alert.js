@@ -31,7 +31,8 @@ export default async function handler(req, res) {
     // Destination admin email
     const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'pk9823425404@gmail.com';
     const gmailUser = process.env.GMAIL_USER || adminEmail;
-    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+    const rawAppPassword = process.env.GMAIL_APP_PASSWORD || '';
+    const gmailAppPassword = rawAppPassword.replace(/\s+/g, '');
 
     if (!gmailAppPassword) {
       console.warn('[Registration Alert] GMAIL_APP_PASSWORD is not set. Email notification skipped.');
