@@ -678,6 +678,68 @@ export const uploadPopupPhotoToFirebase = async (file) => {
 };
 
 /**
+ * Upload an Event Poster / Banner to Firebase Storage
+ * Store location: events/{timestamp}_{fileName}
+ */
+export const uploadEventPosterToFirebase = async (file) => {
+  const validation = validateImageFile(file);
+  if (!validation.isValid) {
+    throw new Error(`INVALID_MEDIA_FILE: ${validation.error}`);
+  }
+
+  let fileToUpload = file;
+
+  if (file && (file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(file.name || ''))) {
+    try {
+      fileToUpload = await compressImageToFile(file, {
+        maxWidth: 1400,
+        maxHeight: 1400,
+        quality: 0.85
+      });
+    } catch (compressErr) {
+      console.warn('Event poster compression fallback:', compressErr);
+    }
+  }
+
+  const cleanName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'event_poster.jpg';
+  const fileName = `${Date.now()}_${cleanName}`;
+  const storagePath = `events/${fileName}`;
+  const contentType = fileToUpload.type || 'image/jpeg';
+
+  return await uploadFileToFirebaseStorage(fileToUpload, storagePath, contentType);
+};
+
+/**
+ * Upload a Gallery Image / Media to Firebase Storage
+ * Store location: gallery/{timestamp}_{fileName}
+ */
+export const uploadGalleryMediaToFirebase = async (file) => {
+  let fileToUpload = file;
+  if (file && file.type?.startsWith('image/')) {
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      throw new Error(`INVALID_MEDIA_FILE: ${validation.error}`);
+    }
+    try {
+      fileToUpload = await compressImageToFile(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85
+      });
+    } catch (compressErr) {
+      console.warn('Gallery media compression fallback:', compressErr);
+    }
+  }
+
+  const cleanName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'gallery_item.jpg';
+  const fileName = `${Date.now()}_${cleanName}`;
+  const storagePath = `gallery/${fileName}`;
+  const contentType = fileToUpload.type || (file ? file.type : 'image/jpeg');
+
+  return await uploadFileToFirebaseStorage(fileToUpload, storagePath, contentType);
+};
+
+/**
  * Delete a Biodata PDF or Photo from Firebase Storage
  */
 export const deleteBiodataPdfFromFirebase = async (pdfUrl) => {

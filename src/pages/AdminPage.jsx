@@ -9,7 +9,15 @@ import { SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, INCOME_RANGES, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { compressImage } from '../utils/imageCompressor';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
-import { uploadPhotoToFirebase, uploadStoryPhotoToFirebase, uploadPopupPhotoToFirebase, uploadBiodataPdfToFirebase, optimizeAndCompressExistingProfileMedia } from '../services/firebaseService';
+import { 
+  uploadPhotoToFirebase, 
+  uploadStoryPhotoToFirebase, 
+  uploadPopupPhotoToFirebase, 
+  uploadBiodataPdfToFirebase, 
+  optimizeAndCompressExistingProfileMedia,
+  uploadEventPosterToFirebase,
+  uploadGalleryMediaToFirebase
+} from '../services/firebaseService';
 import { SiteAnnouncementModal } from '../components/common/SiteAnnouncementModal';
 import { doesProfileHavePhone } from '../utils/phoneUtils';
 import { jsPDF } from 'jspdf';
@@ -767,6 +775,7 @@ export const AdminPage = ({ onNavigate }) => {
 
   // Admin Events Management State
   const [showEventModal, setShowEventModal] = useState(false);
+  const [isUploadingEventPoster, setIsUploadingEventPoster] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventFormData, setEventFormData] = useState({
     title: '',
@@ -785,6 +794,7 @@ export const AdminPage = ({ onNavigate }) => {
 
   // Admin Gallery Management State
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [isUploadingGalleryMedia, setIsUploadingGalleryMedia] = useState(false);
   const [editingGalleryItem, setEditingGalleryItem] = useState(null);
   const [galleryFormData, setGalleryFormData] = useState({
     title: '',
@@ -5415,31 +5425,125 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-brand-charcoal mb-1">Poster Image (URL or Upload)</label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={eventFormData.posterUrl}
-                    onChange={(e) => setEventFormData({ ...eventFormData, posterUrl: e.target.value })}
-                    placeholder="https://... or upload below"
-                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                  />
-                  <label className="px-3 py-2.5 bg-brand-lightBg hover:bg-brand-rose/20 text-brand-plum rounded-xl cursor-pointer text-xs font-bold shrink-0 border border-brand-rose/30">
-                    <span>Upload</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const url = await uploadFileToFirebaseStorage(file, `events/${Date.now()}_${file.name}`, file.type);
-                          setEventFormData({ ...eventFormData, posterUrl: url });
-                        }
-                      }}
+                <label className="block text-brand-charcoal mb-1">Poster Image (URL or Upload from Device)</label>
+
+                {/* Uploaded Image Preview */}
+                {eventFormData.posterUrl ? (
+                  <div className="relative rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-3 flex items-center space-x-3 mb-2">
+                    <img
+                      src={eventFormData.posterUrl}
+                      alt="Event Poster Preview"
+                      className="w-16 h-16 object-cover rounded-xl border border-emerald-200 shrink-0 shadow-sm"
                     />
-                  </label>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-emerald-800 flex items-center space-x-1 truncate">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline mr-1" />
+                        <span>Poster Image Ready</span>
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate mt-0.5">{eventFormData.posterUrl}</p>
+                      <div className="flex items-center space-x-3 mt-1.5">
+                        <label className="text-[11px] font-bold text-brand-plum hover:underline cursor-pointer flex items-center space-x-1">
+                          <Upload className="w-3 h-3" />
+                          <span>Change Image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingEventPoster}
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  setIsUploadingEventPoster(true);
+                                  const url = await uploadEventPosterToFirebase(file);
+                                  setEventFormData((prev) => ({ ...prev, posterUrl: url }));
+                                  addToast('Event poster uploaded successfully!', 'success');
+                                } catch (err) {
+                                  console.error('Failed to upload event poster:', err);
+                                  alert('Failed to upload image. Please try again.');
+                                } finally {
+                                  setIsUploadingEventPoster(false);
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setEventFormData((prev) => ({ ...prev, posterUrl: '' }))}
+                          className="text-[11px] font-bold text-rose-600 hover:underline flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Upload from Device Dropzone */}
+                    <label
+                      className={`w-full py-4 px-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        isUploadingEventPoster
+                          ? 'border-brand-plum bg-brand-plum/5 cursor-wait'
+                          : 'border-brand-rose/40 hover:border-brand-plum bg-brand-lightBg/50 hover:bg-brand-rose/10'
+                      }`}
+                    >
+                      {isUploadingEventPoster ? (
+                        <div className="flex flex-col items-center space-y-1">
+                          <Loader2 className="w-6 h-6 animate-spin text-brand-plum" />
+                          <span className="text-xs font-bold text-brand-plum">Uploading from device to cloud...</span>
+                          <span className="text-[10px] text-gray-500">Optimizing and compressing image</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-1 text-center">
+                          <div className="w-10 h-10 rounded-full bg-brand-rose/20 text-brand-plum flex items-center justify-center mb-1">
+                            <UploadCloud className="w-5 h-5 text-brand-plum" />
+                          </div>
+                          <span className="text-xs font-bold text-brand-plum">
+                            Upload from Device (डिव्हाइसमधून पोस्टर निवडा)
+                          </span>
+                          <span className="text-[10px] text-gray-500">
+                            Click to select photo from mobile gallery or computer (JPG, PNG, WebP)
+                          </span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingEventPoster}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              setIsUploadingEventPoster(true);
+                              const url = await uploadEventPosterToFirebase(file);
+                              setEventFormData((prev) => ({ ...prev, posterUrl: url }));
+                              addToast('Event poster uploaded successfully!', 'success');
+                            } catch (err) {
+                              console.error('Failed to upload event poster:', err);
+                              alert('Failed to upload image. Please try again.');
+                            } finally {
+                              setIsUploadingEventPoster(false);
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+
+                    {/* Or paste direct URL */}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={eventFormData.posterUrl}
+                        onChange={(e) => setEventFormData({ ...eventFormData, posterUrl: e.target.value })}
+                        placeholder="Or paste direct image URL (https://...)"
+                        className="w-full p-2.5 rounded-xl border border-gray-200 text-xs text-brand-charcoal"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -5507,9 +5611,17 @@ export const AdminPage = ({ onNavigate }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                  disabled={isUploadingEventPoster}
+                  className="px-5 py-2 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark disabled:opacity-50 flex items-center space-x-1.5"
                 >
-                  {editingEvent ? 'Save Changes' : 'Create Event'}
+                  {isUploadingEventPoster ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Uploading Poster...</span>
+                    </>
+                  ) : (
+                    <span>{editingEvent ? 'Save Changes' : 'Create Event'}</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -5584,32 +5696,128 @@ export const AdminPage = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-brand-charcoal mb-1">Media URL or Upload *</label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    required
-                    value={galleryFormData.url}
-                    onChange={(e) => setGalleryFormData({ ...galleryFormData, url: e.target.value })}
-                    placeholder="https://... or upload below"
-                    className="w-full p-2.5 rounded-xl border border-gray-200 text-xs"
-                  />
-                  <label className="px-3 py-2.5 bg-brand-lightBg hover:bg-brand-rose/20 text-brand-plum rounded-xl cursor-pointer text-xs font-bold shrink-0 border border-brand-rose/30">
-                    <span>Upload</span>
-                    <input
-                      type="file"
-                      accept={galleryFormData.type === 'video' ? 'video/*' : 'image/*'}
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const url = await uploadFileToFirebaseStorage(file, `gallery/${Date.now()}_${file.name}`, file.type);
-                          setGalleryFormData({ ...galleryFormData, url });
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
+                <label className="block text-brand-charcoal mb-1">Media (URL or Upload from Device) *</label>
+
+                {galleryFormData.url ? (
+                  <div className="relative rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-3 flex items-center space-x-3 mb-2">
+                    {galleryFormData.type === 'video' ? (
+                      <div className="w-16 h-16 rounded-xl bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200">
+                        <span className="text-xl">🎬</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={galleryFormData.url}
+                        alt="Gallery Preview"
+                        className="w-16 h-16 object-cover rounded-xl border border-emerald-200 shrink-0 shadow-sm"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-emerald-800 flex items-center space-x-1 truncate">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline mr-1" />
+                        <span>Media Uploaded Ready</span>
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate mt-0.5">{galleryFormData.url}</p>
+                      <div className="flex items-center space-x-3 mt-1.5">
+                        <label className="text-[11px] font-bold text-brand-plum hover:underline cursor-pointer flex items-center space-x-1">
+                          <Upload className="w-3 h-3" />
+                          <span>Change File</span>
+                          <input
+                            type="file"
+                            accept={galleryFormData.type === 'video' ? 'video/*' : 'image/*'}
+                            disabled={isUploadingGalleryMedia}
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  setIsUploadingGalleryMedia(true);
+                                  const url = await uploadGalleryMediaToFirebase(file);
+                                  setGalleryFormData((prev) => ({ ...prev, url }));
+                                  addToast('Gallery media uploaded successfully!', 'success');
+                                } catch (err) {
+                                  console.error('Failed to upload gallery media:', err);
+                                  alert('Failed to upload file. Please try again.');
+                                } finally {
+                                  setIsUploadingGalleryMedia(false);
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setGalleryFormData((prev) => ({ ...prev, url: '' }))}
+                          className="text-[11px] font-bold text-rose-600 hover:underline flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label
+                      className={`w-full py-4 px-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        isUploadingGalleryMedia
+                          ? 'border-brand-plum bg-brand-plum/5 cursor-wait'
+                          : 'border-brand-rose/40 hover:border-brand-plum bg-brand-lightBg/50 hover:bg-brand-rose/10'
+                      }`}
+                    >
+                      {isUploadingGalleryMedia ? (
+                        <div className="flex flex-col items-center space-y-1">
+                          <Loader2 className="w-6 h-6 animate-spin text-brand-plum" />
+                          <span className="text-xs font-bold text-brand-plum">Uploading from device to cloud...</span>
+                          <span className="text-[10px] text-gray-500">Optimizing media file</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-1 text-center">
+                          <div className="w-10 h-10 rounded-full bg-brand-rose/20 text-brand-plum flex items-center justify-center mb-1">
+                            <UploadCloud className="w-5 h-5 text-brand-plum" />
+                          </div>
+                          <span className="text-xs font-bold text-brand-plum">
+                            Upload from Device (डिव्हाइसमधून निवडा)
+                          </span>
+                          <span className="text-[10px] text-gray-500">
+                            Click to select photo or video from mobile gallery or computer
+                          </span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept={galleryFormData.type === 'video' ? 'video/*' : 'image/*'}
+                        disabled={isUploadingGalleryMedia}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              setIsUploadingGalleryMedia(true);
+                              const url = await uploadGalleryMediaToFirebase(file);
+                              setGalleryFormData((prev) => ({ ...prev, url }));
+                              addToast('Gallery media uploaded successfully!', 'success');
+                            } catch (err) {
+                              console.error('Failed to upload gallery media:', err);
+                              alert('Failed to upload file. Please try again.');
+                            } finally {
+                              setIsUploadingGalleryMedia(false);
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={galleryFormData.url}
+                        onChange={(e) => setGalleryFormData({ ...galleryFormData, url: e.target.value })}
+                        placeholder="Or paste direct media URL (https://...)"
+                        className="w-full p-2.5 rounded-xl border border-gray-200 text-xs text-brand-charcoal"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -5654,9 +5862,17 @@ export const AdminPage = ({ onNavigate }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark"
+                  disabled={isUploadingGalleryMedia}
+                  className="px-5 py-2 rounded-xl bg-brand-plum text-white font-bold shadow hover:bg-brand-plumDark disabled:opacity-50 flex items-center space-x-1.5"
                 >
-                  {editingGalleryItem ? 'Save Changes' : 'Add Item'}
+                  {isUploadingGalleryMedia ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Uploading Media...</span>
+                    </>
+                  ) : (
+                    <span>{editingGalleryItem ? 'Save Changes' : 'Add Item'}</span>
+                  )}
                 </button>
               </div>
             </form>
