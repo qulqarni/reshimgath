@@ -7,6 +7,7 @@ import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { doesProfileHavePhone, isSamePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import { CURRENT_TERMS_VERSION, hasAcceptedTerms, createTermsAcceptanceRecord } from '../utils/termsEnforcement';
 import { sendAdminRegistrationAlert } from '../services/alertService';
+import { safeSetItem } from '../utils/safeStorage';
 
 const AuthContext = createContext();
 
@@ -540,10 +541,8 @@ export const AuthProvider = ({ children }) => {
       const stored = localStorage.getItem('reshimgath_profiles');
       const profiles = stored ? JSON.parse(stored) : [];
       const updated = sortProfilesByLatest([newUser, ...profiles.filter(p => p.id !== newUser.id)]);
-      localStorage.setItem('reshimgath_profiles', JSON.stringify(updated));
-    } catch (e) {
-      console.warn('localStorage quota or write error:', e);
-    }
+      safeSetItem('reshimgath_profiles', updated);
+    } catch (e) {}
     // Push newly created user profile directly to Firebase Firestore Database!
     await saveProfileToFirestore(newUser.id, newUser);
 
@@ -585,7 +584,7 @@ export const AuthProvider = ({ children }) => {
         if (stored) {
           const profiles = JSON.parse(stored);
           const nextProfiles = profiles.map(p => String(p.id) === String(user.id) ? { ...p, ...record } : p);
-          localStorage.setItem('reshimgath_profiles', JSON.stringify(nextProfiles));
+          safeSetItem('reshimgath_profiles', nextProfiles);
         }
       } catch (e) {}
 
@@ -930,7 +929,7 @@ const getStoredInterestsFast = () => {
         }
         return p;
       });
-      localStorage.setItem('reshimgath_profiles', JSON.stringify(allProfiles));
+      safeSetItem('reshimgath_profiles', allProfiles);
     } catch (e) {}
 
     // Update target profile in Firestore and record mutual connection in Firestore
@@ -1061,7 +1060,7 @@ const getStoredInterestsFast = () => {
           }
           return p;
         });
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(nextProfiles));
+        safeSetItem('reshimgath_profiles', nextProfiles);
       }
     } catch (e) {}
 
@@ -1090,7 +1089,7 @@ const getStoredInterestsFast = () => {
     setUser(updatedUser);
 
     try {
-      localStorage.setItem('reshimgath_user', JSON.stringify(updatedUser));
+      safeSetItem('reshimgath_user', updatedUser);
       const storedProfiles = localStorage.getItem('reshimgath_profiles');
       if (storedProfiles) {
         const parsed = JSON.parse(storedProfiles);
@@ -1100,7 +1099,7 @@ const getStoredInterestsFast = () => {
           }
           return p;
         });
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(nextProfiles));
+        safeSetItem('reshimgath_profiles', nextProfiles);
       }
     } catch (e) {}
 

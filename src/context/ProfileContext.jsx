@@ -50,6 +50,7 @@ import {
   deleteGalleryItemFromFirestore
 } from '../services/firebaseService';
 import { doesProfileHavePhone } from '../utils/phoneUtils';
+import { safeSetItem, evictStorageQuota } from '../utils/safeStorage';
 import confetti from 'canvas-confetti';
 
 const ProfileContext = createContext();
@@ -565,6 +566,9 @@ export const ProfileProvider = ({ children }) => {
 
   // Real-time Cloud Firestore data subscriptions (onSnapshot)
   useEffect(() => {
+    // Evict any stale/oversized caches on startup to maintain ample storage headroom
+    evictStorageQuota();
+
     const unsubProfiles = subscribeToProfilesFromFirestore((firestoreProfiles) => {
       const deletedIds = (() => {
         try {
@@ -608,9 +612,7 @@ export const ProfileProvider = ({ children }) => {
         const updatedList = Array.from(map.values()).filter((p) => !allExcluded.includes(String(p.id)) && !isAdminCheck(p));
         const sortedList = sortProfilesByLatest(updatedList);
         setTimeout(() => {
-          try {
-            localStorage.setItem('reshimgath_profiles', JSON.stringify(sortedList));
-          } catch (e) {}
+          safeSetItem('reshimgath_profiles', sortedList);
         }, 50);
         return sortedList;
       });
@@ -763,29 +765,19 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(subscriptionPlans));
-    } catch (e) {}
+    safeSetItem('reshimgath_subscription_plans', subscriptionPlans);
   }, [subscriptionPlans]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('reshimgath_profiles', JSON.stringify(profiles));
-    } catch (e) {
-      console.warn('Profiles quota exceeded:', e);
-    }
+    safeSetItem('reshimgath_profiles', profiles);
   }, [profiles]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('reshimgath_home_content', JSON.stringify(homeContent));
-    } catch (e) {}
+    safeSetItem('reshimgath_home_content', homeContent);
   }, [homeContent]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('reshimgath_stories', JSON.stringify(stories));
-    } catch (e) {}
+    safeSetItem('reshimgath_stories', stories);
   }, [stories]);
   
   // Clean interest states
@@ -865,24 +857,22 @@ export const ProfileProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_interests', JSON.stringify(interests));
+    safeSetItem('reshimgath_interests', interests);
   }, [interests]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      try {
-        localStorage.setItem('reshimgath_chats', JSON.stringify(chats));
-      } catch (e) {}
+      safeSetItem('reshimgath_chats', chats);
     }, 400);
     return () => clearTimeout(timer);
   }, [chats]);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_profile_views', JSON.stringify(profileViews));
+    safeSetItem('reshimgath_profile_views', profileViews);
   }, [profileViews]);
 
   useEffect(() => {
-    localStorage.setItem('reshimgath_notifications', JSON.stringify(notifications));
+    safeSetItem('reshimgath_notifications', notifications);
   }, [notifications]);
 
   const recordProfileView = async (targetProfile, viewerUser) => {
@@ -1499,9 +1489,7 @@ export const ProfileProvider = ({ children }) => {
         }
         return p;
       });
-      try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
-      } catch (e) {}
+      safeSetItem('reshimgath_profiles', next);
       return next;
     });
     addToast('Profile verification status updated successfully!', 'success');
@@ -1519,9 +1507,7 @@ export const ProfileProvider = ({ children }) => {
         }
         return p;
       });
-      try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
-      } catch (e) {}
+      safeSetItem('reshimgath_profiles', next);
       return next;
     });
     addToast('Profile block status updated successfully!', 'info');
@@ -1559,9 +1545,7 @@ export const ProfileProvider = ({ children }) => {
 
     setProfiles((prev) => {
       const next = sortProfilesByLatest([createdProfile, ...prev]);
-      try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
-      } catch (e) {}
+      safeSetItem('reshimgath_profiles', next);
       return next;
     });
     saveProfileToFirestore(String(id), createdProfile);
@@ -1590,9 +1574,7 @@ export const ProfileProvider = ({ children }) => {
         return p;
       });
       const sortedNext = sortProfilesByLatest(next);
-      try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(sortedNext));
-      } catch (e) {}
+      safeSetItem('reshimgath_profiles', sortedNext);
       return sortedNext;
     });
 
@@ -1609,7 +1591,7 @@ export const ProfileProvider = ({ children }) => {
           delete mergedUser.matchFor;
         }
         const updatedUser = normalizeProfile(mergedUser);
-        localStorage.setItem('reshimgath_user', JSON.stringify(updatedUser));
+        safeSetItem('reshimgath_user', updatedUser);
       }
     } catch (e) {}
 
@@ -1657,9 +1639,7 @@ export const ProfileProvider = ({ children }) => {
 
     setProfiles((prev) => {
       const updatedList = sortProfilesByLatest([normalized, ...prev]);
-      try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(updatedList));
-      } catch (e) {}
+      safeSetItem('reshimgath_profiles', updatedList);
       return updatedList;
     });
 
@@ -1675,15 +1655,13 @@ export const ProfileProvider = ({ children }) => {
       const deletedSaved = JSON.parse(localStorage.getItem('reshimgath_deleted_profiles') || '[]');
       if (!deletedSaved.includes(idStr)) {
         const updated = [...deletedSaved, idStr];
-        localStorage.setItem('reshimgath_deleted_profiles', JSON.stringify(updated));
+        safeSetItem('reshimgath_deleted_profiles', updated);
       }
     } catch (e) {}
 
     setProfiles((prev) => {
       const updated = prev.filter((p) => String(p.id) !== idStr);
-      try {
-        localStorage.setItem('reshimgath_profiles', JSON.stringify(updated));
-      } catch (e) {}
+      safeSetItem('reshimgath_profiles', updated);
       return updated;
     });
 
@@ -2140,9 +2118,7 @@ export const ProfileProvider = ({ children }) => {
           }
           return p;
         });
-        try {
-          localStorage.setItem('reshimgath_profiles', JSON.stringify(next));
-        } catch (e) {}
+        safeSetItem('reshimgath_profiles', next);
         return next;
       });
       addToast('Violating photo removed from member profile.', 'success');
