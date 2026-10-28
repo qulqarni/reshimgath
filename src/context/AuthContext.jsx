@@ -371,34 +371,8 @@ export const AuthProvider = ({ children }) => {
       const normMatched = normalizeProfile(matchedProfile);
       setUser(normMatched);
 
-      // Proactively fetch latest profile data from Firestore (source of truth for unlockedProfiles and credits)
-      if (isFirebaseConfigured && matchedProfile.id) {
-        getDoc(doc(db, 'profiles', String(matchedProfile.id))).then((snap) => {
-          if (snap.exists()) {
-            const firestoreData = snap.data();
-            setUser((prev) => {
-              if (!prev || String(prev.id) !== String(matchedProfile.id)) return prev;
-              const liveSub = firestoreData.subscription || {};
-              const liveUnlocked = firestoreData.unlockedProfiles || liveSub.unlockedProfiles || [];
-              const prevUnlocked = prev.unlockedProfiles || prev.subscription?.unlockedProfiles || [];
-              const mergedUnlocked = Array.from(new Set([...prevUnlocked, ...liveUnlocked]));
-              const mergedSub = {
-                ...(prev.subscription || {}),
-                ...liveSub,
-                unlockedProfiles: mergedUnlocked
-              };
-              return {
-                ...prev,
-                ...firestoreData,
-                subscription: mergedSub,
-                unlockedProfiles: mergedUnlocked
-              };
-            });
-          }
-        }).catch((err) => {
-          console.warn('Proactive firestore fetch on login:', err);
-        });
-      }
+      // Note: Live profile data, unlocked profiles, and subscriptions are automatically 
+      // synced via the userDocRef onSnapshot listener (line 250), avoiding duplicate getDoc reads.
 
       return { success: true, user: normMatched };
     }

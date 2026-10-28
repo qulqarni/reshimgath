@@ -53,6 +53,9 @@ import { doesProfileHavePhone } from '../utils/phoneUtils';
 import { safeSetItem, evictStorageQuota } from '../utils/safeStorage';
 import confetti from 'canvas-confetti';
 
+// In-memory session tracking for profile visits to eliminate repeat Firestore reads
+const sessionVisitedViewKeys = new Set();
+
 const ProfileContext = createContext();
 
 const normalizeVisitorTargetId = (id) => {
@@ -564,7 +567,7 @@ export const ProfileProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Real-time Cloud Firestore data subscriptions (onSnapshot)
+  // 1. Public Content & Profiles Subscription (Shared, Cached with persistent cache)
   useEffect(() => {
     // Evict any stale/oversized caches on startup to maintain ample storage headroom
     evictStorageQuota();
@@ -618,11 +621,78 @@ export const ProfileProvider = ({ children }) => {
       });
     });
 
+    const loadPublicContent = async () => {
+      const firestoreHome = await fetchHomeContentFromFirestore();
+      if (firestoreHome) {
+        setHomeContent((prev) => ({
+          ...prev,
+          ...firestoreHome,
+          popupAd: {
+            ...DEFAULT_HOME_CONTENT.popupAd,
+            ...(prev.popupAd || {}),
+            ...(firestoreHome.popupAd || {})
+          }
+        }));
+      }
+      const firestoreStories = await fetchSuccessStoriesFromFirestore();
+      if (firestoreStories && firestoreStories.length > 0) {
+        setStories(firestoreStories);
+      }
+      const firestorePlans = await fetchSubscriptionPlansFromFirestore();
+      if (firestorePlans && Array.isArray(firestorePlans) && firestorePlans.length > 0) {
+        const merged = mergeWithDefaultPlans(firestorePlans);
+        setSubscriptionPlans(merged);
+        try {
+          localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(merged));
+        } catch (e) {}
+      }
+      const firestoreFeedbacks = await fetchFeedbacksFromFirestore(false);
+      if (firestoreFeedbacks && Array.isArray(firestoreFeedbacks) && firestoreFeedbacks.length > 0) {
+        setFeedbacks(firestoreFeedbacks);
+        try {
+          localStorage.setItem('reshimgath_feedbacks', JSON.stringify(firestoreFeedbacks));
+        } catch (e) {}
+      }
+      const firestoreEvents = await fetchEventsFromFirestore(false);
+      if (firestoreEvents && Array.isArray(firestoreEvents) && firestoreEvents.length > 0) {
+        setEvents(firestoreEvents);
+        try {
+          localStorage.setItem('reshimgath_events', JSON.stringify(firestoreEvents));
+        } catch (e) {}
+      }
+      const firestoreGallery = await fetchGalleryFromFirestore(false);
+      if (firestoreGallery && Array.isArray(firestoreGallery) && firestoreGallery.length > 0) {
+        setGallery(firestoreGallery);
+        try {
+          localStorage.setItem('reshimgath_gallery', JSON.stringify(firestoreGallery));
+        } catch (e) {}
+      }
+    };
+    loadPublicContent();
+
+    return () => {
+      unsubProfiles();
+    };
+  }, []);
+
+  // 2. User & Admin Scoped Real-Time Subscriptions (Only active when logged in)
+  useEffect(() => {
+    if (!user || !user.id) {
+      return;
+    }
+
+    const isUserAdmin = Boolean(
+      user.isAdmin || 
+      user.role === 'admin' || 
+      user.id === 'admin_1' || 
+      (user.email && user.email.includes('admin'))
+    );
+
     const unsubChats = subscribeToChatsFromFirestore((firestoreChats) => {
       if (firestoreChats && Object.keys(firestoreChats).length > 0) {
         setChats((prev) => ({ ...prev, ...firestoreChats }));
       }
-    });
+    }, user.id, isUserAdmin);
 
     const unsubInterests = subscribeToInterestsFromFirestore((firestoreInterests) => {
       if (firestoreInterests) {
@@ -654,7 +724,7 @@ export const ProfileProvider = ({ children }) => {
       if (firestoreViews && firestoreViews.length > 0) {
         setProfileViews(deduplicateProfileViews(firestoreViews));
       }
-    });
+    }, user.id, isUserAdmin);
 
     const unsubNotifs = subscribeToNotificationsFromFirestore((firestoreNotifs) => {
       if (firestoreNotifs && firestoreNotifs.length > 0) {
@@ -670,99 +740,66 @@ export const ProfileProvider = ({ children }) => {
         );
         setNotifications(deduplicateViewNotifications(updated));
       }
-    });
+    }, user.id, isUserAdmin);
 
-    const unsubInquiries = subscribeToInquiriesFromFirestore((firestoreInquiries) => {
-      if (firestoreInquiries && firestoreInquiries.length > 0) {
-        setInquiries(firestoreInquiries);
-        try {
-          localStorage.setItem('reshimgath_inquiries', JSON.stringify(firestoreInquiries));
-        } catch (e) {}
-      }
-    });
+    let unsubInquiries = null;
+    let unsubReports = null;
 
-    const unsubReports = subscribeToReportsFromFirestore((firestoreReports) => {
-      if (firestoreReports && Array.isArray(firestoreReports)) {
-        setReports(firestoreReports);
-        try {
-          localStorage.setItem('reshimgath_reports', JSON.stringify(firestoreReports));
-        } catch (e) {}
-      }
-    });
+    if (isUserAdmin) {
+      unsubInquiries = subscribeToInquiriesFromFirestore((firestoreInquiries) => {
+        if (firestoreInquiries && firestoreInquiries.length > 0) {
+          setInquiries(firestoreInquiries);
+          try {
+            localStorage.setItem('reshimgath_inquiries', JSON.stringify(firestoreInquiries));
+          } catch (e) {}
+        }
+      });
 
-    const loadOtherContent = async () => {
-      const firestoreHome = await fetchHomeContentFromFirestore();
-      if (firestoreHome) {
-        setHomeContent((prev) => ({
-          ...prev,
-          ...firestoreHome,
-          popupAd: {
-            ...DEFAULT_HOME_CONTENT.popupAd,
-            ...(prev.popupAd || {}),
-            ...(firestoreHome.popupAd || {})
-          }
-        }));
-      }
-      const firestoreStories = await fetchSuccessStoriesFromFirestore();
-      if (firestoreStories && firestoreStories.length > 0) {
-        setStories(firestoreStories);
-      }
-      const firestorePlans = await fetchSubscriptionPlansFromFirestore();
-      if (firestorePlans && Array.isArray(firestorePlans) && firestorePlans.length > 0) {
-        const merged = mergeWithDefaultPlans(firestorePlans);
-        setSubscriptionPlans(merged);
-        try {
-          localStorage.setItem('reshimgath_subscription_plans', JSON.stringify(merged));
-        } catch (e) {}
-      }
-      const firestoreReports = await fetchReportsFromFirestore();
-      if (firestoreReports && Array.isArray(firestoreReports)) {
-        setReports(firestoreReports);
-        try {
-          localStorage.setItem('reshimgath_reports', JSON.stringify(firestoreReports));
-        } catch (e) {}
-      }
-      const firestoreDeletions = await fetchDeletionRequestsFromFirestore();
-      if (firestoreDeletions && Array.isArray(firestoreDeletions)) {
-        setDeletionRequests(firestoreDeletions);
-        try {
-          localStorage.setItem('reshimgath_deletion_requests', JSON.stringify(firestoreDeletions));
-        } catch (e) {}
-      }
-      const firestoreFeedbacks = await fetchFeedbacksFromFirestore(true);
-      if (firestoreFeedbacks && Array.isArray(firestoreFeedbacks) && firestoreFeedbacks.length > 0) {
-        setFeedbacks(firestoreFeedbacks);
-        try {
-          localStorage.setItem('reshimgath_feedbacks', JSON.stringify(firestoreFeedbacks));
-        } catch (e) {}
-      }
-      const firestoreEvents = await fetchEventsFromFirestore(true);
-      if (firestoreEvents && Array.isArray(firestoreEvents) && firestoreEvents.length > 0) {
-        setEvents(firestoreEvents);
-        try {
-          localStorage.setItem('reshimgath_events', JSON.stringify(firestoreEvents));
-        } catch (e) {}
-      }
-      const firestoreGallery = await fetchGalleryFromFirestore(true);
-      if (firestoreGallery && Array.isArray(firestoreGallery) && firestoreGallery.length > 0) {
-        setGallery(firestoreGallery);
-        try {
-          localStorage.setItem('reshimgath_gallery', JSON.stringify(firestoreGallery));
-        } catch (e) {}
-      }
-    };
-    loadOtherContent();
+      unsubReports = subscribeToReportsFromFirestore((firestoreReports) => {
+        if (firestoreReports && Array.isArray(firestoreReports)) {
+          setReports(firestoreReports);
+          try {
+            localStorage.setItem('reshimgath_reports', JSON.stringify(firestoreReports));
+          } catch (e) {}
+        }
+      });
+
+      fetchDeletionRequestsFromFirestore().then((firestoreDeletions) => {
+        if (firestoreDeletions && Array.isArray(firestoreDeletions)) {
+          setDeletionRequests(firestoreDeletions);
+          try {
+            localStorage.setItem('reshimgath_deletion_requests', JSON.stringify(firestoreDeletions));
+          } catch (e) {}
+        }
+      }).catch((e) => console.warn('Admin deletions fetch error:', e));
+
+      // Admin view for all feedbacks, events, and gallery items
+      fetchFeedbacksFromFirestore(true).then((fb) => {
+        if (fb && Array.isArray(fb) && fb.length > 0) {
+          setFeedbacks(fb);
+        }
+      }).catch(() => {});
+      fetchEventsFromFirestore(true).then((ev) => {
+        if (ev && Array.isArray(ev) && ev.length > 0) {
+          setEvents(ev);
+        }
+      }).catch(() => {});
+      fetchGalleryFromFirestore(true).then((gal) => {
+        if (gal && Array.isArray(gal) && gal.length > 0) {
+          setGallery(gal);
+        }
+      }).catch(() => {});
+    }
 
     return () => {
-      unsubProfiles();
-      unsubChats();
-      unsubInterests();
-      unsubViews();
-      unsubNotifs();
+      if (unsubChats) unsubChats();
+      if (unsubInterests) unsubInterests();
+      if (unsubViews) unsubViews();
+      if (unsubNotifs) unsubNotifs();
       if (unsubInquiries) unsubInquiries();
       if (unsubReports) unsubReports();
     };
-  }, []);
+  }, [user?.id, user?.isAdmin, user?.role, user?.email]);
 
   useEffect(() => {
     safeSetItem('reshimgath_subscription_plans', subscriptionPlans);
@@ -902,6 +939,13 @@ export const ProfileProvider = ({ children }) => {
       return;
     }
 
+    const docKey = `${cleanVisitorId}_${cleanTargetId}`;
+
+    // Fast-path: Check in-memory session cache first to eliminate duplicate reads
+    if (sessionVisitedViewKeys.has(docKey)) {
+      return;
+    }
+
     // Rule 2: Check if visitor_user_id + profile_owner_user_id pair already exists in local profileViews state
     const alreadyVisitedLocally = (profileViews || []).some((v) => {
       if (!v) return false;
@@ -919,17 +963,17 @@ export const ProfileProvider = ({ children }) => {
     });
 
     if (alreadyVisitedLocally || alreadyNotifiedLocally) {
-      // Exactly 1 notification per (visitor_user_id + profile_owner_user_id). Do nothing!
+      sessionVisitedViewKeys.add(docKey);
       return;
     }
 
     // Rule 4: Database-level check to prevent duplicate records/notifications from concurrent requests or page refreshes
     const existsInDb = await isProfileVisitedInFirestore(cleanVisitorId, cleanTargetId);
     if (existsInDb) {
+      sessionVisitedViewKeys.add(docKey);
       return;
     }
-
-    const docKey = `${cleanVisitorId}_${cleanTargetId}`;
+    sessionVisitedViewKeys.add(docKey);
 
     const viewEntry = {
       id: docKey,

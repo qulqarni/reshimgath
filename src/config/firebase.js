@@ -1,5 +1,10 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Sambodhi Sarang Marriage Bureau Official Firebase Configuration
@@ -22,8 +27,20 @@ export const isFirebaseConfigured = Boolean(
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firebase Services
-export const db = getFirestore(app);
+// Initialize Firestore with IndexedDB Multi-Tab Persistent Cache to eliminate repeat reads
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch {
+  // Fallback if already initialized (e.g. during HMR)
+  firestoreDb = getFirestore(app);
+}
+
+export const db = firestoreDb;
 export const storage = getStorage(app);
 
 export default app;

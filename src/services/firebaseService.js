@@ -48,6 +48,34 @@ const EVENTS_COLLECTION = 'events';
 const GALLERY_COLLECTION = 'gallery';
 
 // -------------------------------------------------------------
+// IN-MEMORY TTL CACHE FOR STATIC CMS & REFERENCE DATA
+// -------------------------------------------------------------
+const memoryCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
+
+const getCachedData = (key) => {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.data;
+};
+
+const setCachedData = (key, data, ttlMs = CACHE_TTL_MS) => {
+  memoryCache.set(key, { data, expiry: Date.now() + ttlMs });
+};
+
+export const invalidateFirestoreCacheKey = (key) => {
+  if (key) {
+    memoryCache.delete(key);
+  } else {
+    memoryCache.clear();
+  }
+};
+
+// -------------------------------------------------------------
 // FIRESTORE PROFILES API
 // -------------------------------------------------------------
 
@@ -165,19 +193,16 @@ export const findProfileInFirestore = async (identifier) => {
       }
     }
 
-    // 5. Fallback fast scan
-    const all = await fetchProfilesFromFirestore();
-    if (all && Array.isArray(all)) {
-      return all.find(
-        (p) =>
-          (p.email && p.email.toLowerCase() === cleanId) ||
-          doesProfileHavePhone(p, rawId) ||
-          (p.id && String(p.id).toLowerCase() === cleanId) ||
-          (p.regId && String(p.regId).toLowerCase() === cleanId) ||
-          (p.registrationId && String(p.registrationId) === cleanId) ||
-          (p.registrationId && `ss-${p.registrationId}`.toLowerCase() === cleanId)
-      ) || null;
+    // 5. Query clean 10-digit phone if different from rawId
+    if (cleanPhone.length === 10 && cleanPhone !== rawId) {
+      const qCleanPhone = query(collection(db, PROFILES_COLLECTION), where('phone', '==', cleanPhone), limit(1));
+      const snapCleanPhone = await getDocs(qCleanPhone);
+      if (!snapCleanPhone.empty) {
+        const d = snapCleanPhone.docs[0];
+        return { id: d.id, ...d.data() };
+      }
     }
+
     return null;
   } catch (err) {
     console.warn('findProfileInFirestore error:', err);
@@ -759,14 +784,18 @@ export const deleteBiodataPdfFromFirebase = async (pdfUrl) => {
 // -------------------------------------------------------------
 
 /**
- * Fetch Homepage Content from Firestore
+ * Fetch Homepage Content from Firestore (with in-memory TTL caching)
  */
 export const fetchHomeContentFromFirestore = async () => {
   if (!isFirebaseConfigured) return null;
+  const cached = getCachedData('home_content');
+  if (cached) return cached;
   try {
     const docSnap = await getDoc(doc(db, HOME_CONTENT_COLLECTION, 'homepage'));
     if (docSnap.exists()) {
-      return docSnap.data();
+      const data = docSnap.data();
+      setCachedData('home_content', data);
+      return data;
     }
     return null;
   } catch (error) {
@@ -785,6 +814,7 @@ export const saveHomeContentToFirestore = async (contentData) => {
       ...contentData,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+    invalidateFirestoreCacheKey('home_content');
     return true;
   } catch (error) {
     console.error('Error saving homepage content to Firestore:', error);
@@ -793,14 +823,18 @@ export const saveHomeContentToFirestore = async (contentData) => {
 };
 
 /**
- * Fetch Subscription Plans from Firestore
+ * Fetch Subscription Plans from Firestore (with in-memory TTL caching)
  */
 export const fetchSubscriptionPlansFromFirestore = async () => {
   if (!isFirebaseConfigured) return null;
+  const cached = getCachedData('subscription_plans');
+  if (cached) return cached;
   try {
     const docSnap = await getDoc(doc(db, PLANS_COLLECTION, 'pricing'));
     if (docSnap.exists() && Array.isArray(docSnap.data().plans)) {
-      return docSnap.data().plans;
+      const plans = docSnap.data().plans;
+      setCachedData('subscription_plans', plans);
+      return plans;
     }
     return null;
   } catch (error) {
@@ -819,6 +853,7 @@ export const saveSubscriptionPlansToFirestore = async (plansArray) => {
       plans: plansArray,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+    invalidateFirestoreCacheKey('subscription_plans');
     return true;
   } catch (error) {
     console.error('Error saving subscription plans to Firestore:', error);
@@ -827,17 +862,23 @@ export const saveSubscriptionPlansToFirestore = async (plansArray) => {
 };
 
 /**
- * Fetch Success Stories from Firestore
+ * Fetch Success Stories from Firestore (with in-memory TTL caching)
  */
 export const fetchSuccessStoriesFromFirestore = async () => {
   if (!isFirebaseConfigured) return null;
+  const cached = getCachedData('success_stories');
+  if (cached) return cached;
   try {
     const querySnapshot = await getDocs(collection(db, STORIES_COLLECTION));
     const storiesList = [];
     querySnapshot.forEach((docSnap) => {
       storiesList.push({ id: docSnap.id, ...docSnap.data() });
     });
-    return storiesList.length > 0 ? storiesList : null;
+    if (storiesList.length > 0) {
+      setCachedData('success_stories', storiesList);
+      return storiesList;
+    }
+    return null;
   } catch (error) {
     console.error('Error fetching success stories from Firestore:', error);
     return null;
@@ -855,6 +896,7 @@ export const saveSuccessStoryToFirestore = async (storyData) => {
       ...storyData,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+    invalidateFirestoreCacheKey('success_stories');
     return docId;
   } catch (error) {
     console.error('Error saving success story to Firestore:', error);
@@ -869,6 +911,7 @@ export const deleteSuccessStoryFromFirestore = async (storyId) => {
   if (!isFirebaseConfigured) return true;
   try {
     await deleteDoc(doc(db, STORIES_COLLECTION, String(storyId)));
+    invalidateFirestoreCacheKey('success_stories');
     return true;
   } catch (error) {
     console.error('Error deleting success story from Firestore:', error);
@@ -1017,10 +1060,7 @@ export const isProfileVisitedInFirestore = async (visitorId, targetId) => {
     const docId = `${cleanV}_${cleanT}`;
     const docRef = doc(db, PROFILE_VIEWS_COLLECTION, docId);
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) return true;
-
-    const notifDocSnap = await getDoc(doc(db, NOTIFICATIONS_COLLECTION, `view_${cleanV}_${cleanT}`));
-    return notifDocSnap.exists();
+    return docSnap.exists();
   } catch (error) {
     console.error('Error checking profile view in Firestore:', error);
     return false;
@@ -1029,7 +1069,7 @@ export const isProfileVisitedInFirestore = async (visitorId, targetId) => {
 
 /**
  * Save a unique profile view record (and optional notification) to Firestore.
- * Enforces visitor_user_id + profile_owner_user_id unique constraint.
+ * Enforces visitor_user_id + profile_owner_user_id unique constraint deterministically.
  */
 export const saveProfileViewToFirestore = async (viewEntry, notificationData = null) => {
   if (!isFirebaseConfigured || !viewEntry) return true;
@@ -1041,12 +1081,6 @@ export const saveProfileViewToFirestore = async (viewEntry, notificationData = n
 
     const docId = `${cleanV}_${cleanT}`;
     const viewDocRef = doc(db, PROFILE_VIEWS_COLLECTION, docId);
-
-    // Database-level check before writing
-    const existingSnap = await getDoc(viewDocRef);
-    if (existingSnap.exists()) {
-      return false;
-    }
 
     const payload = {
       id: docId,
@@ -1069,17 +1103,14 @@ export const saveProfileViewToFirestore = async (viewEntry, notificationData = n
     if (notificationData) {
       const notifDocId = `view_${cleanV}_${cleanT}`;
       const notifDocRef = doc(db, NOTIFICATIONS_COLLECTION, notifDocId);
-      const notifSnap = await getDoc(notifDocRef);
-      if (!notifSnap.exists()) {
-        await setDoc(notifDocRef, {
-          ...notificationData,
-          id: notificationData.id || notifDocId,
-          docId: notifDocId,
-          visitor_user_id: viewEntry.visitor_user_id || viewEntry.visitorId,
-          profile_owner_user_id: viewEntry.profile_owner_user_id || viewEntry.targetId || viewEntry.targetUserId,
-          createdAt: new Date().toISOString()
-        }, { merge: true });
-      }
+      await setDoc(notifDocRef, {
+        ...notificationData,
+        id: notificationData.id || notifDocId,
+        docId: notifDocId,
+        visitor_user_id: viewEntry.visitor_user_id || viewEntry.visitorId,
+        profile_owner_user_id: viewEntry.profile_owner_user_id || viewEntry.targetId || viewEntry.targetUserId,
+        createdAt: notificationData.createdAt || new Date().toISOString()
+      }, { merge: true });
     }
 
     return true;
@@ -1139,23 +1170,49 @@ export const subscribeToProfilesFromFirestore = (callback) => {
   }
 };
 
-export const subscribeToChatsFromFirestore = (callback, currentUserId = null) => {
-  if (!isFirebaseConfigured) return () => {};
+export const subscribeToChatsFromFirestore = (callback, currentUserId = null, isAdmin = false) => {
+  if (!isFirebaseConfigured || !currentUserId) return () => {};
   try {
-    const cleanUserId = currentUserId ? String(currentUserId).toLowerCase().trim() : null;
-    return onSnapshot(collection(db, CHATS_COLLECTION), (snapshot) => {
+    const cleanUserId = String(currentUserId).trim();
+    const cleanLower = cleanUserId.toLowerCase();
+
+    // Bureau Admins need access to manage all chats
+    if (isAdmin) {
+      return onSnapshot(collection(db, CHATS_COLLECTION), (snapshot) => {
+        const chatsMap = {};
+        snapshot.forEach((docSnap) => {
+          chatsMap[docSnap.id] = docSnap.data().messages || [];
+        });
+        callback(chatsMap);
+      });
+    }
+
+    // Authenticated members: read only conversations where current user is a participant
+    const qChats = query(
+      collection(db, CHATS_COLLECTION),
+      where('participants', 'array-contains', cleanUserId)
+    );
+
+    return onSnapshot(qChats, (snapshot) => {
       const chatsMap = {};
       snapshot.forEach((docSnap) => {
-        const docId = docSnap.id;
-        if (cleanUserId) {
-          const parts = docId.toLowerCase().split('_');
-          if (!parts.includes(cleanUserId)) {
-            return;
-          }
-        }
-        chatsMap[docId] = docSnap.data().messages || [];
+        chatsMap[docSnap.id] = docSnap.data().messages || [];
       });
       callback(chatsMap);
+    }, (error) => {
+      console.warn('Fallback chats listener triggered:', error);
+      // Safe fallback if participants index is pending
+      return onSnapshot(collection(db, CHATS_COLLECTION), (snapshot) => {
+        const chatsMap = {};
+        snapshot.forEach((docSnap) => {
+          const docId = docSnap.id;
+          const parts = docId.toLowerCase().split('_');
+          if (parts.includes(cleanLower)) {
+            chatsMap[docId] = docSnap.data().messages || [];
+          }
+        });
+        callback(chatsMap);
+      });
     });
   } catch (error) {
     console.error('Error subscribing to chats in Firestore:', error);
@@ -1177,15 +1234,49 @@ export const subscribeToInterestsFromFirestore = (callback) => {
   }
 };
 
-export const subscribeToProfileViewsFromFirestore = (callback) => {
-  if (!isFirebaseConfigured) return () => {};
+export const subscribeToProfileViewsFromFirestore = (callback, currentUserId = null, isAdmin = false) => {
+  if (!isFirebaseConfigured || !currentUserId) return () => {};
   try {
-    return onSnapshot(collection(db, PROFILE_VIEWS_COLLECTION), (snapshot) => {
+    const rawId = String(currentUserId).trim();
+    const cleanId = rawId.replace(/^ss-/i, '');
+    const ssId = `SS-${cleanId}`;
+
+    if (isAdmin) {
+      return onSnapshot(collection(db, PROFILE_VIEWS_COLLECTION), (snapshot) => {
+        const viewsList = [];
+        snapshot.forEach((docSnap) => {
+          viewsList.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        callback(viewsList);
+      });
+    }
+
+    const targetIds = Array.from(new Set([rawId, cleanId, ssId, rawId.toLowerCase()]));
+    const qViews = query(
+      collection(db, PROFILE_VIEWS_COLLECTION),
+      where('targetUserId', 'in', targetIds),
+      limit(50)
+    );
+
+    return onSnapshot(qViews, (snapshot) => {
       const viewsList = [];
       snapshot.forEach((docSnap) => {
         viewsList.push({ id: docSnap.id, ...docSnap.data() });
       });
       callback(viewsList);
+    }, (err) => {
+      console.warn('Fallback profile views listener:', err);
+      return onSnapshot(collection(db, PROFILE_VIEWS_COLLECTION), (snapshot) => {
+        const viewsList = [];
+        snapshot.forEach((docSnap) => {
+          const d = docSnap.data();
+          const target = String(d.targetUserId || d.profile_owner_user_id || d.targetId || '').toLowerCase();
+          if (targetIds.some(id => id.toLowerCase() === target)) {
+            viewsList.push({ id: docSnap.id, ...d });
+          }
+        });
+        callback(viewsList);
+      });
     });
   } catch (error) {
     console.error('Error subscribing to profile views in Firestore:', error);
@@ -1193,16 +1284,54 @@ export const subscribeToProfileViewsFromFirestore = (callback) => {
   }
 };
 
-export const subscribeToNotificationsFromFirestore = (callback) => {
-  if (!isFirebaseConfigured) return () => {};
+export const subscribeToNotificationsFromFirestore = (callback, currentUserId = null, isAdmin = false) => {
+  if (!isFirebaseConfigured || !currentUserId) return () => {};
   try {
-    return onSnapshot(collection(db, NOTIFICATIONS_COLLECTION), (snapshot) => {
+    const rawId = String(currentUserId).trim();
+    const cleanId = rawId.replace(/^ss-/i, '');
+    const ssId = `SS-${cleanId}`;
+
+    if (isAdmin) {
+      const qAdmin = query(collection(db, NOTIFICATIONS_COLLECTION), limit(100));
+      return onSnapshot(qAdmin, (snapshot) => {
+        const notificationsList = [];
+        snapshot.forEach((docSnap) => {
+          notificationsList.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        notificationsList.sort((a, b) => (b.id || 0) - (a.id || 0));
+        callback(notificationsList);
+      });
+    }
+
+    const targetIds = Array.from(new Set([rawId, cleanId, ssId, rawId.toLowerCase()]));
+    const qUser = query(
+      collection(db, NOTIFICATIONS_COLLECTION),
+      where('targetUserId', 'in', targetIds),
+      limit(50)
+    );
+
+    return onSnapshot(qUser, (snapshot) => {
       const notificationsList = [];
       snapshot.forEach((docSnap) => {
         notificationsList.push({ id: docSnap.id, ...docSnap.data() });
       });
       notificationsList.sort((a, b) => (b.id || 0) - (a.id || 0));
       callback(notificationsList);
+    }, (err) => {
+      console.warn('Fallback notifications listener:', err);
+      const qFallback = query(collection(db, NOTIFICATIONS_COLLECTION), limit(50));
+      return onSnapshot(qFallback, (snapshot) => {
+        const notificationsList = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const target = String(data.targetUserId || '').toLowerCase();
+          if (targetIds.some(id => id.toLowerCase() === target)) {
+            notificationsList.push({ id: docSnap.id, ...data });
+          }
+        });
+        notificationsList.sort((a, b) => (b.id || 0) - (a.id || 0));
+        callback(notificationsList);
+      });
     });
   } catch (error) {
     console.error('Error subscribing to notifications in Firestore:', error);
@@ -1636,6 +1765,11 @@ export const optimizeAndCompressExistingProfileMedia = async (profilesList = [],
 
 export const fetchFeedbacksFromFirestore = async (isAdmin = false) => {
   if (!isFirebaseConfigured) return null;
+  const cacheKey = isAdmin ? null : 'feedbacks_public';
+  if (cacheKey) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
   try {
     const collRef = collection(db, FEEDBACKS_COLLECTION);
     const q = isAdmin 
@@ -1646,6 +1780,9 @@ export const fetchFeedbacksFromFirestore = async (isAdmin = false) => {
     snapshot.forEach((docSnap) => {
       list.push({ id: docSnap.id, ...docSnap.data() });
     });
+    if (cacheKey && list.length > 0) {
+      setCachedData(cacheKey, list);
+    }
     return list;
   } catch (error) {
     console.error('Error fetching feedbacks from Firestore:', error);
@@ -1654,7 +1791,11 @@ export const fetchFeedbacksFromFirestore = async (isAdmin = false) => {
       const snap = await getDocs(collection(db, FEEDBACKS_COLLECTION));
       const list = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
-      return isAdmin ? list : list.filter(item => item.status === 'approved' && item.published === true);
+      const result = isAdmin ? list : list.filter(item => item.status === 'approved' && item.published === true);
+      if (cacheKey && result.length > 0) {
+        setCachedData(cacheKey, result);
+      }
+      return result;
     } catch (e) {
       return null;
     }
@@ -1670,6 +1811,7 @@ export const saveFeedbackToFirestore = async (feedbackData) => {
       id: docId,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+    invalidateFirestoreCacheKey('feedbacks_public');
     return docId;
   } catch (error) {
     console.error('Error saving feedback to Firestore:', error);
@@ -1681,6 +1823,7 @@ export const deleteFeedbackFromFirestore = async (feedbackId) => {
   if (!isFirebaseConfigured || !feedbackId) return true;
   try {
     await deleteDoc(doc(db, FEEDBACKS_COLLECTION, String(feedbackId)));
+    invalidateFirestoreCacheKey('feedbacks_public');
     return true;
   } catch (error) {
     console.error('Error deleting feedback from Firestore:', error);
@@ -1694,13 +1837,22 @@ export const deleteFeedbackFromFirestore = async (feedbackId) => {
 
 export const fetchEventsFromFirestore = async (isAdmin = false) => {
   if (!isFirebaseConfigured) return null;
+  const cacheKey = isAdmin ? null : 'events_public';
+  if (cacheKey) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
   try {
     const collRef = collection(db, EVENTS_COLLECTION);
     const snap = await getDocs(collRef);
     const list = [];
     snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
     list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    return isAdmin ? list : list.filter(item => item.published !== false);
+    const result = isAdmin ? list : list.filter(item => item.published !== false);
+    if (cacheKey && result.length > 0) {
+      setCachedData(cacheKey, result);
+    }
+    return result;
   } catch (error) {
     console.error('Error fetching events from Firestore:', error);
     return null;
@@ -1716,6 +1868,7 @@ export const saveEventToFirestore = async (eventData) => {
       id: docId,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+    invalidateFirestoreCacheKey('events_public');
     return docId;
   } catch (error) {
     console.error('Error saving event to Firestore:', error);
@@ -1727,6 +1880,7 @@ export const deleteEventFromFirestore = async (eventId) => {
   if (!isFirebaseConfigured || !eventId) return true;
   try {
     await deleteDoc(doc(db, EVENTS_COLLECTION, String(eventId)));
+    invalidateFirestoreCacheKey('events_public');
     return true;
   } catch (error) {
     console.error('Error deleting event from Firestore:', error);
@@ -1740,13 +1894,22 @@ export const deleteEventFromFirestore = async (eventId) => {
 
 export const fetchGalleryFromFirestore = async (isAdmin = false) => {
   if (!isFirebaseConfigured) return null;
+  const cacheKey = isAdmin ? null : 'gallery_public';
+  if (cacheKey) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
   try {
     const collRef = collection(db, GALLERY_COLLECTION);
     const snap = await getDocs(collRef);
     const list = [];
     snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
     list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    return isAdmin ? list : list.filter(item => item.published !== false);
+    const result = isAdmin ? list : list.filter(item => item.published !== false);
+    if (cacheKey && result.length > 0) {
+      setCachedData(cacheKey, result);
+    }
+    return result;
   } catch (error) {
     console.error('Error fetching gallery from Firestore:', error);
     return null;
@@ -1762,6 +1925,7 @@ export const saveGalleryItemToFirestore = async (galleryItem) => {
       id: docId,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+    invalidateFirestoreCacheKey('gallery_public');
     return docId;
   } catch (error) {
     console.error('Error saving gallery item to Firestore:', error);
@@ -1773,6 +1937,7 @@ export const deleteGalleryItemFromFirestore = async (itemId) => {
   if (!isFirebaseConfigured || !itemId) return true;
   try {
     await deleteDoc(doc(db, GALLERY_COLLECTION, String(itemId)));
+    invalidateFirestoreCacheKey('gallery_public');
     return true;
   } catch (error) {
     console.error('Error deleting gallery item from Firestore:', error);

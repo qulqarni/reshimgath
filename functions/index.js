@@ -60,64 +60,68 @@ async function getTokensForUser(targetUserId) {
   }
 
   try {
-    // Strategy A: Query 'fcm_tokens' collection by userId (Android app device tokens)
-    const fcmTokensQueries = [
-      db.collection('fcm_tokens').where('userId', '==', targetUserId)
-    ];
-    if (idStr && idStr !== targetUserId) {
-      fcmTokensQueries.push(db.collection('fcm_tokens').where('userId', '==', idStr));
-    }
-
-    const fcmSnapshots = await Promise.all(fcmTokensQueries.map(q => q.get().catch(() => null)));
-    fcmSnapshots.forEach(snap => {
-      if (snap && !snap.empty) {
-        snap.forEach(docSnap => {
-          const data = docSnap.data() || {};
-          docRefsMap.set(docSnap.ref.path, docSnap.ref);
-          if (data.token && typeof data.token === 'string' && data.token.trim()) {
-            tokensSet.add(data.token.trim());
-          }
-        });
-      }
-    });
-
-    // Strategy B: Direct Document Lookup by ID in 'profiles' and 'users'
+    // Strategy A: Direct Document Lookup by ID in 'profiles' (fastest & most common, 1 read)
     const profileDirectDoc = await db.collection('profiles').doc(idStr).get();
     if (profileDirectDoc.exists) extractTokens(profileDirectDoc);
 
-    const userDirectDoc = await db.collection('users').doc(idStr).get();
-    if (userDirectDoc.exists) extractTokens(userDirectDoc);
-
-    // Strategy C: Query 'profiles' collection by matching fields
-    const profileQueries = [
-      db.collection('profiles').where('id', '==', idStr),
-      db.collection('profiles').where('id', '==', isNaN(Number(idStr)) ? idStr : Number(idStr)),
-      db.collection('profiles').where('regId', '==', idStr),
-      db.collection('profiles').where('registrationId', '==', idStr),
-      db.collection('profiles').where('registrationId', '==', isNaN(Number(idStr)) ? idStr : Number(idStr)),
-      db.collection('profiles').where('email', '==', idStrLower)
-    ];
-
-    const profileSnapshots = await Promise.all(profileQueries.map(q => q.get().catch(() => null)));
-    profileSnapshots.forEach(snap => {
-      if (snap && !snap.empty) {
-        snap.forEach(docSnap => extractTokens(docSnap));
+    // Strategy B: Query 'fcm_tokens' collection by userId (Android app device tokens)
+    if (tokensSet.size === 0) {
+      const fcmTokensQueries = [
+        db.collection('fcm_tokens').where('userId', '==', targetUserId)
+      ];
+      if (idStr && idStr !== targetUserId) {
+        fcmTokensQueries.push(db.collection('fcm_tokens').where('userId', '==', idStr));
       }
-    });
 
-    // Strategy D: Query 'users' collection by matching fields
-    const userQueries = [
-      db.collection('users').where('id', '==', idStr),
-      db.collection('users').where('id', '==', isNaN(Number(idStr)) ? idStr : Number(idStr)),
-      db.collection('users').where('email', '==', idStrLower)
-    ];
+      const fcmSnapshots = await Promise.all(fcmTokensQueries.map(q => q.get().catch(() => null)));
+      fcmSnapshots.forEach(snap => {
+        if (snap && !snap.empty) {
+          snap.forEach(docSnap => {
+            const data = docSnap.data() || {};
+            docRefsMap.set(docSnap.ref.path, docSnap.ref);
+            if (data.token && typeof data.token === 'string' && data.token.trim()) {
+              tokensSet.add(data.token.trim());
+            }
+          });
+        }
+      });
+    }
 
-    const userSnapshots = await Promise.all(userQueries.map(q => q.get().catch(() => null)));
-    userSnapshots.forEach(snap => {
-      if (snap && !snap.empty) {
-        snap.forEach(docSnap => extractTokens(docSnap));
+    // Direct doc in 'users'
+    if (tokensSet.size === 0) {
+      const userDirectDoc = await db.collection('users').doc(idStr).get();
+      if (userDirectDoc.exists) extractTokens(userDirectDoc);
+    }
+
+    // Strategy C & D: Fallback queries only if tokens are not yet found
+    if (tokensSet.size === 0) {
+      const profileQueries = [
+        db.collection('profiles').where('id', '==', idStr),
+        db.collection('profiles').where('regId', '==', idStr),
+        db.collection('profiles').where('registrationId', '==', isNaN(Number(idStr)) ? idStr : Number(idStr)),
+        db.collection('profiles').where('email', '==', idStrLower)
+      ];
+
+      const profileSnapshots = await Promise.all(profileQueries.map(q => q.get().catch(() => null)));
+      profileSnapshots.forEach(snap => {
+        if (snap && !snap.empty) {
+          snap.forEach(docSnap => extractTokens(docSnap));
+        }
+      });
+
+      if (tokensSet.size === 0) {
+        const userQueries = [
+          db.collection('users').where('id', '==', idStr),
+          db.collection('users').where('email', '==', idStrLower)
+        ];
+        const userSnapshots = await Promise.all(userQueries.map(q => q.get().catch(() => null)));
+        userSnapshots.forEach(snap => {
+          if (snap && !snap.empty) {
+            snap.forEach(docSnap => extractTokens(docSnap));
+          }
+        });
       }
-    });
+    }
 
   } catch (error) {
     functions.logger.error('Error fetching FCM tokens for user:', targetUserId, error);
