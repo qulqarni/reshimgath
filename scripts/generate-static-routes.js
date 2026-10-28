@@ -14,6 +14,16 @@ if (!fs.existsSync(indexHtmlPath)) {
 }
 
 const routes = [
+  'admin',
+  'dashboard',
+  'my-profile',
+  'edit-profile',
+  'profile-setup',
+  'interests',
+  'messages',
+  'notifications',
+  'settings',
+  'blocked-users',
   'child-safety-standards',
   'child-safety',
   'safety-standards',
@@ -28,15 +38,23 @@ const routes = [
   'contact',
   'login',
   'signup',
+  'forgot-password',
+  'reset-password',
   'stories',
   'success-stories',
   'feedbacks',
   'feedback',
+  'testimonials',
   'events',
   'upcoming-events',
+  'melawa',
   'gallery',
+  'photos',
+  'videos',
   'subscription',
-  'plans'
+  'plans',
+  'pricing',
+  'memberships'
 ];
 
 const indexContent = fs.readFileSync(indexHtmlPath, 'utf8');
