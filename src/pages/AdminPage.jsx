@@ -5986,6 +5986,64 @@ export const AdminPage = ({ onNavigate }) => {
                   </div>
 
                   <div>
+                    <label className="block font-semibold mb-1 text-gray-700 flex items-center space-x-1">
+                      <Phone className="w-3.5 h-3.5 text-brand-plum" />
+                      <span>Contact / Mobile Number (मोबाईल नंबर) *</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={editingProfile.phone || editingProfile.mobile || editingProfile.contactNumber || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditingProfile({
+                          ...editingProfile,
+                          phone: val,
+                          mobile: val,
+                          contactNumber: val
+                        });
+                      }}
+                      placeholder="e.g. 9823425404 or +91 98234 25404"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-mono font-bold text-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700 flex items-center space-x-1">
+                      <Mail className="w-3.5 h-3.5 text-brand-plum" />
+                      <span>Email Address (ईमेल)</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={editingProfile.email || ''}
+                      onChange={(e) => setEditingProfile({ ...editingProfile, email: e.target.value })}
+                      placeholder="e.g. candidate@gmail.com"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1 text-gray-700 flex items-center space-x-1">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>WhatsApp / Alternate No. (पर्यायी संपर्क)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={editingProfile.whatsapp || editingProfile.whatsappNumber || editingProfile.secondaryPhone || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditingProfile({
+                          ...editingProfile,
+                          whatsapp: val,
+                          whatsappNumber: val,
+                          secondaryPhone: val
+                        });
+                      }}
+                      placeholder="e.g. 9823425404"
+                      className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 focus:border-brand-plum font-mono"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block font-semibold mb-1 text-gray-700 flex items-center justify-between">
                       <span className="flex items-center space-x-1">
                         <Lock className="w-3.5 h-3.5 text-brand-plum" />
