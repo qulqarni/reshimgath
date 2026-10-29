@@ -296,8 +296,7 @@ export const DiscoverPage = ({ onNavigate }) => {
   };
 
   const handleProfileClick = (targetProfile) => {
-    const profileSlug = targetProfile.regId || (targetProfile.registrationId ? `SS-${targetProfile.registrationId}` : targetProfile.id);
-    onNavigate(`/profile/${profileSlug}`);
+    onNavigate(`/profile/${targetProfile.id}`);
   };
 
   const handleConfirmUnlock = () => {

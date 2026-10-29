@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { DEMO_PROFILES, DEMO_USER } from '../data/mockProfiles';
 import { saveProfileToFirestore, saveUnlockedConnectionToFirestore, saveNotificationToFirestore, checkExistingUserInFirestore, saveUserBlockedListToFirestore, findProfileInFirestore } from '../services/firebaseService';
 import { db, isFirebaseConfigured } from '../config/firebase';
-import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
 import { doesProfileHavePhone, isSamePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import { CURRENT_TERMS_VERSION, hasAcceptedTerms, createTermsAcceptanceRecord } from '../utils/termsEnforcement';
@@ -44,6 +44,36 @@ export const getNextRegistrationId = () => {
   } catch (e) {
     return 1001;
   }
+};
+
+/**
+ * Asynchronously query the latest registered profile from Cloud Firestore
+ * to guarantee unique sequential registrationId (e.g. 3208, 3209, ...)
+ * for self-registering candidates across all devices.
+ */
+export const getNextRegistrationIdAsync = async () => {
+  try {
+    if (isFirebaseConfigured) {
+      const q = query(collection(db, 'profiles'), orderBy('registrationId', 'desc'), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const topDoc = snap.docs[0].data();
+        let topNum = Number(topDoc.registrationId);
+        if ((!topNum || isNaN(topNum)) && topDoc.regId) {
+          const match = String(topDoc.regId).match(/\d+/);
+          if (match) topNum = Number(match[0]);
+        }
+        if (topNum && !isNaN(topNum) && topNum >= 1000) {
+          return topNum + 1;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error querying next registrationId from Firestore:', err);
+  }
+
+  // Fallback to local storage if offline or query fails
+  return getNextRegistrationId();
 };
 
 export const getProfileCreationTime = (p) => {
@@ -488,7 +518,7 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    const regNum = getNextRegistrationId();
+    const regNum = await getNextRegistrationIdAsync();
     const newUserId = "u_" + Date.now();
     const termsRecord = createTermsAcceptanceRecord(newUserId, CURRENT_TERMS_VERSION);
 

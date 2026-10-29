@@ -139,9 +139,8 @@ export const InterestsPage = ({ onNavigate }) => {
   const myId = user?.id ? String(user.id).toLowerCase() : '';
 
   const handleOpenProfileClick = (targetProfile) => {
-    if (!targetProfile) return;
-    const profileSlug = targetProfile.regId || (targetProfile.registrationId ? `SS-${targetProfile.registrationId}` : targetProfile.id);
-    onNavigate(`/profile/${profileSlug}`);
+    if (!targetProfile || !targetProfile.id) return;
+    onNavigate(`/profile/${targetProfile.id}`);
   };
 
   const handleMessageCandidate = (targetProfile) => {

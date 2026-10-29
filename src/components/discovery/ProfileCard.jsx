@@ -122,13 +122,13 @@ export const ProfileCard = React.memo(({ profile, onSelect, priority = false }) 
   const handleAction = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-      onSelect(profileSlug, 'sendInterest');
+      onSelect(profile.id, 'sendInterest');
       return;
     }
 
     if (isAccepted) {
       if (!isProfileUnlocked) {
-        onSelect(profileSlug, 'viewProfile');
+        onSelect(profile.id, 'viewProfile');
         return;
       }
       try {
@@ -161,7 +161,7 @@ export const ProfileCard = React.memo(({ profile, onSelect, priority = false }) 
 
   return (
     <div
-      onClick={() => onSelect(profileSlug)}
+      onClick={() => onSelect(profile.id)}
       className="group bg-white rounded-3xl overflow-hidden border border-brand-rose/20 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
     >
       {/* Top Image Container with Slideshow */}
@@ -335,7 +335,7 @@ export const ProfileCard = React.memo(({ profile, onSelect, priority = false }) 
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onSelect(profileSlug);
+              onSelect(profile.id);
             }}
             className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all border border-emerald-400/30"
           >
