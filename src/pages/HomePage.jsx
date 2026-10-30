@@ -43,11 +43,52 @@ export const HomePage = ({ onNavigate }) => {
   // Restore filter, search, and pagination state from URL params or sessionStorage
   const initialListingState = useMemo(() => parseListingStateFromSearch(), []);
 
+  // Detect logged-in candidate user's community / caste to show same caste at start
+  const defaultCaste = useMemo(() => {
+    if (!user) return 'All';
+    let rawCaste = (user.caste || '').trim();
+    const rawReligion = (user.religion || '').trim().toLowerCase();
+
+    // If caste is not set or says Buddhist/Bauddha, check both caste and religion
+    if (!rawCaste && (rawReligion.includes('buddh') || rawReligion.includes('bauddha'))) {
+      rawCaste = 'Buddhist';
+    }
+    if (!rawCaste) return 'All';
+
+    // Normalize Bauddha to Buddhist
+    if (/bauddha/i.test(rawCaste) || /buddh/i.test(rawCaste)) {
+      return 'Buddhist';
+    }
+
+    const matched = MAHARASHTRA_COMMUNITIES.find((c) => {
+      const cLower = c.toLowerCase();
+      const uLower = rawCaste.toLowerCase();
+      const baseUser = uLower.split(' ')[0].replace(/[^a-z]/g, '');
+      const baseCommunity = cLower.split(' ')[0].replace(/[^a-z]/g, '');
+      return (
+        cLower === uLower ||
+        cLower.includes(uLower) ||
+        uLower.includes(cLower) ||
+        (baseUser.length >= 3 && baseCommunity.length >= 3 && baseUser === baseCommunity)
+      );
+    });
+
+    return matched || rawCaste;
+  }, [user]);
+
+  // Track if user has manually changed caste filter in this session
+  const userChangedCasteManually = useRef(false);
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState(() => initialListingState.searchQuery);
   const [selectedDistrict, setSelectedDistrict] = useState(() => initialListingState.selectedDistrict);
   const [selectedReligion, setSelectedReligion] = useState(() => initialListingState.selectedReligion);
-  const [selectedCaste, setSelectedCaste] = useState(() => initialListingState.selectedCaste);
+  const [selectedCaste, setSelectedCaste] = useState(() => {
+    if (initialListingState.selectedCaste && initialListingState.selectedCaste !== 'All') {
+      return initialListingState.selectedCaste;
+    }
+    return defaultCaste;
+  });
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState(() => initialListingState.selectedMaritalStatus);
   const [selectedEducation, setSelectedEducation] = useState(() => initialListingState.selectedEducation);
   const [govtEmployeeFilter, setGovtEmployeeFilter] = useState(() => initialListingState.govtEmployeeFilter);
@@ -59,6 +100,16 @@ export const HomePage = ({ onNavigate }) => {
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(() => initialListingState.currentPage);
   const PROFILES_PER_PAGE = 24;
+
+  // Automatically pre-filter to logged-in user's own caste on start if not manually changed
+  useEffect(() => {
+    if (defaultCaste && defaultCaste !== 'All' && !userChangedCasteManually.current) {
+      const params = new URLSearchParams(window.location.search || '');
+      if (!params.has('caste')) {
+        setSelectedCaste(defaultCaste);
+      }
+    }
+  }, [defaultCaste]);
 
   const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
 
@@ -174,7 +225,8 @@ export const HomePage = ({ onNavigate }) => {
         } else {
           const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
           if (targetC === 'buddhist' || targetC === 'bauddha') {
-            if (!c.includes('buddhist') && !c.includes('bauddha') && !c.includes('buddh')) return false;
+            const r = (p.religion || '').toLowerCase().trim();
+            if (!c.includes('buddhist') && !c.includes('bauddha') && !c.includes('buddh') && !r.includes('buddh') && !r.includes('bauddha')) return false;
           } else if (!c.includes(targetC) && !c.includes(baseTarget)) {
             return false;
           }
@@ -380,6 +432,7 @@ export const HomePage = ({ onNavigate }) => {
   }, [currentPage, totalPages]);
 
   const handleReset = () => {
+    userChangedCasteManually.current = true;
     setSearchQuery('');
     setSelectedDistrict([]);
     setSelectedReligion('All');
@@ -701,7 +754,10 @@ export const HomePage = ({ onNavigate }) => {
               <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
               <select
                 value={selectedCaste}
-                onChange={(e) => setSelectedCaste(e.target.value)}
+                onChange={(e) => {
+                  userChangedCasteManually.current = true;
+                  setSelectedCaste(e.target.value);
+                }}
                 className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
               >
                 <option value="All">All Communities / Castes</option>
@@ -1108,7 +1164,10 @@ export const HomePage = ({ onNavigate }) => {
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
                 <select
                   value={selectedCaste}
-                  onChange={(e) => setSelectedCaste(e.target.value)}
+                  onChange={(e) => {
+                    userChangedCasteManually.current = true;
+                    setSelectedCaste(e.target.value);
+                  }}
                   className="w-full p-3 rounded-xl border border-gray-200 text-xs"
                 >
                   <option value="All">All Communities / Castes</option>
