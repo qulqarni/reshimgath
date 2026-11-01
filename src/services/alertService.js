@@ -28,44 +28,39 @@ export const sendAdminRegistrationAlert = async (candidateData) => {
       city: candidateData.city || ''
     };
 
-    // Attempt 1: Standard /api/send-registration-alert (Vercel & Vite dev server)
-    try {
-      const res = await fetch('/api/send-registration-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true
-      });
+    // Determine endpoint priority based on environment:
+    // On Hostinger (sambodhisarang.com) and static hosts, .php is the physical server script.
+    const isHostinger = typeof window !== 'undefined' && (
+      window.location.hostname.includes('sambodhisarang.com') ||
+      window.location.pathname.endsWith('.php') ||
+      !window.location.hostname.includes('vercel.app')
+    );
 
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (data?.success) {
-          console.log('✅ [Admin Alert] Registration email dispatched to admin.');
-          return data;
+    const endpoints = isHostinger
+      ? ['/api/send-registration-alert.php', '/api/send-registration-alert']
+      : ['/api/send-registration-alert', '/api/send-registration-alert.php'];
+
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        // Guard against SPA returning index.html (200 OK text/html)
+        if (res.ok && contentType.includes('application/json')) {
+          const data = await res.json().catch(() => ({}));
+          if (data && data.success) {
+            console.log(`✅ [Admin Alert] Registration email dispatched via ${ep}:`, data);
+            return data;
+          }
         }
+      } catch (err) {
+        console.warn(`⚠️ [Admin Alert] Endpoint ${ep} attempt failed:`, err.message);
       }
-    } catch (e1) {
-      console.warn('⚠️ [Admin Alert] Attempt 1 failed, trying fallback PHP endpoint...');
-    }
-
-    // Attempt 2: Direct /api/send-registration-alert.php (Hostinger live site fallback)
-    try {
-      const resPhp = await fetch('/api/send-registration-alert.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true
-      });
-
-      if (resPhp.ok) {
-        const dataPhp = await resPhp.json().catch(() => ({}));
-        if (dataPhp?.success) {
-          console.log('✅ [Admin Alert] Registration email dispatched via PHP endpoint.');
-          return dataPhp;
-        }
-      }
-    } catch (e2) {
-      console.warn('⚠️ [Admin Alert] Attempt 2 failed:', e2.message);
     }
 
     return { success: false, error: 'Could not deliver email through available endpoints' };

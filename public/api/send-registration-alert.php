@@ -190,13 +190,39 @@ $htmlBody = '
 $smtpHost = 'ssl://smtp.gmail.com';
 $smtpPort = 465;
 $smtpUser = 'pk9823425404@gmail.com';
-$smtpPass = 'pbynrraidgncpigp'; // Gmail App Password
+$smtpPass = 'pbynrraidgncpigp'; // Default Gmail App Password
 $recipient = 'pk9823425404@gmail.com';
 
+// Read dynamic environment variables from .env if present
+$envPaths = [
+    __DIR__ . '/../../.env',
+    __DIR__ . '/../.env',
+    __DIR__ . '/.env'
+];
+
+foreach ($envPaths as $envPath) {
+    if (file_exists($envPath)) {
+        $envLines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($envLines) {
+            foreach ($envLines as $line) {
+                if (strpos(trim($line), '#') === 0) continue;
+                if (strpos($line, '=') !== false) {
+                    list($k, $v) = explode('=', $line, 2);
+                    $k = trim($k);
+                    $v = trim($v, " \t\n\r\0\x0B\"'");
+                    if ($k === 'GMAIL_APP_PASSWORD' && !empty($v)) $smtpPass = str_replace(' ', '', $v);
+                    if ($k === 'GMAIL_USER' && !empty($v)) $smtpUser = $v;
+                    if ($k === 'ADMIN_ALERT_EMAIL' && !empty($v)) $recipient = $v;
+                }
+            }
+        }
+    }
+}
+
 function sendSmtpEmail($host, $port, $user, $pass, $to, $subject, $body, $replyTo) {
-    $socket = @fsockopen($host, $port, $errno, $errstr, 15);
+    $socket = @fsockopen($host, $port, $errno, $errstr, 12);
     if (!$socket) {
-        return ['success' => false, 'error' => "Connection failed: $errstr ($errno)"];
+        return ['success' => false, 'error' => "Connection to $host:$port failed: $errstr ($errno)"];
     }
 
     $read = function($sock) {
@@ -248,17 +274,44 @@ function sendSmtpEmail($host, $port, $user, $pass, $to, $subject, $body, $replyT
 $res = sendSmtpEmail($smtpHost, $smtpPort, $smtpUser, $smtpPass, $recipient, $subject, $htmlBody, $candidateEmail);
 
 if ($res['success']) {
-    echo json_encode(['success' => true, 'message' => 'Email sent successfully via Gmail SMTP']);
+    echo json_encode([
+        'success' => true, 
+        'method' => 'smtp', 
+        'message' => 'Email sent successfully via Gmail SMTP',
+        'recipient' => $recipient
+    ]);
 } else {
-    // Fallback to PHP mail() if direct socket failed
+    // Fallback to Hostinger server mail() with authentic domain sender to bypass Gmail DMARC reject
+    $domainFrom = 'noreply@sambodhisarang.com';
     $headers  = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: Sambodhi Sarang <$smtpUser>\r\n";
-    $mailSent = @mail($recipient, $subject, $htmlBody, $headers);
+    $headers .= "From: Sambodhi Sarang Portal <" . $domainFrom . ">\r\n";
+    if (!empty($candidateEmail) && $candidateEmail !== 'N/A') {
+        $headers .= "Reply-To: <" . $candidateEmail . ">\r\n";
+    } else {
+        $headers .= "Reply-To: <" . $recipient . ">\r\n";
+    }
+    $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+    $headers .= "X-Priority: 1 (Highest)\r\n";
+    $headers .= "Importance: High\r\n";
+
+    $mailSent = @mail($recipient, $subject, $htmlBody, $headers, "-f" . $domainFrom);
     if ($mailSent) {
-        echo json_encode(['success' => true, 'fallback' => true, 'message' => 'Sent via PHP mail()']);
+        echo json_encode([
+            'success' => true, 
+            'fallback' => true, 
+            'method' => 'php_mail',
+            'sender' => $domainFrom,
+            'message' => 'Sent via PHP mail() from ' . $domainFrom,
+            'smtp_notice' => $res['error'],
+            'recipient' => $recipient
+        ]);
     } else {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $res['error']]);
+        echo json_encode([
+            'success' => false, 
+            'error' => 'Both SMTP and PHP mail delivery failed. ' . $res['error'],
+            'recipient' => $recipient
+        ]);
     }
 }

@@ -550,7 +550,25 @@ export const AuthProvider = ({ children }) => {
     // Push newly created user profile directly to Firebase Firestore Database!
     await saveProfileToFirestore(newUser.id, newUser);
 
-    // Asynchronously dispatch instant email notification to bureau admin (waits max 2.5s so browser does not abort request)
+    // Save instant in-app admin alert in Firestore
+    try {
+      await saveNotificationToFirestore({
+        id: `notif_reg_${newUser.id}_${Date.now()}`,
+        userId: 'admin_1',
+        type: 'registration',
+        senderId: newUser.id,
+        senderName: newUser.name,
+        senderRegId: newUser.regId,
+        title: `New Registration: ${newUser.name} (${newUser.regId})`,
+        message: `${newUser.name} (${newUser.phone}, ${newUser.gender}, ${newUser.caste || 'Candidate'}) has registered on Sambodhi Sarang.`,
+        createdAt: new Date().toISOString(),
+        read: false
+      });
+    } catch (notifErr) {
+      console.warn('[Admin In-app Registration Alert Catch]:', notifErr);
+    }
+
+    // Asynchronously dispatch instant email notification to bureau admin (waits max 3.5s so browser does not abort request)
     try {
       await Promise.race([
         sendAdminRegistrationAlert({
@@ -558,7 +576,7 @@ export const AuthProvider = ({ children }) => {
           district: signupData.district || '',
           city: signupData.city || ''
         }),
-        new Promise((resolve) => setTimeout(resolve, 2500))
+        new Promise((resolve) => setTimeout(resolve, 3500))
       ]);
     } catch (err) {
       console.warn('[Admin Alert Non-blocking Catch]:', err);

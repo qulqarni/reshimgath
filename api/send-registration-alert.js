@@ -1,4 +1,33 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
+
+// Safely parse local .env file when running in local node / serverless environments
+function loadLocalEnv() {
+  try {
+    const candidates = [
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), '.env.local')
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        const text = fs.readFileSync(p, 'utf8');
+        text.split('\n').forEach((line) => {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+            const [k, ...v] = trimmed.split('=');
+            const key = k.trim();
+            const val = v.join('=').trim().replace(/^["']|["']$/g, '');
+            if (!process.env[key] && val) {
+              process.env[key] = val;
+            }
+          }
+        });
+      }
+    }
+  } catch (e) {}
+}
+loadLocalEnv();
 
 export default async function handler(req, res) {
   // CORS configuration
