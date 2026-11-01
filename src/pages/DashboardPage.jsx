@@ -28,7 +28,48 @@ export const DashboardPage = ({ onNavigate }) => {
   const acceptedCount = interests.accepted.length;
   const visitsCount = profileViews.length;
 
-  const recommendedMatches = sortProfilesByLatest(profiles.filter(p => p.id !== user?.id)).slice(0, 3);
+  const isCandidateUser = Boolean(user && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1');
+  const userCaste = (user?.caste || user?.community || '').trim();
+  const userReligion = (user?.religion || '').trim();
+  const userGender = (user?.gender || '').trim().toLowerCase();
+  const oppositeGender = userGender === 'male' ? 'female' : userGender === 'female' ? 'male' : '';
+
+  const candidateSameCommunity = isCandidateUser && (userCaste || /budd|baudd/i.test(userReligion));
+  const isBuddhistUser = candidateSameCommunity && (/budd|baudd/i.test(userCaste) || /budd|baudd/i.test(userReligion));
+
+  const recommendedMatches = React.useMemo(() => {
+    return sortProfilesByLatest(
+      profiles.filter(p => {
+        if (!p || p.id === user?.id) return false;
+        if (p.isApproved === false || p.verified === false) return false;
+
+        if (isCandidateUser) {
+          // Opposite gender filter
+          if (oppositeGender) {
+            const pGender = (p.gender || '').trim().toLowerCase();
+            if (pGender && pGender !== oppositeGender) return false;
+          }
+
+          // Same community filter
+          if (candidateSameCommunity) {
+            const pCaste = (p.caste || p.community || '').trim();
+            const pRel = (p.religion || '').trim();
+            if (isBuddhistUser) {
+              const pIsBuddhist = /budd|baudd/i.test(pCaste) || /budd|baudd/i.test(pRel);
+              if (!pIsBuddhist) return false;
+            } else if (userCaste) {
+              const uCasteLower = userCaste.toLowerCase();
+              const pCasteLower = pCaste.toLowerCase();
+              if (!pCasteLower || (!pCasteLower.includes(uCasteLower) && !uCasteLower.includes(pCasteLower))) {
+                return false;
+              }
+            }
+          }
+        }
+        return true;
+      })
+    ).slice(0, 3);
+  }, [profiles, user, isCandidateUser, oppositeGender, candidateSameCommunity, isBuddhistUser, userCaste]);
 
   const visitorsRef = React.useRef(null);
 

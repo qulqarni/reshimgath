@@ -43,7 +43,9 @@ export const HomePage = ({ onNavigate }) => {
   // Restore filter, search, and pagination state from URL params or sessionStorage
   const initialListingState = useMemo(() => parseListingStateFromSearch(), []);
 
-  // Detect logged-in candidate user's community / caste to show same caste at start
+  const isCandidateUser = Boolean(user && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1');
+
+  // Detect logged-in candidate user's community / caste to show same caste strictly
   const defaultCaste = useMemo(() => {
     if (!user) return 'All';
     let rawCaste = (user.caste || '').trim();
@@ -76,14 +78,14 @@ export const HomePage = ({ onNavigate }) => {
     return matched || rawCaste;
   }, [user]);
 
-  // Track if user has manually changed caste filter in this session
-  const userChangedCasteManually = useRef(false);
-
   // Filter States
   const [searchQuery, setSearchQuery] = useState(() => initialListingState.searchQuery);
   const [selectedDistrict, setSelectedDistrict] = useState(() => initialListingState.selectedDistrict);
   const [selectedReligion, setSelectedReligion] = useState(() => initialListingState.selectedReligion);
   const [selectedCaste, setSelectedCaste] = useState(() => {
+    if (isCandidateUser && defaultCaste && defaultCaste !== 'All') {
+      return defaultCaste;
+    }
     if (initialListingState.selectedCaste && initialListingState.selectedCaste !== 'All') {
       return initialListingState.selectedCaste;
     }
@@ -101,15 +103,12 @@ export const HomePage = ({ onNavigate }) => {
   const [currentPage, setCurrentPage] = useState(() => initialListingState.currentPage);
   const PROFILES_PER_PAGE = 24;
 
-  // Automatically pre-filter to logged-in user's own caste on start if not manually changed
+  // Always keep candidate users locked strictly to their own community
   useEffect(() => {
-    if (defaultCaste && defaultCaste !== 'All' && !userChangedCasteManually.current) {
-      const params = new URLSearchParams(window.location.search || '');
-      if (!params.has('caste')) {
-        setSelectedCaste(defaultCaste);
-      }
+    if (isCandidateUser && defaultCaste && defaultCaste !== 'All') {
+      setSelectedCaste(defaultCaste);
     }
-  }, [defaultCaste]);
+  }, [isCandidateUser, defaultCaste]);
 
   const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
 
@@ -201,8 +200,23 @@ export const HomePage = ({ onNavigate }) => {
         }
       }
 
-      // 9. Caste / Community Filter
-      if (selectedCaste !== 'All') {
+      // 9. Caste / Community Filter - Strictly enforce same caste for candidate users
+      if (isCandidateUser && defaultCaste && defaultCaste !== 'All') {
+        const c = (p.caste || '').toLowerCase().trim();
+        const r = (p.religion || '').toLowerCase().trim();
+        const targetC = defaultCaste.toLowerCase().trim();
+
+        if (targetC === 'buddhist' || targetC === 'bauddha') {
+          if (!c.includes('buddhist') && !c.includes('bauddha') && !c.includes('buddh') && !r.includes('buddh') && !r.includes('bauddha')) {
+            return false;
+          }
+        } else {
+          const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
+          if (!c.includes(targetC) && !c.includes(baseTarget)) {
+            return false;
+          }
+        }
+      } else if (selectedCaste !== 'All') {
         const c = (p.caste || '').toLowerCase().trim();
         const targetC = selectedCaste.toLowerCase().trim();
         if (targetC === 'other') {
@@ -316,13 +330,13 @@ export const HomePage = ({ onNavigate }) => {
     if (minAge !== '18' || maxAge !== '60') count++;
     if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : selectedDistrict !== 'All') count++;
     if (selectedReligion !== 'All') count++;
-    if (selectedCaste !== 'All') count++;
+    if (!isCandidateUser && selectedCaste !== 'All') count++;
     if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : selectedEducation !== 'All') count++;
     if (govtEmployeeFilter !== 'All') count++;
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
+  }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery, isCandidateUser]);
 
   const isInitialFilterMount = useRef(true);
   useEffect(() => {
@@ -436,7 +450,7 @@ export const HomePage = ({ onNavigate }) => {
     setSearchQuery('');
     setSelectedDistrict([]);
     setSelectedReligion('All');
-    setSelectedCaste('All');
+    setSelectedCaste(isCandidateUser && defaultCaste && defaultCaste !== 'All' ? defaultCaste : 'All');
     setSelectedMaritalStatus('All');
     setSelectedEducation([]);
     setGovtEmployeeFilter('All');
@@ -752,19 +766,31 @@ export const HomePage = ({ onNavigate }) => {
             {/* 6. Caste / Community */}
             <div>
               <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
-              <select
-                value={selectedCaste}
-                onChange={(e) => {
-                  userChangedCasteManually.current = true;
-                  setSelectedCaste(e.target.value);
-                }}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                <option value="All">All Communities / Castes</option>
-                {casteOptions.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                <div
+                  className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                  title="Showing profiles from your community only"
+                >
+                  <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                  <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                    🔒 Locked
+                  </span>
+                </div>
+              ) : (
+                <select
+                  value={selectedCaste}
+                  onChange={(e) => {
+                    userChangedCasteManually.current = true;
+                    setSelectedCaste(e.target.value);
+                  }}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  <option value="All">All Communities / Castes</option>
+                  {casteOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* 7. Education (Multi-Select) */}
@@ -1162,19 +1188,31 @@ export const HomePage = ({ onNavigate }) => {
               {/* Caste */}
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
-                <select
-                  value={selectedCaste}
-                  onChange={(e) => {
-                    userChangedCasteManually.current = true;
-                    setSelectedCaste(e.target.value);
-                  }}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="All">All Communities / Castes</option>
-                  {casteOptions.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                  <div
+                    className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing profiles from your community only"
+                  >
+                    <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCaste}
+                    onChange={(e) => {
+                      userChangedCasteManually.current = true;
+                      setSelectedCaste(e.target.value);
+                    }}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    <option value="All">All Communities / Castes</option>
+                    {casteOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Education (Multi-Select) */}

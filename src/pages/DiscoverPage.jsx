@@ -23,6 +23,10 @@ export const DiscoverPage = ({ onNavigate }) => {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
+  const isCandidateUser = Boolean(user && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1');
+  const userCaste = (user?.caste || user?.community || '').trim();
+  const userReligion = (user?.religion || '').trim();
+
   const defaultGender = useMemo(() => {
     if (user && user.gender === 'male') return 'female';
     if (user && user.gender === 'female') return 'male';
@@ -30,9 +34,11 @@ export const DiscoverPage = ({ onNavigate }) => {
   }, [user]);
 
   const defaultCaste = useMemo(() => {
-    if (!user || !user.caste) return 'All';
-    const userCaste = String(user.caste).trim();
-    if (!userCaste) return 'All';
+    if (!isCandidateUser) return 'All';
+    if (!userCaste && !userReligion) return 'All';
+
+    // Prioritize Buddhist religion matching
+    if (/budd|baudd/i.test(userReligion)) return 'Buddhist';
 
     const matched = MAHARASHTRA_COMMUNITIES.find((c) => {
       const cLower = c.toLowerCase();
@@ -47,14 +53,14 @@ export const DiscoverPage = ({ onNavigate }) => {
       );
     });
 
-    return matched || userCaste;
-  }, [user]);
+    return matched || userCaste || 'All';
+  }, [isCandidateUser, userCaste, userReligion]);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState([]);
   const [selectedReligion, setSelectedReligion] = useState('All');
-  const [selectedCaste, setSelectedCaste] = useState(() => defaultCaste);
+  const [selectedCaste, setSelectedCaste] = useState(() => (isCandidateUser && defaultCaste !== 'All' ? defaultCaste : 'All'));
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('All');
   const [selectedEducation, setSelectedEducation] = useState([]);
   const [govtEmployeeFilter, setGovtEmployeeFilter] = useState('All');
@@ -67,8 +73,10 @@ export const DiscoverPage = ({ onNavigate }) => {
   const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
 
   useEffect(() => {
-    setSelectedCaste(defaultCaste);
-  }, [defaultCaste]);
+    if (isCandidateUser && defaultCaste && defaultCaste !== 'All') {
+      setSelectedCaste(defaultCaste);
+    }
+  }, [isCandidateUser, defaultCaste]);
 
   const casteOptions = useMemo(() => {
     const list = [...MAHARASHTRA_COMMUNITIES];
@@ -173,9 +181,14 @@ export const DiscoverPage = ({ onNavigate }) => {
       }
 
       // 9. Caste / Community Filter
-      if (selectedCaste !== 'All') {
-        const c = (p.caste || '').toLowerCase().trim();
-        const targetC = selectedCaste.toLowerCase().trim();
+      const candidateSameCommunityRequired = isCandidateUser && defaultCaste && defaultCaste !== 'All';
+      const isBuddhistUser = candidateSameCommunityRequired && /budd|baudd/i.test(defaultCaste);
+      const targetCaste = candidateSameCommunityRequired ? defaultCaste : selectedCaste;
+
+      if (targetCaste !== 'All') {
+        const c = (p.caste || p.community || '').toLowerCase().trim();
+        const r = (p.religion || '').toLowerCase().trim();
+        const targetC = targetCaste.toLowerCase().trim();
 
         if (targetC === 'other') {
           const standardList = MAHARASHTRA_COMMUNITIES
@@ -195,11 +208,12 @@ export const DiscoverPage = ({ onNavigate }) => {
           });
 
           if (isStandardCaste) return false;
+        } else if (isBuddhistUser || targetC === 'buddhist' || targetC === 'bauddha' || /budd|baudd/i.test(targetC)) {
+          const pIsBuddhist = /budd|baudd/i.test(c) || /budd|baudd/i.test(r);
+          if (!pIsBuddhist) return false;
         } else {
           const baseTarget = targetC.split(' ')[0].replace(/[^a-z]/g, '');
-          if (targetC === 'buddhist' || targetC === 'bauddha') {
-            if (!c.includes('buddhist') && !c.includes('bauddha') && !c.includes('buddh')) return false;
-          } else if (!c.includes(targetC) && !c.includes(baseTarget)) {
+          if (!c.includes(targetC) && !c.includes(baseTarget)) {
             return false;
           }
         }
@@ -279,12 +293,12 @@ export const DiscoverPage = ({ onNavigate }) => {
       return true;
     });
     return sortProfilesByLatest(list);
-  }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
+  }, [profiles, user, isCandidateUser, defaultCaste, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   const handleReset = () => {
     setSelectedDistrict([]);
     setSelectedReligion('All');
-    setSelectedCaste(defaultCaste);
+    setSelectedCaste(isCandidateUser && defaultCaste && defaultCaste !== 'All' ? defaultCaste : 'All');
     setSelectedMaritalStatus('All');
     setSelectedEducation([]);
     setGovtEmployeeFilter('All');
@@ -320,13 +334,13 @@ export const DiscoverPage = ({ onNavigate }) => {
     if (minAge !== '18' || maxAge !== '60') count++;
     if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : selectedDistrict !== 'All') count++;
     if (selectedReligion !== 'All') count++;
-    if (selectedCaste !== 'All') count++;
+    if (selectedCaste !== 'All' && !(isCandidateUser && defaultCaste !== 'All')) count++;
     if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : selectedEducation !== 'All') count++;
     if (govtEmployeeFilter !== 'All') count++;
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [genderFilter, defaultGender, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
+  }, [genderFilter, defaultGender, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery, isCandidateUser, defaultCaste]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -490,16 +504,28 @@ export const DiscoverPage = ({ onNavigate }) => {
           {/* 6. Caste / Community */}
           <div>
             <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
-            <select
-              value={selectedCaste}
-              onChange={(e) => setSelectedCaste(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-            >
-              <option value="All">All Communities / Castes</option>
-              {casteOptions.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+              <div
+                className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                title="Showing profiles from your community only"
+              >
+                <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                  🔒 Locked
+                </span>
+              </div>
+            ) : (
+              <select
+                value={selectedCaste}
+                onChange={(e) => setSelectedCaste(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+              >
+                <option value="All">All Communities / Castes</option>
+                {casteOptions.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* 7. Education (Multi-Select) */}
@@ -688,16 +714,28 @@ export const DiscoverPage = ({ onNavigate }) => {
               {/* Caste */}
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
-                <select
-                  value={selectedCaste}
-                  onChange={(e) => setSelectedCaste(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="All">All Communities / Castes</option>
-                  {casteOptions.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                  <div
+                    className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing profiles from your community only"
+                  >
+                    <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCaste}
+                    onChange={(e) => setSelectedCaste(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    <option value="All">All Communities / Castes</option>
+                    {casteOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Education (Multi-Select) */}
