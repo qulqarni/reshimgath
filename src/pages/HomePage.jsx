@@ -45,6 +45,12 @@ export const HomePage = ({ onNavigate }) => {
 
   const isCandidateUser = Boolean(user && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1');
 
+  // Detect candidate user's gender and strictly enforce opposite gender matching
+  const userGenderRaw = String(user?.gender || user?.lookingFor || '').toLowerCase().trim();
+  const isCandidateGirl = isCandidateUser && (/fem|bride|girl|woman|वधू|स्त्री/i.test(userGenderRaw) || userGenderRaw === 'female');
+  const isCandidateBoy = isCandidateUser && !isCandidateGirl && (/male|groom|boy|man|वर|पुरुष/i.test(userGenderRaw) || userGenderRaw === 'male');
+  const candidateTargetGender = isCandidateGirl ? 'male' : isCandidateBoy ? 'female' : null;
+
   // Detect logged-in candidate user's community / caste to show same caste strictly
   const defaultCaste = useMemo(() => {
     if (!user) return 'All';
@@ -96,19 +102,27 @@ export const HomePage = ({ onNavigate }) => {
   const [govtEmployeeFilter, setGovtEmployeeFilter] = useState(() => initialListingState.govtEmployeeFilter);
   const [minAge, setMinAge] = useState(() => initialListingState.minAge);
   const [maxAge, setMaxAge] = useState(() => initialListingState.maxAge);
-  const [genderFilter, setGenderFilter] = useState(() => initialListingState.genderFilter);
+  const [genderFilter, setGenderFilter] = useState(() => {
+    if (isCandidateUser && candidateTargetGender) {
+      return candidateTargetGender;
+    }
+    return initialListingState.genderFilter || 'all';
+  });
   const [verifiedOnly, setVerifiedOnly] = useState(() => initialListingState.verifiedOnly);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(() => initialListingState.currentPage);
   const PROFILES_PER_PAGE = 24;
 
-  // Always keep candidate users locked strictly to their own community
+  // Always keep candidate users locked strictly to their own community & opposite gender
   useEffect(() => {
     if (isCandidateUser && defaultCaste && defaultCaste !== 'All') {
       setSelectedCaste(defaultCaste);
     }
-  }, [isCandidateUser, defaultCaste]);
+    if (isCandidateUser && candidateTargetGender) {
+      setGenderFilter(candidateTargetGender);
+    }
+  }, [isCandidateUser, defaultCaste, candidateTargetGender]);
 
   const districtOptions = useMemo(() => ['Ichalkaranji/इचलकरंजी', ...DISTRICTS], []);
 
@@ -135,15 +149,17 @@ export const HomePage = ({ onNavigate }) => {
         return false;
       }
 
-      // 4. Gender Filter
-      if (user && user.gender === 'male') {
-        if ((p.gender || '').toLowerCase().trim() !== 'female') return false;
-      } else if (user && user.gender === 'female') {
-        if ((p.gender || '').toLowerCase().trim() !== 'male') return false;
+      // 4. Gender Filter - candidates strictly see opposite gender only
+      const pGenderRaw = String(p.gender || p.lookingFor || '').toLowerCase().trim();
+      const isPFemale = /fem|bride|girl|woman|वधू|स्त्री/i.test(pGenderRaw) || pGenderRaw === 'female';
+      const isPMale = !isPFemale && (/male|groom|boy|man|वर|पुरुष/i.test(pGenderRaw) || pGenderRaw === 'male');
+
+      if (candidateTargetGender) {
+        if (candidateTargetGender === 'male' && !isPMale) return false;
+        if (candidateTargetGender === 'female' && !isPFemale) return false;
       } else if (genderFilter !== 'all') {
-        const g = (p.gender || '').toLowerCase().trim();
-        const targetG = genderFilter.toLowerCase().trim();
-        if (g !== targetG) return false;
+        if (genderFilter === 'male' && !isPMale) return false;
+        if (genderFilter === 'female' && !isPFemale) return false;
       }
 
       // 5. Marital Status Filter
@@ -321,11 +337,11 @@ export const HomePage = ({ onNavigate }) => {
       return true;
     });
     return sortProfilesByLatest(list);
-  }, [profiles, user, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
+  }, [profiles, user, candidateTargetGender, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (genderFilter !== 'all') count++;
+    if (genderFilter !== 'all' && !(isCandidateUser && candidateTargetGender)) count++;
     if (selectedMaritalStatus !== 'All') count++;
     if (minAge !== '18' || maxAge !== '60') count++;
     if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : selectedDistrict !== 'All') count++;
@@ -336,7 +352,7 @@ export const HomePage = ({ onNavigate }) => {
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery, isCandidateUser]);
+  }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery, isCandidateUser, candidateTargetGender]);
 
   const isInitialFilterMount = useRef(true);
   useEffect(() => {
@@ -456,7 +472,7 @@ export const HomePage = ({ onNavigate }) => {
     setGovtEmployeeFilter('All');
     setMinAge('18');
     setMaxAge('60');
-    setGenderFilter('all');
+    setGenderFilter(isCandidateUser && candidateTargetGender ? candidateTargetGender : 'all');
     setVerifiedOnly(false);
     setCurrentPage(1);
     try {
@@ -687,16 +703,30 @@ export const HomePage = ({ onNavigate }) => {
             
             {/* 1. Gender */}
             <div>
-              <label className="block text-[11px] text-gray-500 mb-1">Gender / वधू-वर</label>
-              <select
-                value={genderFilter}
-                onChange={(e) => setGenderFilter(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                <option value="all">All Genders</option>
-                <option value="female">Brides (वधू / Female)</option>
-                <option value="male">Grooms (वर / Male)</option>
-              </select>
+              <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Gender / वधू-वर</label>
+              {isCandidateUser && candidateTargetGender ? (
+                <div
+                  className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                  title="Showing opposite gender matches for your profile"
+                >
+                  <span className="truncate">
+                    {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
+                  </span>
+                  <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                    🔒 Locked
+                  </span>
+                </div>
+              ) : (
+                <select
+                  value={genderFilter}
+                  onChange={(e) => setGenderFilter(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  <option value="all">All Genders</option>
+                  <option value="female">Brides (वधू / Female)</option>
+                  <option value="male">Grooms (वर / Male)</option>
+                </select>
+              )}
             </div>
 
             {/* 2. Marital Status */}
@@ -1110,15 +1140,29 @@ export const HomePage = ({ onNavigate }) => {
               {/* Gender */}
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Gender / वधू-वर</label>
-                <select
-                  value={genderFilter}
-                  onChange={(e) => setGenderFilter(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="all">All Genders</option>
-                  <option value="female">Brides (वधू / Female)</option>
-                  <option value="male">Grooms (वर / Male)</option>
-                </select>
+                {isCandidateUser && candidateTargetGender ? (
+                  <div
+                    className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing opposite gender matches for your profile"
+                  >
+                    <span className="truncate">
+                      {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
+                    </span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                  >
+                    <option value="all">All Genders</option>
+                    <option value="female">Brides (वधू / Female)</option>
+                    <option value="male">Grooms (वर / Male)</option>
+                  </select>
+                )}
               </div>
 
               {/* Marital Status */}

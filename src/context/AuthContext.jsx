@@ -297,12 +297,12 @@ export const AuthProvider = ({ children }) => {
             unlockedProfiles: mergedUnlocked
           };
 
-          return {
+          return normalizeProfile({
             ...prev,
             ...liveData,
             subscription: mergedSub,
             unlockedProfiles: mergedUnlocked
-          };
+          });
         });
       }
     }, (err) => {

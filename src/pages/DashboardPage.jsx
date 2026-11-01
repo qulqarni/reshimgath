@@ -31,8 +31,12 @@ export const DashboardPage = ({ onNavigate }) => {
   const isCandidateUser = Boolean(user && !user.isAdmin && user.role !== 'admin' && user.id !== 'admin_1');
   const userCaste = (user?.caste || user?.community || '').trim();
   const userReligion = (user?.religion || '').trim();
-  const userGender = (user?.gender || '').trim().toLowerCase();
-  const oppositeGender = userGender === 'male' ? 'female' : userGender === 'female' ? 'male' : '';
+
+  // Detect candidate user's gender and strictly enforce opposite gender matching
+  const userGenderRaw = String(user?.gender || user?.lookingFor || '').toLowerCase().trim();
+  const isCandidateGirl = isCandidateUser && (/fem|bride|girl|woman|वधू|स्त्री/i.test(userGenderRaw) || userGenderRaw === 'female');
+  const isCandidateBoy = isCandidateUser && !isCandidateGirl && (/male|groom|boy|man|वर|पुरुष/i.test(userGenderRaw) || userGenderRaw === 'male');
+  const candidateTargetGender = isCandidateGirl ? 'male' : isCandidateBoy ? 'female' : null;
 
   const candidateSameCommunity = isCandidateUser && (userCaste || /budd|baudd/i.test(userReligion));
   const isBuddhistUser = candidateSameCommunity && (/budd|baudd/i.test(userCaste) || /budd|baudd/i.test(userReligion));
@@ -44,10 +48,13 @@ export const DashboardPage = ({ onNavigate }) => {
         if (p.isApproved === false || p.verified === false) return false;
 
         if (isCandidateUser) {
-          // Opposite gender filter
-          if (oppositeGender) {
-            const pGender = (p.gender || '').trim().toLowerCase();
-            if (pGender && pGender !== oppositeGender) return false;
+          // Opposite gender filter - candidate girls see boys, candidate boys see girls
+          if (candidateTargetGender) {
+            const pGenderRaw = String(p.gender || p.lookingFor || '').toLowerCase().trim();
+            const isPFemale = /fem|bride|girl|woman|वधू|स्त्री/i.test(pGenderRaw) || pGenderRaw === 'female';
+            const isPMale = !isPFemale && (/male|groom|boy|man|वर|पुरुष/i.test(pGenderRaw) || pGenderRaw === 'male');
+            if (candidateTargetGender === 'male' && !isPMale) return false;
+            if (candidateTargetGender === 'female' && !isPFemale) return false;
           }
 
           // Same community filter
@@ -69,7 +76,7 @@ export const DashboardPage = ({ onNavigate }) => {
         return true;
       })
     ).slice(0, 3);
-  }, [profiles, user, isCandidateUser, oppositeGender, candidateSameCommunity, isBuddhistUser, userCaste]);
+  }, [profiles, user, isCandidateUser, candidateTargetGender, candidateSameCommunity, isBuddhistUser, userCaste]);
 
   const visitorsRef = React.useRef(null);
 
