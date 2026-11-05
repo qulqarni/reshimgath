@@ -6,7 +6,7 @@ import { useProfiles, sortProfilesByLatest } from '../context/ProfileContext';
 import { PaithaniDivider } from '../components/common/PaithaniDivider';
 import { ProfileCard } from '../components/discovery/ProfileCard';
 import { MultiSelectDropdown } from '../components/common/MultiSelectDropdown';
-import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS } from '../data/maharashtraData';
+import { DISTRICTS, normalizeDistrict, MAHARASHTRA_DISTRICTS, MAHARASHTRA_COMMUNITIES, RELIGIONS, EDUCATION_LEVELS, OCCUPATIONS, HEIGHT_OPTIONS } from '../data/maharashtraData';
 import { parseListingStateFromSearch, serializeListingStateToQuery } from '../utils/listingFilterState';
 import { 
   Heart, 
@@ -32,6 +32,25 @@ import {
 
 const AGE_OPTIONS = Array.from({ length: 53 }, (_, i) => 18 + i);
 
+const parseHeightToCm = (hStr) => {
+  if (!hStr || hStr === 'All') return null;
+  const str = String(hStr);
+  const cmMatch = str.match(/(\d{2,3})\s*cm/i);
+  if (cmMatch) return parseInt(cmMatch[1], 10);
+  const ftInMatch = str.match(/(\d+)'\s*(\d+)?/);
+  if (ftInMatch) {
+    const feet = parseInt(ftInMatch[1], 10);
+    const inches = ftInMatch[2] ? parseInt(ftInMatch[2], 10) : 0;
+    return Math.round((feet * 12 + inches) * 2.54);
+  }
+  const num = parseInt(str, 10);
+  if (!isNaN(num)) {
+    if (num >= 100 && num <= 250) return num;
+    if (num >= 4 && num <= 7) return Math.round(num * 30.48);
+  }
+  return null;
+};
+
 export const HomePage = ({ onNavigate }) => {
   const { user, isAuthenticated, loginAsDemo } = useAuth();
   const { t } = useLanguage();
@@ -53,7 +72,7 @@ export const HomePage = ({ onNavigate }) => {
 
   // Detect logged-in candidate user's community / caste to show same caste strictly
   const defaultCaste = useMemo(() => {
-    if (!user) return 'All';
+    if (!isCandidateUser || !user) return 'All';
     let rawCaste = (user.caste || '').trim();
     const rawReligion = (user.religion || '').trim().toLowerCase();
 
@@ -82,9 +101,10 @@ export const HomePage = ({ onNavigate }) => {
     });
 
     return matched || rawCaste;
-  }, [user]);
+  }, [user, isCandidateUser]);
 
   // Filter States
+  const [filterMode, setFilterMode] = useState(() => initialListingState.filterMode || 'basic');
   const [searchQuery, setSearchQuery] = useState(() => initialListingState.searchQuery);
   const [selectedDistrict, setSelectedDistrict] = useState(() => initialListingState.selectedDistrict);
   const [selectedReligion, setSelectedReligion] = useState(() => initialListingState.selectedReligion);
@@ -99,6 +119,9 @@ export const HomePage = ({ onNavigate }) => {
   });
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState(() => initialListingState.selectedMaritalStatus);
   const [selectedEducation, setSelectedEducation] = useState(() => initialListingState.selectedEducation);
+  const [selectedProfession, setSelectedProfession] = useState(() => initialListingState.selectedProfession || 'All');
+  const [minHeight, setMinHeight] = useState(() => initialListingState.minHeight || 'All');
+  const [maxHeight, setMaxHeight] = useState(() => initialListingState.maxHeight || 'All');
   const [govtEmployeeFilter, setGovtEmployeeFilter] = useState(() => initialListingState.govtEmployeeFilter);
   const [minAge, setMinAge] = useState(() => initialListingState.minAge);
   const [maxAge, setMaxAge] = useState(() => initialListingState.maxAge);
@@ -187,36 +210,7 @@ export const HomePage = ({ onNavigate }) => {
         if (!isNaN(maxA) && ageNum > maxA) return false;
       }
 
-      // 7. District Filter (Multi-select)
-      if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : (selectedDistrict && selectedDistrict !== 'All')) {
-        const selectedList = Array.isArray(selectedDistrict) ? selectedDistrict : [selectedDistrict];
-        const d = (p.district || '').toLowerCase().trim();
-
-        const matchesAny = selectedList.some((targetItem) => {
-          if (!targetItem || targetItem === 'All') return true;
-          const targetD = targetItem.toLowerCase().trim();
-          const parts = targetD.split('/').map(s => s.trim()).filter(Boolean);
-          return d === targetD || 
-            d.includes(targetD) || 
-            targetD.includes(d) || 
-            parts.some(part => d === part || d.includes(part) || part.includes(d));
-        });
-
-        if (!matchesAny) return false;
-      }
-
-      // 8. Religion Filter
-      if (selectedReligion !== 'All') {
-        const r = (p.religion || '').toLowerCase().trim();
-        const targetR = selectedReligion.toLowerCase().trim();
-        if (targetR === 'buddhism' || targetR === 'buddhist' || targetR === 'bauddha') {
-          if (!r.includes('buddh') && !r.includes('bauddha')) return false;
-        } else if (!r.includes(targetR) && !targetR.includes(r)) {
-          return false;
-        }
-      }
-
-      // 9. Caste / Community Filter - Strictly enforce same caste for candidate users
+      // 7. Caste / Community Filter - Strictly enforce same caste for candidate users
       if (isCandidateUser && defaultCaste && defaultCaste !== 'All') {
         const c = (p.caste || '').toLowerCase().trim();
         const r = (p.religion || '').toLowerCase().trim();
@@ -263,40 +257,109 @@ export const HomePage = ({ onNavigate }) => {
         }
       }
 
-      // 10. Education Filter (Multi-select)
-      if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : (selectedEducation && selectedEducation !== 'All')) {
-        const selectedList = Array.isArray(selectedEducation) ? selectedEducation : [selectedEducation];
-        const edu = (p.education || '').toLowerCase().trim();
-
-        const matchesAny = selectedList.some((targetItem) => {
-          if (!targetItem || targetItem === 'All') return true;
-          const targetEdu = targetItem.toLowerCase().trim();
-          const firstToken = targetEdu.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
-
-          if (targetEdu === 'other') {
-            const isStandard = EDUCATION_LEVELS
-              .filter((item) => item.toLowerCase().trim() !== 'other')
-              .some((std) => {
-                const stdToken = std.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
-                return stdToken && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(stdToken);
-              });
-            return !isStandard;
+      // === BASIC FILTER SPECIFIC CRITERIA ===
+      if (filterMode === 'basic') {
+        // Religion Filter
+        if (selectedReligion !== 'All') {
+          const r = (p.religion || '').toLowerCase().trim();
+          const targetR = selectedReligion.toLowerCase().trim();
+          if (targetR === 'buddhism' || targetR === 'buddhist' || targetR === 'bauddha') {
+            if (!r.includes('buddh') && !r.includes('bauddha')) return false;
+          } else if (!r.includes(targetR) && !targetR.includes(r)) {
+            return false;
           }
-          return edu.includes(targetEdu) || (firstToken.length >= 2 && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(firstToken));
-        });
-
-        if (!matchesAny) return false;
+        }
       }
 
-      // 11. Government Employee Filter
-      if (govtEmployeeFilter !== 'All') {
-        const isGovtField = (p.isGovtEmployee || '').toLowerCase().trim() === 'yes';
-        const occ = (p.occupation || '').toLowerCase();
-        const isGovtOcc = occ.includes('govt') || occ.includes('government') || occ.includes('शासकीय') || occ.includes('सरकारी');
-        const isGovt = isGovtField || isGovtOcc;
+      // === ADVANCED FILTER SPECIFIC CRITERIA ===
+      if (filterMode === 'advanced') {
+        // Education Filter (Multi-select)
+        if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : (selectedEducation && selectedEducation !== 'All')) {
+          const selectedList = Array.isArray(selectedEducation) ? selectedEducation : [selectedEducation];
+          const edu = (p.education || '').toLowerCase().trim();
 
-        if (govtEmployeeFilter === 'Yes' && !isGovt) return false;
-        if (govtEmployeeFilter === 'No' && isGovt) return false;
+          const matchesAny = selectedList.some((targetItem) => {
+            if (!targetItem || targetItem === 'All') return true;
+            const targetEdu = targetItem.toLowerCase().trim();
+            const firstToken = targetEdu.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+            if (targetEdu === 'other') {
+              const isStandard = EDUCATION_LEVELS
+                .filter((item) => item.toLowerCase().trim() !== 'other')
+                .some((std) => {
+                  const stdToken = std.split('/')[0].split(' ')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+                  return stdToken && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(stdToken);
+                });
+              return !isStandard;
+            }
+            return edu.includes(targetEdu) || (firstToken.length >= 2 && edu.replace(/[^a-z0-9]/gi, '').toLowerCase().includes(firstToken));
+          });
+
+          if (!matchesAny) return false;
+        }
+
+        // Profession Filter
+        if (selectedProfession && selectedProfession !== 'All') {
+          const occ = (p.occupation || p.profession || p.customOccupation || '').toLowerCase().trim();
+          const targetOcc = selectedProfession.toLowerCase().trim();
+
+          if (targetOcc === 'other') {
+            const standardList = OCCUPATIONS
+              .filter((o) => o.toLowerCase().trim() !== 'other')
+              .map((o) => o.toLowerCase().trim());
+            const isStandard = standardList.some((std) => {
+              const keyTerms = std.split('/').map(k => k.trim().toLowerCase());
+              return keyTerms.some(term => occ.includes(term));
+            });
+            if (isStandard) return false;
+          } else {
+            const terms = targetOcc.split('/').map(t => t.trim().toLowerCase()).filter(Boolean);
+            const matchesOcc = occ.includes(targetOcc) || terms.some((term) => {
+              const cleanTerm = term.replace(/\([^)]*\)/g, '').trim();
+              return occ.includes(cleanTerm) || occ.includes(term);
+            });
+            if (!matchesOcc) return false;
+          }
+        }
+
+        // Height Filter (From - To)
+        if (minHeight !== 'All' || maxHeight !== 'All') {
+          const pCm = parseHeightToCm(p.height);
+          if (!pCm) return false;
+          const minCm = parseHeightToCm(minHeight);
+          const maxCm = parseHeightToCm(maxHeight);
+          if (minCm !== null && pCm < minCm) return false;
+          if (maxCm !== null && pCm > maxCm) return false;
+        }
+
+        // District Filter (Multi-select)
+        if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : (selectedDistrict && selectedDistrict !== 'All')) {
+          const selectedList = Array.isArray(selectedDistrict) ? selectedDistrict : [selectedDistrict];
+          const d = (p.district || '').toLowerCase().trim();
+
+          const matchesAny = selectedList.some((targetItem) => {
+            if (!targetItem || targetItem === 'All') return true;
+            const targetD = targetItem.toLowerCase().trim();
+            const parts = targetD.split('/').map(s => s.trim()).filter(Boolean);
+            return d === targetD || 
+              d.includes(targetD) || 
+              targetD.includes(d) || 
+              parts.some(part => d === part || d.includes(part) || part.includes(d));
+          });
+
+          if (!matchesAny) return false;
+        }
+
+        // Government Employee Filter
+        if (govtEmployeeFilter !== 'All') {
+          const isGovtField = (p.isGovtEmployee || '').toLowerCase().trim() === 'yes';
+          const occ = (p.occupation || '').toLowerCase();
+          const isGovtOcc = occ.includes('govt') || occ.includes('government') || occ.includes('शासकीय') || occ.includes('सरकारी');
+          const isGovt = isGovtField || isGovtOcc;
+
+          if (govtEmployeeFilter === 'Yes' && !isGovt) return false;
+          if (govtEmployeeFilter === 'No' && isGovt) return false;
+        }
       }
 
       // 12. Verified Only Filter
@@ -337,22 +400,29 @@ export const HomePage = ({ onNavigate }) => {
       return true;
     });
     return sortProfilesByLatest(list);
-  }, [profiles, user, candidateTargetGender, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery]);
+  }, [profiles, user, candidateTargetGender, defaultCaste, isCandidateUser, filterMode, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, selectedProfession, minHeight, maxHeight, govtEmployeeFilter, verifiedOnly, searchQuery]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (genderFilter !== 'all' && !(isCandidateUser && candidateTargetGender)) count++;
-    if (selectedMaritalStatus !== 'All') count++;
     if (minAge !== '18' || maxAge !== '60') count++;
-    if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : selectedDistrict !== 'All') count++;
-    if (selectedReligion !== 'All') count++;
-    if (!isCandidateUser && selectedCaste !== 'All') count++;
-    if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : selectedEducation !== 'All') count++;
-    if (govtEmployeeFilter !== 'All') count++;
+    if (selectedMaritalStatus !== 'All') count++;
+    if (selectedCaste !== 'All' && !(isCandidateUser && defaultCaste && defaultCaste !== 'All')) count++;
+
+    if (filterMode === 'basic') {
+      if (selectedReligion !== 'All') count++;
+    } else {
+      if (Array.isArray(selectedEducation) ? selectedEducation.length > 0 : selectedEducation !== 'All') count++;
+      if (selectedProfession !== 'All') count++;
+      if (minHeight !== 'All' || maxHeight !== 'All') count++;
+      if (Array.isArray(selectedDistrict) ? selectedDistrict.length > 0 : selectedDistrict !== 'All') count++;
+      if (govtEmployeeFilter !== 'All') count++;
+    }
+
     if (verifiedOnly) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, govtEmployeeFilter, verifiedOnly, searchQuery, isCandidateUser, candidateTargetGender]);
+  }, [filterMode, genderFilter, selectedMaritalStatus, minAge, maxAge, selectedDistrict, selectedReligion, selectedCaste, selectedEducation, selectedProfession, minHeight, maxHeight, govtEmployeeFilter, verifiedOnly, searchQuery, isCandidateUser, candidateTargetGender, defaultCaste]);
 
   const isInitialFilterMount = useRef(true);
   useEffect(() => {
@@ -361,17 +431,21 @@ export const HomePage = ({ onNavigate }) => {
       return;
     }
     setCurrentPage(1);
-  }, [searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly]);
+  }, [filterMode, searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, selectedProfession, minHeight, maxHeight, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly]);
 
   // Synchronize active filters, search query, and pagination with URL and sessionStorage
   useEffect(() => {
     const stateObj = {
+      filterMode,
       searchQuery,
       selectedDistrict,
       selectedReligion,
       selectedCaste,
       selectedMaritalStatus,
       selectedEducation,
+      selectedProfession,
+      minHeight,
+      maxHeight,
       govtEmployeeFilter,
       minAge,
       maxAge,
@@ -397,18 +471,22 @@ export const HomePage = ({ onNavigate }) => {
     } catch (e) {
       console.warn('Listing state synchronization error:', e);
     }
-  }, [searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly, currentPage]);
+  }, [filterMode, searchQuery, selectedDistrict, selectedReligion, selectedCaste, selectedMaritalStatus, selectedEducation, selectedProfession, minHeight, maxHeight, govtEmployeeFilter, minAge, maxAge, genderFilter, verifiedOnly, currentPage]);
 
   // Listen to popstate for browser back/forward buttons when returning or navigating history
   useEffect(() => {
     const handleUrlStateChange = () => {
       const parsed = parseListingStateFromSearch(window.location.search, false);
+      setFilterMode(parsed.filterMode || 'basic');
       setSearchQuery(parsed.searchQuery);
       setSelectedDistrict(parsed.selectedDistrict);
       setSelectedReligion(parsed.selectedReligion);
       setSelectedCaste(parsed.selectedCaste);
       setSelectedMaritalStatus(parsed.selectedMaritalStatus);
       setSelectedEducation(parsed.selectedEducation);
+      setSelectedProfession(parsed.selectedProfession || 'All');
+      setMinHeight(parsed.minHeight || 'All');
+      setMaxHeight(parsed.maxHeight || 'All');
       setGovtEmployeeFilter(parsed.govtEmployeeFilter);
       setMinAge(parsed.minAge);
       setMaxAge(parsed.maxAge);
@@ -462,13 +540,15 @@ export const HomePage = ({ onNavigate }) => {
   }, [currentPage, totalPages]);
 
   const handleReset = () => {
-    userChangedCasteManually.current = true;
     setSearchQuery('');
     setSelectedDistrict([]);
     setSelectedReligion('All');
     setSelectedCaste(isCandidateUser && defaultCaste && defaultCaste !== 'All' ? defaultCaste : 'All');
     setSelectedMaritalStatus('All');
     setSelectedEducation([]);
+    setSelectedProfession('All');
+    setMinHeight('All');
+    setMaxHeight('All');
     setGovtEmployeeFilter('All');
     setMinAge('18');
     setMaxAge('60');
@@ -664,7 +744,7 @@ export const HomePage = ({ onNavigate }) => {
             className="w-full py-3.5 px-5 bg-brand-plum text-white font-bold text-sm rounded-2xl flex items-center justify-center space-x-2 shadow-luxury border border-brand-gold/40 hover:bg-brand-plumDark transition-all"
           >
             <Filter className="w-4 h-4 text-brand-gold" />
-            <span>Filter</span>
+            <span>Filter ({filterMode === 'advanced' ? 'Advanced' : 'Basic'})</span>
             {activeFiltersCount > 0 && (
               <span className="ml-1.5 px-2 py-0.5 bg-brand-kesari text-white text-[10px] font-bold rounded-full">
                 {activeFiltersCount}
@@ -675,18 +755,47 @@ export const HomePage = ({ onNavigate }) => {
 
         {/* SMART PROFILE FILTER PANEL (DESKTOP VIEW ONLY) */}
         <div className="hidden md:block bg-white rounded-3xl p-4 sm:p-6 border border-brand-rose/20 shadow-luxury space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3 gap-2">
-            <div className="flex items-center space-x-2 min-w-0">
-              <SlidersHorizontal className="w-4 h-4 text-brand-plum shrink-0" />
-              <h3 className="font-serif font-bold text-xs sm:text-sm text-brand-plum uppercase tracking-wider truncate sm:whitespace-nowrap">
-                Search & Filter Candidates
-              </h3>
-              {activeFiltersCount > 0 && (
-                <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
-                  {activeFiltersCount} Active
-                </span>
-              )}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+              <div className="flex items-center space-x-2">
+                <SlidersHorizontal className="w-4 h-4 text-brand-plum shrink-0" />
+                <h3 className="font-serif font-bold text-xs sm:text-sm text-brand-plum uppercase tracking-wider truncate sm:whitespace-nowrap">
+                  Search & Filter Candidates
+                </h3>
+                {activeFiltersCount > 0 && (
+                  <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
+                    {activeFiltersCount} Active
+                  </span>
+                )}
+              </div>
+
+              {/* Mode Switcher Tabs */}
+              <div className="flex items-center bg-gray-100/90 p-0.5 rounded-xl border border-gray-200/70 text-xs font-semibold ml-1">
+                <button
+                  type="button"
+                  onClick={() => setFilterMode('basic')}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    filterMode === 'basic'
+                      ? 'bg-brand-plum text-white font-bold shadow-sm'
+                      : 'text-gray-600 hover:text-brand-plum hover:bg-white/50'
+                  }`}
+                >
+                  Basic Filter (प्राथमिक)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterMode('advanced')}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    filterMode === 'advanced'
+                      ? 'bg-brand-plum text-white font-bold shadow-sm'
+                      : 'text-gray-600 hover:text-brand-plum hover:bg-white/50'
+                  }`}
+                >
+                  Advanced Filter (प्रगत)
+                </button>
+              </div>
             </div>
+
             {activeFiltersCount > 0 && (
               <button
                 onClick={handleReset}
@@ -698,155 +807,294 @@ export const HomePage = ({ onNavigate }) => {
             )}
           </div>
 
-          {/* Filter Controls Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
-            
-            {/* 1. Gender */}
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Gender / वधू-वर</label>
-              {isCandidateUser && candidateTargetGender ? (
-                <div
-                  className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
-                  title="Showing opposite gender matches for your profile"
-                >
-                  <span className="truncate">
-                    {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
-                  </span>
-                  <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
-                    🔒 Locked
-                  </span>
+          {/* BASIC FILTER GRID (5 fields: Gender, Age, Religion, Caste, Marital Status) */}
+          {filterMode === 'basic' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 text-xs font-semibold">
+              {/* 1. Gender */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Gender / वधू-वर</label>
+                {isCandidateUser && candidateTargetGender ? (
+                  <div
+                    className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing opposite gender matches for your profile"
+                  >
+                    <span className="truncate">
+                      {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
+                    </span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    <option value="all">All Genders</option>
+                    <option value="female">Brides (वधू / Female)</option>
+                    <option value="male">Grooms (वर / Male)</option>
+                  </select>
+                )}
+              </div>
+
+              {/* 2. Age Range */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">Age Range / वय (From - To)</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <select
+                    value={minAge}
+                    onChange={(e) => setMinAge(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`basic-from-${a}`} value={a}>{a}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={maxAge}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`basic-to-${a}`} value={a}>{a}</option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <select
-                  value={genderFilter}
-                  onChange={(e) => setGenderFilter(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-                >
-                  <option value="all">All Genders</option>
-                  <option value="female">Brides (वधू / Female)</option>
-                  <option value="male">Grooms (वर / Male)</option>
-                </select>
-              )}
-            </div>
+              </div>
 
-            {/* 2. Marital Status */}
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1">Marital Status / वैवाहिक स्थिती</label>
-              <select
-                value={selectedMaritalStatus}
-                onChange={(e) => setSelectedMaritalStatus(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                <option value="All">All Marital Statuses</option>
-                <option value="Unmarried">Unmarried (अविवाहित)</option>
-                <option value="Divorced">Divorced (घटस्फोटित)</option>
-                <option value="Widowed">Widowed (विधवा/विधुर)</option>
-              </select>
-            </div>
-
-            {/* 3. Age Range (From Age to To Age) */}
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1">Age Range / वय (From - To)</label>
-              <div className="grid grid-cols-2 gap-1.5">
+              {/* 3. Religion */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Religion / धर्म</label>
                 <select
-                  value={minAge}
-                  onChange={(e) => setMinAge(e.target.value)}
+                  value={selectedReligion}
+                  onChange={(e) => setSelectedReligion(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
                 >
-                  {AGE_OPTIONS.map((a) => (
-                    <option key={`from-${a}`} value={a}>{a}</option>
-                  ))}
-                </select>
-                <select
-                  value={maxAge}
-                  onChange={(e) => setMaxAge(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-                >
-                  {AGE_OPTIONS.map((a) => (
-                    <option key={`to-${a}`} value={a}>{a}</option>
+                  <option value="All">All Religions</option>
+                  {RELIGIONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* 4. District (Multi-Select) */}
-            <MultiSelectDropdown
-              label="District / जिल्हा"
-              options={districtOptions}
-              selectedValues={selectedDistrict}
-              onChange={setSelectedDistrict}
-              allLabel="All Districts / सर्व जिल्हे"
-            />
+              {/* 4. Caste */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
+                {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                  <div
+                    className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing profiles from your community only"
+                  >
+                    <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCaste}
+                    onChange={(e) => setSelectedCaste(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    <option value="All">All Communities / Castes</option>
+                    {casteOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
-            {/* 5. Religion */}
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Religion / धर्म</label>
-              <select
-                value={selectedReligion}
-                onChange={(e) => setSelectedReligion(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                <option value="All">All Religions</option>
-                {RELIGIONS.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 6. Caste / Community */}
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
-              {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
-                <div
-                  className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
-                  title="Showing profiles from your community only"
-                >
-                  <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
-                  <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
-                    🔒 Locked
-                  </span>
-                </div>
-              ) : (
+              {/* 5. Marital Status */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">Marital Status / वैवाहिक स्थिती</label>
                 <select
-                  value={selectedCaste}
-                  onChange={(e) => {
-                    userChangedCasteManually.current = true;
-                    setSelectedCaste(e.target.value);
-                  }}
+                  value={selectedMaritalStatus}
+                  onChange={(e) => setSelectedMaritalStatus(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
                 >
-                  <option value="All">All Communities / Castes</option>
-                  {casteOptions.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  <option value="All">All Marital Statuses</option>
+                  <option value="Unmarried">Unmarried (अविवाहित)</option>
+                  <option value="Divorced">Divorced (घटस्फोटित)</option>
+                  <option value="Widowed">Widowed (विधवा/विधुर)</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* ADVANCED FILTER GRID (9 fields: Gender, Age, Marital Status, Caste, Education, Profession, Height, District, Govt Employee) */}
+          {filterMode === 'advanced' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-semibold">
+              {/* 1. Gender */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Gender / वधू-वर</label>
+                {isCandidateUser && candidateTargetGender ? (
+                  <div
+                    className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing opposite gender matches for your profile"
+                  >
+                    <span className="truncate">
+                      {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
+                    </span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    <option value="all">All Genders</option>
+                    <option value="female">Brides (वधू / Female)</option>
+                    <option value="male">Grooms (वर / Male)</option>
+                  </select>
+                )}
+              </div>
+
+              {/* 2. Age Range */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">Age Range / वय (From - To)</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <select
+                    value={minAge}
+                    onChange={(e) => setMinAge(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`adv-from-${a}`} value={a}>{a}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={maxAge}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    {AGE_OPTIONS.map((a) => (
+                      <option key={`adv-to-${a}`} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* 3. Marital Status */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">Marital Status / वैवाहिक स्थिती</label>
+                <select
+                  value={selectedMaritalStatus}
+                  onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  <option value="All">All Marital Statuses</option>
+                  <option value="Unmarried">Unmarried (अविवाहित)</option>
+                  <option value="Divorced">Divorced (घटस्फोटित)</option>
+                  <option value="Widowed">Widowed (विधवा/विधुर)</option>
+                </select>
+              </div>
+
+              {/* 4. Caste */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Caste / जात-समाज</label>
+                {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                  <div
+                    className="w-full p-2.5 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                    title="Showing profiles from your community only"
+                  >
+                    <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCaste}
+                    onChange={(e) => setSelectedCaste(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    <option value="All">All Communities / Castes</option>
+                    {casteOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* 5. Education (Multi-Select) */}
+              <MultiSelectDropdown
+                label="Education / शिक्षण"
+                options={EDUCATION_LEVELS}
+                selectedValues={selectedEducation}
+                onChange={setSelectedEducation}
+                allLabel="All Education Backgrounds"
+              />
+
+              {/* 6. Profession */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Profession / व्यवसाय - नोकरी</label>
+                <select
+                  value={selectedProfession}
+                  onChange={(e) => setSelectedProfession(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  <option value="All">All Professions / सर्व व्यवसाय</option>
+                  {OCCUPATIONS.map((occ) => (
+                    <option key={occ} value={occ}>{occ}</option>
                   ))}
                 </select>
-              )}
+              </div>
+
+              {/* 7. Height (From - To) */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1 font-semibold">Height / उंची (From - To)</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <select
+                    value={minHeight}
+                    onChange={(e) => setMinHeight(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    <option value="All">Min Height (किमान)</option>
+                    {HEIGHT_OPTIONS.map((h) => (
+                      <option key={`adv-min-h-${h}`} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={maxHeight}
+                    onChange={(e) => setMaxHeight(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                  >
+                    <option value="All">Max Height (कमाल)</option>
+                    {HEIGHT_OPTIONS.map((h) => (
+                      <option key={`adv-max-h-${h}`} value={h}>{h}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* 8. District (Multi-Select) */}
+              <MultiSelectDropdown
+                label="District / जिल्हा"
+                options={districtOptions}
+                selectedValues={selectedDistrict}
+                onChange={setSelectedDistrict}
+                allLabel="All Districts / सर्व जिल्हे"
+              />
+
+              {/* 9. Government Employee */}
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">Govt Employee / शासकीय कर्मचारी</label>
+                <select
+                  value={govtEmployeeFilter}
+                  onChange={(e) => setGovtEmployeeFilter(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
+                >
+                  <option value="All">All (सर्व)</option>
+                  <option value="Yes">Yes (होय)</option>
+                  <option value="No">No (नाही)</option>
+                </select>
+              </div>
             </div>
-
-            {/* 7. Education (Multi-Select) */}
-            <MultiSelectDropdown
-              label="Education / शिक्षण"
-              options={EDUCATION_LEVELS}
-              selectedValues={selectedEducation}
-              onChange={setSelectedEducation}
-              allLabel="All Education Backgrounds"
-            />
-
-            {/* 8. Government Employee */}
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1">Govt Employee / शासकीय कर्मचारी</label>
-              <select
-                value={govtEmployeeFilter}
-                onChange={(e) => setGovtEmployeeFilter(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-plum/20 text-xs font-semibold text-brand-charcoal bg-gray-50/50"
-              >
-                <option value="All">All (सर्व)</option>
-                <option value="Yes">Yes (होय)</option>
-                <option value="No">No (नाही)</option>
-              </select>
-            </div>
-
-          </div>
+          )}
 
           {/* Bottom Checkbox Option */}
           <div className="flex flex-wrap items-center justify-between pt-2 gap-3 border-t border-gray-100 text-xs">
@@ -863,7 +1111,7 @@ export const HomePage = ({ onNavigate }) => {
 
             {activeFiltersCount > 0 && (
               <span className="text-[11px] text-gray-500 italic">
-                Showing candidates matching active filters
+                Showing candidates matching {filterMode === 'advanced' ? 'advanced' : 'basic'} filters
               </span>
             )}
           </div>
@@ -1124,163 +1372,340 @@ export const HomePage = ({ onNavigate }) => {
       </section>
       {/* Mobile Filter Modal Sheet */}
       {showMobileFilters && createPortal(
-        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 space-y-5 max-w-md w-full my-auto max-h-[85vh] overflow-y-auto shadow-2xl border border-brand-rose/20 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-serif font-bold text-lg text-brand-plum">Filter Candidates</h3>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center space-x-2">
+                <SlidersHorizontal className="w-4 h-4 text-brand-plum" />
+                <h3 className="font-serif font-bold text-base text-brand-plum">
+                  {t('filterTitle')}
+                </h3>
+                {activeFiltersCount > 0 && (
+                  <span className="px-2 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="p-1 rounded-full text-gray-400 hover:text-brand-plum"
+                className="p-1.5 text-gray-400 hover:text-brand-plum rounded-full hover:bg-gray-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs font-semibold">
-              {/* Gender */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Gender / वधू-वर</label>
-                {isCandidateUser && candidateTargetGender ? (
-                  <div
-                    className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
-                    title="Showing opposite gender matches for your profile"
-                  >
-                    <span className="truncate">
-                      {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
-                    </span>
-                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
-                      🔒 Locked
-                    </span>
+            {/* Mobile Mode Switcher Tabs */}
+            <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-2xl border border-gray-200/80">
+              <button
+                type="button"
+                onClick={() => setFilterMode('basic')}
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                  filterMode === 'basic'
+                    ? 'bg-brand-plum text-white shadow'
+                    : 'text-gray-600 hover:text-brand-plum'
+                }`}
+              >
+                Basic Filter (प्राथमिक)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterMode('advanced')}
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                  filterMode === 'advanced'
+                    ? 'bg-brand-plum text-white shadow'
+                    : 'text-gray-600 hover:text-brand-plum'
+                }`}
+              >
+                Advanced Filter (प्रगत)
+              </button>
+            </div>
+
+            {/* Mobile Filter Controls */}
+            <div className="space-y-3.5">
+              {filterMode === 'basic' ? (
+                <>
+                  {/* 1. Gender */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Gender / वधू-वर</label>
+                    {isCandidateUser && candidateTargetGender ? (
+                      <div
+                        className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                        title="Showing opposite gender matches for your profile"
+                      >
+                        <span className="truncate">
+                          {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
+                        </span>
+                        <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                          🔒 Locked
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={genderFilter}
+                        onChange={(e) => setGenderFilter(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="all">All Genders</option>
+                        <option value="female">Brides (वधू / Female)</option>
+                        <option value="male">Grooms (वर / Male)</option>
+                      </select>
+                    )}
                   </div>
-                ) : (
-                  <select
-                    value={genderFilter}
-                    onChange={(e) => setGenderFilter(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                  >
-                    <option value="all">All Genders</option>
-                    <option value="female">Brides (वधू / Female)</option>
-                    <option value="male">Grooms (वर / Male)</option>
-                  </select>
-                )}
-              </div>
 
-              {/* Marital Status */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Marital Status / वैवाहिक स्थिती</label>
-                <select
-                  value={selectedMaritalStatus}
-                  onChange={(e) => setSelectedMaritalStatus(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="All">All Marital Statuses</option>
-                  <option value="Unmarried">Unmarried (अविवाहित)</option>
-                  <option value="Divorced">Divorced (घटस्फोटित)</option>
-                  <option value="Widowed">Widowed (विधवा/विधुर)</option>
-                </select>
-              </div>
-
-              {/* Age Range */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Age Range / वय (From - To)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={minAge}
-                    onChange={(e) => setMinAge(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                  >
-                    {AGE_OPTIONS.map((a) => (
-                      <option key={`m-hm-from-${a}`} value={a}>{a}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={maxAge}
-                    onChange={(e) => setMaxAge(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                  >
-                    {AGE_OPTIONS.map((a) => (
-                      <option key={`m-hm-to-${a}`} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* District (Multi-Select) */}
-              <MultiSelectDropdown
-                label="District / जिल्हा"
-                options={districtOptions}
-                selectedValues={selectedDistrict}
-                onChange={setSelectedDistrict}
-                allLabel="All Districts / सर्व जिल्हे"
-              />
-
-              {/* Religion */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Religion / धर्म</label>
-                <select
-                  value={selectedReligion}
-                  onChange={(e) => setSelectedReligion(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="All">All Religions</option>
-                  {RELIGIONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Caste */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
-                {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
-                  <div
-                    className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
-                    title="Showing profiles from your community only"
-                  >
-                    <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
-                    <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
-                      🔒 Locked
-                    </span>
+                  {/* 2. Age Range */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Age Range / वय (From - To)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={minAge}
+                        onChange={(e) => setMinAge(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        {AGE_OPTIONS.map((a) => (
+                          <option key={`m-basic-from-${a}`} value={a}>{a}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={maxAge}
+                        onChange={(e) => setMaxAge(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        {AGE_OPTIONS.map((a) => (
+                          <option key={`m-basic-to-${a}`} value={a}>{a}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                ) : (
-                  <select
-                    value={selectedCaste}
-                    onChange={(e) => {
-                      userChangedCasteManually.current = true;
-                      setSelectedCaste(e.target.value);
-                    }}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                  >
-                    <option value="All">All Communities / Castes</option>
-                    {casteOptions.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
 
-              {/* Education (Multi-Select) */}
-              <MultiSelectDropdown
-                label="Education / शिक्षण"
-                options={EDUCATION_LEVELS}
-                selectedValues={selectedEducation}
-                onChange={setSelectedEducation}
-                allLabel="All Education Backgrounds"
-              />
+                  {/* 3. Religion */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Religion / धर्म</label>
+                    <select
+                      value={selectedReligion}
+                      onChange={(e) => setSelectedReligion(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                    >
+                      <option value="All">All Religions</option>
+                      {RELIGIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Government Employee */}
-              <div>
-                <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Government Employee / शासकीय कर्मचारी</label>
-                <select
-                  value={govtEmployeeFilter}
-                  onChange={(e) => setGovtEmployeeFilter(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  <option value="All">All (सर्व)</option>
-                  <option value="Yes">Yes (होय)</option>
-                  <option value="No">No (नाही)</option>
-                </select>
-              </div>
+                  {/* 4. Caste */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
+                    {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                      <div
+                        className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                        title="Showing profiles from your community only"
+                      >
+                        <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                        <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                          🔒 Locked
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedCaste}
+                        onChange={(e) => setSelectedCaste(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="All">All Communities / Castes</option>
+                        {casteOptions.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* 5. Marital Status */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Marital Status / वैवाहिक स्थिती</label>
+                    <select
+                      value={selectedMaritalStatus}
+                      onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                    >
+                      <option value="All">All Marital Statuses</option>
+                      <option value="Unmarried">Unmarried (अविवाहित)</option>
+                      <option value="Divorced">Divorced (घटस्फोटित)</option>
+                      <option value="Widowed">Widowed (विधवा/विधुर)</option>
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* 1. Gender */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Gender / वधू-वर</label>
+                    {isCandidateUser && candidateTargetGender ? (
+                      <div
+                        className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                        title="Showing opposite gender matches for your profile"
+                      >
+                        <span className="truncate">
+                          {candidateTargetGender === 'male' ? 'Grooms (वर / Boys)' : 'Brides (वधू / Girls)'}
+                        </span>
+                        <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                          🔒 Locked
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={genderFilter}
+                        onChange={(e) => setGenderFilter(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="all">All Genders</option>
+                        <option value="female">Brides (वधू / Female)</option>
+                        <option value="male">Grooms (वर / Male)</option>
+                      </select>
+                    )}
+                  </div>
+
+                  {/* 2. Age Range */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Age Range / वय (From - To)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={minAge}
+                        onChange={(e) => setMinAge(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        {AGE_OPTIONS.map((a) => (
+                          <option key={`m-adv-from-${a}`} value={a}>{a}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={maxAge}
+                        onChange={(e) => setMaxAge(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        {AGE_OPTIONS.map((a) => (
+                          <option key={`m-adv-to-${a}`} value={a}>{a}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 3. Marital Status */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Marital Status / वैवाहिक स्थिती</label>
+                    <select
+                      value={selectedMaritalStatus}
+                      onChange={(e) => setSelectedMaritalStatus(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                    >
+                      <option value="All">All Marital Statuses</option>
+                      <option value="Unmarried">Unmarried (अविवाहित)</option>
+                      <option value="Divorced">Divorced (घटस्फोटित)</option>
+                      <option value="Widowed">Widowed (विधवा/विधुर)</option>
+                    </select>
+                  </div>
+
+                  {/* 4. Caste */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Caste / जात-समाज</label>
+                    {isCandidateUser && defaultCaste && defaultCaste !== 'All' ? (
+                      <div
+                        className="w-full p-3 rounded-xl border border-brand-plum/30 bg-brand-plum/5 text-xs font-semibold text-brand-plum flex items-center justify-between"
+                        title="Showing profiles from your community only"
+                      >
+                        <span className="truncate">{defaultCaste} (तुमचा समाज)</span>
+                        <span className="text-[10px] bg-brand-plum/10 text-brand-plum px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1">
+                          🔒 Locked
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedCaste}
+                        onChange={(e) => setSelectedCaste(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="All">All Communities / Castes</option>
+                        {casteOptions.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* 5. Education (Multi-Select) */}
+                  <MultiSelectDropdown
+                    label="Education / शिक्षण"
+                    options={EDUCATION_LEVELS}
+                    selectedValues={selectedEducation}
+                    onChange={setSelectedEducation}
+                    allLabel="All Education Backgrounds"
+                  />
+
+                  {/* 6. Profession */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Profession / व्यवसाय - नोकरी</label>
+                    <select
+                      value={selectedProfession}
+                      onChange={(e) => setSelectedProfession(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                    >
+                      <option value="All">All Professions / सर्व व्यवसाय</option>
+                      {OCCUPATIONS.map((occ) => (
+                        <option key={occ} value={occ}>{occ}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 7. Height (From - To) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Height / उंची (From - To)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={minHeight}
+                        onChange={(e) => setMinHeight(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="All">Min Height (किमान)</option>
+                        {HEIGHT_OPTIONS.map((h) => (
+                          <option key={`m-min-h-${h}`} value={h}>{h}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={maxHeight}
+                        onChange={(e) => setMaxHeight(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                      >
+                        <option value="All">Max Height (कमाल)</option>
+                        {HEIGHT_OPTIONS.map((h) => (
+                          <option key={`m-max-h-${h}`} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 8. District (Multi-Select) */}
+                  <MultiSelectDropdown
+                    label="District / जिल्हा"
+                    options={districtOptions}
+                    selectedValues={selectedDistrict}
+                    onChange={setSelectedDistrict}
+                    allLabel="All Districts / सर्व जिल्हे"
+                  />
+
+                  {/* 9. Government Employee */}
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Government Employee / शासकीय कर्मचारी</label>
+                    <select
+                      value={govtEmployeeFilter}
+                      onChange={(e) => setGovtEmployeeFilter(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-200 text-xs"
+                    >
+                      <option value="All">All (सर्व)</option>
+                      <option value="Yes">Yes (होय)</option>
+                      <option value="No">No (नाही)</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* Verified Only */}
               <div className="pt-2">

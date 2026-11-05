@@ -4,12 +4,16 @@
  */
 
 export const DEFAULT_LISTING_STATE = {
+  filterMode: 'basic',
   searchQuery: '',
   selectedDistrict: [],
   selectedReligion: 'All',
   selectedCaste: 'All',
   selectedMaritalStatus: 'All',
   selectedEducation: [],
+  selectedProfession: 'All',
+  minHeight: 'All',
+  maxHeight: 'All',
   govtEmployeeFilter: 'All',
   minAge: '18',
   maxAge: '60',
@@ -30,12 +34,16 @@ export const parseListingStateFromSearch = (searchString = '', sessionFallback =
     const hasAnyParam =
       params.has('page') ||
       params.has('search') ||
+      params.has('mode') ||
       params.has('gender') ||
       params.has('district') ||
       params.has('religion') ||
       params.has('caste') ||
       params.has('marital') ||
       params.has('edu') ||
+      params.has('profession') ||
+      params.has('minHeight') ||
+      params.has('maxHeight') ||
       params.has('govt') ||
       params.has('minAge') ||
       params.has('maxAge') ||
@@ -43,6 +51,7 @@ export const parseListingStateFromSearch = (searchString = '', sessionFallback =
 
     if (hasAnyParam) {
       return {
+        filterMode: params.get('mode') === 'advanced' ? 'advanced' : 'basic',
         searchQuery: params.get('search') || '',
         selectedDistrict: params.get('district')
           ? params.get('district').split(',').map((s) => s.trim()).filter(Boolean)
@@ -53,6 +62,9 @@ export const parseListingStateFromSearch = (searchString = '', sessionFallback =
         selectedEducation: params.get('edu')
           ? params.get('edu').split(',').map((s) => s.trim()).filter(Boolean)
           : [],
+        selectedProfession: params.get('profession') || 'All',
+        minHeight: params.get('minHeight') || 'All',
+        maxHeight: params.get('maxHeight') || 'All',
         govtEmployeeFilter: params.get('govt') || 'All',
         minAge: params.get('minAge') || '18',
         maxAge: params.get('maxAge') || '60',
@@ -68,12 +80,16 @@ export const parseListingStateFromSearch = (searchString = '', sessionFallback =
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
           return {
+            filterMode: parsed.filterMode === 'advanced' ? 'advanced' : 'basic',
             searchQuery: parsed.searchQuery || '',
             selectedDistrict: Array.isArray(parsed.selectedDistrict) ? parsed.selectedDistrict : [],
             selectedReligion: parsed.selectedReligion || 'All',
             selectedCaste: parsed.selectedCaste || 'All',
             selectedMaritalStatus: parsed.selectedMaritalStatus || 'All',
             selectedEducation: Array.isArray(parsed.selectedEducation) ? parsed.selectedEducation : [],
+            selectedProfession: parsed.selectedProfession || 'All',
+            minHeight: parsed.minHeight || 'All',
+            maxHeight: parsed.maxHeight || 'All',
             govtEmployeeFilter: parsed.govtEmployeeFilter || 'All',
             minAge: String(parsed.minAge || '18'),
             maxAge: String(parsed.maxAge || '60'),
@@ -99,6 +115,9 @@ export const serializeListingStateToQuery = (state) => {
   if (!state || typeof state !== 'object') return '';
   const params = new URLSearchParams();
 
+  if (state.filterMode && state.filterMode === 'advanced') {
+    params.set('mode', 'advanced');
+  }
   if (state.currentPage && Number(state.currentPage) > 1) {
     params.set('page', String(state.currentPage));
   }
@@ -122,6 +141,15 @@ export const serializeListingStateToQuery = (state) => {
   }
   if (Array.isArray(state.selectedEducation) && state.selectedEducation.length > 0) {
     params.set('edu', state.selectedEducation.join(','));
+  }
+  if (state.selectedProfession && state.selectedProfession !== 'All') {
+    params.set('profession', state.selectedProfession);
+  }
+  if (state.minHeight && state.minHeight !== 'All') {
+    params.set('minHeight', state.minHeight);
+  }
+  if (state.maxHeight && state.maxHeight !== 'All') {
+    params.set('maxHeight', state.maxHeight);
   }
   if (state.govtEmployeeFilter && state.govtEmployeeFilter !== 'All') {
     params.set('govt', state.govtEmployeeFilter);
