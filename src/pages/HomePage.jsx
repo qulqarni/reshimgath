@@ -1372,56 +1372,67 @@ export const HomePage = ({ onNavigate }) => {
       </section>
       {/* Mobile Filter Modal Sheet */}
       {showMobileFilters && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center space-x-2">
-                <SlidersHorizontal className="w-4 h-4 text-brand-plum" />
-                <h3 className="font-serif font-bold text-base text-brand-plum">
-                  {t('filterTitle')}
-                </h3>
-                {activeFiltersCount > 0 && (
-                  <span className="px-2 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
-                    {activeFiltersCount}
-                  </span>
-                )}
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          {/* Backdrop click dismiss */}
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowMobileFilters(false)}
+            aria-hidden="true"
+          />
+
+          <div className="relative z-10 bg-white w-full max-w-lg rounded-t-[28px] sm:rounded-3xl max-h-[90dvh] sm:max-h-[85dvh] flex flex-col shadow-2xl overflow-hidden border border-brand-rose/20">
+            {/* Pinned Header */}
+            <div className="p-4 sm:p-5 pb-3 border-b border-gray-100 shrink-0 bg-white space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <SlidersHorizontal className="w-4 h-4 text-brand-plum" />
+                  <h3 className="font-serif font-bold text-base text-brand-plum">
+                    {t('filterTitle')}
+                  </h3>
+                  {activeFiltersCount > 0 && (
+                    <span className="px-2 py-0.5 bg-brand-plum text-white text-[10px] font-bold rounded-full">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="p-1.5 text-gray-400 hover:text-brand-plum rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="p-1.5 text-gray-400 hover:text-brand-plum rounded-full hover:bg-gray-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              {/* Mobile Mode Switcher Tabs */}
+              <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-2xl border border-gray-200/80">
+                <button
+                  type="button"
+                  onClick={() => setFilterMode('basic')}
+                  className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                    filterMode === 'basic'
+                      ? 'bg-brand-plum text-white shadow'
+                      : 'text-gray-600 hover:text-brand-plum'
+                  }`}
+                >
+                  Basic Filter (प्राथमिक)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterMode('advanced')}
+                  className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                    filterMode === 'advanced'
+                      ? 'bg-brand-plum text-white shadow'
+                      : 'text-gray-600 hover:text-brand-plum'
+                  }`}
+                >
+                  Advanced Filter (प्रगत)
+                </button>
+              </div>
             </div>
 
-            {/* Mobile Mode Switcher Tabs */}
-            <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-2xl border border-gray-200/80">
-              <button
-                type="button"
-                onClick={() => setFilterMode('basic')}
-                className={`py-2 text-xs font-bold rounded-xl transition-all ${
-                  filterMode === 'basic'
-                    ? 'bg-brand-plum text-white shadow'
-                    : 'text-gray-600 hover:text-brand-plum'
-                }`}
-              >
-                Basic Filter (प्राथमिक)
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterMode('advanced')}
-                className={`py-2 text-xs font-bold rounded-xl transition-all ${
-                  filterMode === 'advanced'
-                    ? 'bg-brand-plum text-white shadow'
-                    : 'text-gray-600 hover:text-brand-plum'
-                }`}
-              >
-                Advanced Filter (प्रगत)
-              </button>
-            </div>
-
-            {/* Mobile Filter Controls */}
-            <div className="space-y-3.5">
+            {/* Scrollable Filter Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-3.5">
               {filterMode === 'basic' ? (
                 <>
                   {/* 1. Gender */}
@@ -1721,16 +1732,24 @@ export const HomePage = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-3 border-t">
+            {/* Fixed Sticky Action Footer: Elevated above Android navigation bar */}
+            <div
+              className="p-4 pt-3 border-t border-gray-100 bg-white flex gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+              style={{
+                paddingBottom: 'max(3.25rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem))'
+              }}
+            >
               <button
+                type="button"
                 onClick={handleReset}
-                className="flex-1 py-3 bg-gray-100 text-brand-charcoal font-bold text-xs rounded-xl"
+                className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-brand-charcoal font-bold text-xs rounded-xl transition-colors active:scale-95"
               >
                 Reset
               </button>
               <button
+                type="button"
                 onClick={() => setShowMobileFilters(false)}
-                className="flex-1 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"
+                className="flex-1 py-3.5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md transition-colors active:scale-95"
               >
                 Apply Filters
               </button>

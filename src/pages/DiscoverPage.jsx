@@ -640,19 +640,29 @@ export const DiscoverPage = ({ onNavigate }) => {
 
       {/* Mobile Filter Modal Sheet */}
       {showMobileFilters && createPortal(
-        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 space-y-5 max-w-md w-full my-auto max-h-[85vh] overflow-y-auto shadow-2xl border border-brand-rose/20 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b pb-3">
+        <div className="md:hidden fixed inset-0 w-screen h-screen z-[99999] bg-slate-950/80 backdrop-blur-md flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4 animate-fadeIn">
+          {/* Backdrop click dismiss */}
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowMobileFilters(false)}
+            aria-hidden="true"
+          />
+
+          <div className="relative z-10 bg-white rounded-t-[28px] sm:rounded-3xl max-w-md w-full max-h-[90dvh] sm:max-h-[85dvh] flex flex-col shadow-2xl border border-brand-rose/20 overflow-hidden">
+            {/* Pinned Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 p-4 sm:p-5 pb-3 shrink-0 bg-white">
               <h3 className="font-serif font-bold text-lg text-brand-plum">{t('filterTitle')}</h3>
               <button
+                type="button"
                 onClick={() => setShowMobileFilters(false)}
-                className="p-1 rounded-full text-gray-400 hover:text-brand-plum"
+                className="p-1.5 rounded-full text-gray-400 hover:text-brand-plum hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs font-semibold">
+            {/* Scrollable Filter Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-4 text-xs font-semibold">
               {/* Gender */}
               <div>
                 <label className="block text-xs font-semibold text-brand-charcoal mb-1.5">Looking For (Gender / वधू-वर)</label>
@@ -809,16 +819,24 @@ export const DiscoverPage = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-3 border-t">
+            {/* Fixed Sticky Action Footer: Elevated above Android navigation bar */}
+            <div
+              className="p-4 pt-3 border-t border-gray-100 bg-white flex gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+              style={{
+                paddingBottom: 'max(3.25rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem))'
+              }}
+            >
               <button
+                type="button"
                 onClick={handleReset}
-                className="flex-1 py-3 bg-gray-100 text-brand-charcoal font-bold text-xs rounded-xl"
+                className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-brand-charcoal font-bold text-xs rounded-xl transition-colors active:scale-95"
               >
                 Reset
               </button>
               <button
+                type="button"
                 onClick={() => setShowMobileFilters(false)}
-                className="flex-1 py-3 bg-brand-plum text-white font-bold text-xs rounded-xl shadow"
+                className="flex-1 py-3.5 bg-brand-plum hover:bg-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md transition-colors active:scale-95"
               >
                 Apply Filters
               </button>
