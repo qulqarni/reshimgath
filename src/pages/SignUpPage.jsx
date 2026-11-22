@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff, Calendar, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff, Calendar, Loader2, Camera, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
+import { uploadPhotoToFirebase } from '../services/firebaseService';
+import { compressImageToFile } from '../utils/imageCompressor';
 
 export const SignUpPage = ({ onNavigate }) => {
   const { signup, checkExistingUser, checkExistingUserAsync } = useAuth();
   const { t } = useLanguage();
+
+  const fileInputRef = useRef(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -60,6 +67,67 @@ export const SignUpPage = ({ onNavigate }) => {
     };
   }, [formData.phone, formData.email, checkExistingUserAsync]);
 
+  // Clean up photo preview object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (photoPreview && photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
+
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type || !file.type.startsWith('image/')) {
+      setError('Please select a valid image file (JPG, PNG, or WebP).');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image file size must be less than 10MB.');
+      return;
+    }
+
+    setError('');
+    setIsCompressingPhoto(true);
+
+    try {
+      const compressed = await compressImageToFile(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.85
+      });
+      setPhotoFile(compressed);
+      if (photoPreview && photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+      setPhotoPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      console.warn('Compression fallback to original file:', err);
+      setPhotoFile(file);
+      if (photoPreview && photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+      setPhotoPreview(URL.createObjectURL(file));
+    } finally {
+      setIsCompressingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = (e) => {
+    e.stopPropagation();
+    setPhotoFile(null);
+    if (photoPreview && photoPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(photoPreview);
+    }
+    setPhotoPreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const existingCheck = {
     emailExists: localCheck.emailExists || asyncCheck.emailExists,
     phoneExists: localCheck.phoneExists || asyncCheck.phoneExists
@@ -73,6 +141,12 @@ export const SignUpPage = ({ onNavigate }) => {
 
     if (!agreeToTerms) {
       setError('You must accept the Terms of Use and Community Safety Rules to register.');
+      return;
+    }
+
+    // Compulsory profile photo check
+    if (!photoFile) {
+      setError('Profile photo is compulsory (अनिवार्य). Please upload a clear photograph of the candidate to register.');
       return;
     }
 
@@ -134,7 +208,33 @@ export const SignUpPage = ({ onNavigate }) => {
 
     setIsSubmitting(true);
     try {
-      const res = await signup(formData);
+      // 1. Upload compulsory profile photo to Firebase Storage
+      let uploadedAvatarUrl = '';
+      const tempId = `reg_${Date.now()}`;
+      try {
+        uploadedAvatarUrl = await uploadPhotoToFirebase(photoFile, tempId, 'avatars');
+      } catch (uploadErr) {
+        console.warn('Firebase Storage upload failed, converting to optimized data URL fallback:', uploadErr);
+        // Fallback to data URL so registration is never blocked if storage encounters an issue
+        uploadedAvatarUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(photoFile);
+        });
+      }
+
+      if (!uploadedAvatarUrl) {
+        setError('Failed to process profile photo. Please select another image and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await signup({
+        ...formData,
+        avatar: uploadedAvatarUrl,
+        photos: [uploadedAvatarUrl]
+      });
       if (res && res.success) {
         let redirectPath = null;
         try {
@@ -200,7 +300,101 @@ export const SignUpPage = ({ onNavigate }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Compulsory Profile Photo Upload Section */}
+          <div className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-3 ${
+            photoPreview
+              ? 'bg-emerald-50/40 border-emerald-300'
+              : 'bg-gradient-to-br from-brand-plum/5 via-brand-lightBg to-brand-rose/10 border-dashed border-brand-plum/40 hover:border-brand-plum'
+          }`}>
+            <div className="flex items-center gap-1.5">
+              <Camera className="w-4 h-4 text-brand-plum" />
+              <label className="text-xs font-bold text-brand-plum uppercase tracking-wider">
+                Profile Photo (प्रोफाइल फोटो) *
+              </label>
+              <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                Mandatory / अनिवार्य
+              </span>
+            </div>
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="relative cursor-pointer group"
+              title="Click to choose or change profile photo"
+            >
+              <div className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 transition-all duration-300 flex items-center justify-center shadow-md ${
+                photoPreview
+                  ? 'border-emerald-500 ring-4 ring-emerald-200'
+                  : 'border-dashed border-brand-plum/50 bg-white hover:border-brand-plum hover:scale-105'
+              }`}>
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Candidate Profile Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-3 text-center">
+                    {isCompressingPhoto ? (
+                      <Loader2 className="w-8 h-8 text-brand-plum animate-spin" />
+                    ) : (
+                      <>
+                        <UploadCloud className="w-8 h-8 text-brand-plum/70 group-hover:text-brand-plum group-hover:scale-110 transition-all mb-1" />
+                        <span className="text-[11px] font-bold text-brand-plum leading-tight">
+                          Select Photo *
+                        </span>
+                        <span className="text-[9px] text-gray-500 font-semibold mt-0.5">
+                          (फोटो निवडा)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Camera Icon Badge */}
+              <button
+                type="button"
+                className="absolute bottom-1 right-1 p-2 bg-brand-plum hover:bg-brand-plumDark text-white rounded-full shadow-lg border-2 border-white transition-transform active:scale-90"
+                title="Choose photo"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/jpg"
+              className="hidden"
+              onChange={handlePhotoSelect}
+            />
+
+            <div className="space-y-1">
+              <p className="text-[11px] text-brand-charcoal font-medium">
+                {photoPreview ? (
+                  <span className="text-emerald-700 font-bold flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Photo selected successfully! (फोटो निवडला गेला)
+                  </span>
+                ) : (
+                  <span>Please upload a clear portrait photo of the candidate to register.</span>
+                )}
+              </p>
+              <p className="text-[10px] text-gray-500">
+                JPG, PNG, WebP • Max 10MB • Clear front-facing face
+              </p>
+              {photoPreview && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="text-[11px] text-rose-600 hover:text-rose-700 underline font-semibold transition-colors pt-0.5 block mx-auto"
+                >
+                  Remove & Choose Another Photo
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             {/* Full Name */}
@@ -428,9 +622,9 @@ export const SignUpPage = ({ onNavigate }) => {
 
           <button
             type="submit"
-            disabled={isSubmitting || !agreeToTerms || existingCheck.phoneExists || existingCheck.emailExists}
+            disabled={isSubmitting || isCompressingPhoto || existingCheck.phoneExists || existingCheck.emailExists}
             className={`w-full py-3.5 bg-gradient-to-r from-brand-plum to-brand-plumDark text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all border border-brand-gold/30 flex items-center justify-center space-x-2 ${
-              isSubmitting || existingCheck.phoneExists || existingCheck.emailExists
+              isSubmitting || isCompressingPhoto || existingCheck.phoneExists || existingCheck.emailExists
                 ? 'opacity-60 cursor-not-allowed'
                 : 'hover:brightness-105 active:scale-[0.99]'
             }`}
@@ -438,7 +632,12 @@ export const SignUpPage = ({ onNavigate }) => {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 text-brand-gold animate-spin" />
-                <span>Checking & Creating Profile...</span>
+                <span>Uploading Photo & Creating Profile...</span>
+              </>
+            ) : isCompressingPhoto ? (
+              <>
+                <Loader2 className="w-4 h-4 text-brand-gold animate-spin" />
+                <span>Processing Photo...</span>
               </>
             ) : (
               <>
