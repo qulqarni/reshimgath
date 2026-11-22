@@ -1,5 +1,42 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Allow WebView / Razorpay to detect and communicate with installed UPI apps -->
+    <queries>
+        <!-- Google Pay -->
+        <package android:name="com.google.android.apps.nbu.paisa.user" />
+        <!-- PhonePe -->
+        <package android:name="com.phonepe.app" />
+        <!-- Paytm -->
+        <package android:name="net.one97.paytm" />
+        <!-- BHIM UPI (NPCI) -->
+        <package android:name="in.org.npci.upiapp" />
+        <!-- WhatsApp Pay -->
+        <package android:name="com.whatsapp" />
+        <!-- Amazon Pay -->
+        <package android:name="com.amazon.mShop.android.shopping" />
+        <package android:name="in.amazon.mShop.android.shopping" />
+        <!-- Major Banking UPI Apps -->
+        <package android:name="com.sbi.lotusintouch" />
+        <package android:name="com.csam.icici.bank.imobile" />
+        <package android:name="com.hdfcbank.payzapp" />
+        <package android:name="com.axis.mobile" />
+        <package android:name="com.msf.kbank.mobile" />
+        <package android:name="com.bankofbaroda.mconnect" />
+        <package android:name="com.myairtelapp" />
+        <package android:name="com.mobikwik_new" />
+
+        <!-- Generic UPI & Intent Action Schemes -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="intent" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

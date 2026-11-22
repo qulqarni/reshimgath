@@ -185,6 +185,38 @@ export const openRazorpayCheckout = async ({ plan, user, onSuccess, onError, onS
       theme: {
         color: '#4A1525' // Brand Plum Theme Color
       },
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: 'Pay using UPI / QR (Google Pay, PhonePe, Paytm)',
+              instruments: [
+                {
+                  method: 'upi'
+                }
+              ]
+            },
+            other: {
+              name: 'Cards & Net Banking',
+              instruments: [
+                {
+                  method: 'card'
+                },
+                {
+                  method: 'netbanking'
+                },
+                {
+                  method: 'wallet'
+                }
+              ]
+            }
+          },
+          sequence: ['block.upi', 'block.other'],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      },
       modal: {
         ondismiss: function () {
           console.log('Razorpay Checkout Modal dismissed by user.');
