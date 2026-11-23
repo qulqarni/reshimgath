@@ -534,6 +534,8 @@ export const AuthProvider = ({ children }) => {
       age: signupData.age || (signupData.dob ? calculateAgeFromDob(signupData.dob) : ""),
       avatar: signupData.avatar || (signupData.photos?.[0] || ""),
       photos: signupData.photos || (signupData.avatar ? [signupData.avatar] : []),
+      biodataPdf: signupData.biodataPdf || null,
+      biodataUrl: signupData.biodataUrl || (signupData.biodataPdf?.url || null),
       password: signupData.password || "",
       verified: false,
       termsAcceptedVersion: CURRENT_TERMS_VERSION,

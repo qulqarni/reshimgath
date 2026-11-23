@@ -64,6 +64,12 @@ export const ProfileSetupPage = ({ onNavigate }) => {
     if (step < 6) {
       setStep(step + 1);
     } else {
+      // Mandatory Biodata check before finishing profile setup
+      if (!user?.biodataPdf?.url && !user?.biodataUrl) {
+        alert('Biodata document is compulsory (बायोडेटा अनिवार्य आहे). Please upload your family biodata document before completing profile setup.');
+        return;
+      }
+
       const finalData = {
         ...formData,
         age: formData.age || (formData.dob ? calculateAgeFromDob(formData.dob) : (user?.age || '')),
@@ -480,13 +486,18 @@ export const ProfileSetupPage = ({ onNavigate }) => {
 
           {step === 6 && (
             <div className="space-y-3">
-              {/* Biodata PDF Upload during Registration */}
+              {/* Biodata Document Section */}
               <div className="space-y-2">
-                <h4 className="font-serif text-sm font-bold text-brand-plum uppercase tracking-wider">
-                  Upload Biodata PDF (बायोडेटा PDF अपलोड) - Optional
-                </h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-serif text-sm font-bold text-brand-plum uppercase tracking-wider">
+                    Candidate Biodata (बायोडेटा फाईल) *
+                  </h4>
+                  <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                    Mandatory / अनिवार्य
+                  </span>
+                </div>
                 <p className="text-xs text-brand-gray">
-                  Upload your detailed family biodata PDF now or complete it later from your profile.
+                  Your detailed family biodata document (PDF or Photo). You can review or replace it below.
                 </p>
                 <BiodataPdfSection user={user} updateProfile={updateProfile} isEditable={true} onNavigate={onNavigate} />
               </div>

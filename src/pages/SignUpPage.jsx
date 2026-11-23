@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff, Calendar, Loader2, Camera, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, Sparkles, Eye, EyeOff, Calendar, Loader2, Camera, UploadCloud, CheckCircle2, FileText, FileCheck, Trash2 } from 'lucide-react';
 import { calculateAgeFromDob } from '../utils/ageCalculator';
-import { uploadPhotoToFirebase } from '../services/firebaseService';
+import { uploadPhotoToFirebase, uploadBiodataPdfToFirebase } from '../services/firebaseService';
 import { compressImageToFile } from '../utils/imageCompressor';
 
 export const SignUpPage = ({ onNavigate }) => {
@@ -14,6 +14,12 @@ export const SignUpPage = ({ onNavigate }) => {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
+
+  // Compulsory Biodata Upload State
+  const biodataInputRef = useRef(null);
+  const [biodataFile, setBiodataFile] = useState(null);
+  const [biodataPreviewName, setBiodataPreviewName] = useState('');
+  const [biodataFileSize, setBiodataFileSize] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -128,6 +134,42 @@ export const SignUpPage = ({ onNavigate }) => {
     }
   };
 
+  const handleBiodataSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
+
+    if (!isPdf && !isImage) {
+      setError('Please select a valid Biodata document (PDF, JPG, or PNG).');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setError('Biodata file size must be less than 15MB.');
+      return;
+    }
+
+    setError('');
+    setBiodataFile(file);
+    setBiodataPreviewName(file.name);
+    const formattedSize = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+      : `${Math.round(file.size / 1024)} KB`;
+    setBiodataFileSize(formattedSize);
+  };
+
+  const handleRemoveBiodata = (e) => {
+    e.stopPropagation();
+    setBiodataFile(null);
+    setBiodataPreviewName('');
+    setBiodataFileSize('');
+    if (biodataInputRef.current) {
+      biodataInputRef.current.value = '';
+    }
+  };
+
   const existingCheck = {
     emailExists: localCheck.emailExists || asyncCheck.emailExists,
     phoneExists: localCheck.phoneExists || asyncCheck.phoneExists
@@ -147,6 +189,12 @@ export const SignUpPage = ({ onNavigate }) => {
     // Compulsory profile photo check
     if (!photoFile) {
       setError('Profile photo is compulsory (अनिवार्य). Please upload a clear photograph of the candidate to register.');
+      return;
+    }
+
+    // Compulsory biodata document check
+    if (!biodataFile) {
+      setError('Biodata document (PDF or Photo) is compulsory (बायोडेटा अनिवार्य आहे). Please upload the candidate biodata to complete registration.');
       return;
     }
 
@@ -208,14 +256,14 @@ export const SignUpPage = ({ onNavigate }) => {
 
     setIsSubmitting(true);
     try {
+      const tempId = `reg_${Date.now()}`;
+
       // 1. Upload compulsory profile photo to Firebase Storage
       let uploadedAvatarUrl = '';
-      const tempId = `reg_${Date.now()}`;
       try {
         uploadedAvatarUrl = await uploadPhotoToFirebase(photoFile, tempId, 'avatars');
       } catch (uploadErr) {
         console.warn('Firebase Storage upload failed, converting to optimized data URL fallback:', uploadErr);
-        // Fallback to data URL so registration is never blocked if storage encounters an issue
         uploadedAvatarUrl = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
@@ -230,10 +278,41 @@ export const SignUpPage = ({ onNavigate }) => {
         return;
       }
 
+      // 2. Upload compulsory Biodata to Firebase Storage
+      let uploadedBiodataUrl = '';
+      try {
+        uploadedBiodataUrl = await uploadBiodataPdfToFirebase(biodataFile, tempId);
+      } catch (bioErr) {
+        console.warn('Firebase Biodata upload failed, converting to data URL fallback:', bioErr);
+        uploadedBiodataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(biodataFile);
+        });
+      }
+
+      if (!uploadedBiodataUrl) {
+        setError('Failed to process biodata document. Please select another file and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const isBioPdf = biodataFile.type === 'application/pdf' || biodataFile.name.toLowerCase().endsWith('.pdf');
+      const biodataObject = {
+        fileName: biodataFile.name,
+        fileSize: biodataFileSize || '1 MB',
+        fileType: isBioPdf ? 'pdf' : 'image',
+        uploadedAt: new Date().toISOString().split('T')[0],
+        url: uploadedBiodataUrl
+      };
+
       const res = await signup({
         ...formData,
         avatar: uploadedAvatarUrl,
-        photos: [uploadedAvatarUrl]
+        photos: [uploadedAvatarUrl],
+        biodataPdf: biodataObject,
+        biodataUrl: uploadedBiodataUrl
       });
       if (res && res.success) {
         let redirectPath = null;
@@ -392,6 +471,88 @@ export const SignUpPage = ({ onNavigate }) => {
                   Remove & Choose Another Photo
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Compulsory Biodata Document Upload Section */}
+          <div className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-3 ${
+            biodataFile
+              ? 'bg-emerald-50/40 border-emerald-300'
+              : 'bg-gradient-to-br from-amber-500/5 via-brand-lightBg to-brand-rose/10 border-dashed border-amber-600/40 hover:border-amber-600'
+          }`}>
+            <div className="flex items-center gap-1.5">
+              <FileText className="w-4 h-4 text-brand-plum" />
+              <label className="text-xs font-bold text-brand-plum uppercase tracking-wider">
+                Candidate Biodata (बायोडेटा फाईल) *
+              </label>
+              <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                Mandatory / अनिवार्य
+              </span>
+            </div>
+
+            <div
+              onClick={() => biodataInputRef.current?.click()}
+              className="w-full max-w-sm cursor-pointer group"
+              title="Click to select candidate biodata"
+            >
+              {biodataFile ? (
+                <div className="p-3.5 bg-white rounded-xl border border-emerald-300 shadow-sm flex items-center justify-between gap-3 text-left">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <FileCheck className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-brand-charcoal truncate">
+                        {biodataPreviewName}
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        {biodataFileSize} • Ready to upload
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveBiodata}
+                    className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors shrink-0"
+                    title="Remove file"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-white/80 rounded-xl border border-dashed border-amber-600/40 hover:border-amber-600 group-hover:bg-white transition-all flex flex-col items-center justify-center text-center">
+                  <UploadCloud className="w-7 h-7 text-amber-600/80 group-hover:text-amber-600 group-hover:scale-110 transition-transform mb-1.5" />
+                  <span className="text-xs font-bold text-brand-plum">
+                    Click to Upload Biodata (PDF or Photo) *
+                  </span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">
+                    बायोडेटा निवडा (PDF किंवा फोटो)
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <input
+              ref={biodataInputRef}
+              type="file"
+              accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,image/jpg"
+              className="hidden"
+              onChange={handleBiodataSelect}
+            />
+
+            <div className="space-y-0.5">
+              <p className="text-[11px] text-brand-charcoal font-medium">
+                {biodataFile ? (
+                  <span className="text-emerald-700 font-bold flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Biodata file attached! (बायोडेटा जोडला गेला)
+                  </span>
+                ) : (
+                  <span>Upload detailed family biodata document (PDF or clear image).</span>
+                )}
+              </p>
+              <p className="text-[10px] text-gray-500">
+                Supports PDF, JPG, PNG, WebP • Max 15MB
+              </p>
             </div>
           </div>
 
@@ -632,7 +793,7 @@ export const SignUpPage = ({ onNavigate }) => {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 text-brand-gold animate-spin" />
-                <span>Uploading Photo & Creating Profile...</span>
+                <span>Uploading Photo, Biodata & Creating Profile...</span>
               </>
             ) : isCompressingPhoto ? (
               <>
